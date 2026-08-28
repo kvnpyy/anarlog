@@ -50,6 +50,9 @@ export function OuterHeader({
   viewSwitcher,
   transcriptEditMode = false,
   onTranscriptEditModeChange,
+  onViewChange,
+  enhancedNoteIds = [],
+  canShowTranscript = false,
 }: {
   sessionId: string;
   currentView: EditorView;
@@ -58,6 +61,9 @@ export function OuterHeader({
   viewSwitcher?: React.ReactNode;
   transcriptEditMode?: boolean;
   onTranscriptEditModeChange?: (editMode: boolean) => void;
+  onViewChange?: (view: EditorView) => void;
+  enhancedNoteIds?: readonly string[];
+  canShowTranscript?: boolean;
 }) {
   const { leftsidebar } = useShell();
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
@@ -119,6 +125,9 @@ export function OuterHeader({
           standaloneWindow={standaloneWindow}
           sessionId={sessionId}
           currentView={currentView}
+          onViewChange={onViewChange}
+          enhancedNoteIds={enhancedNoteIds}
+          canShowTranscript={canShowTranscript}
         />
       </div>
     </div>

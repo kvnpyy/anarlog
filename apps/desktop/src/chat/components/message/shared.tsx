@@ -38,17 +38,15 @@ export function MessageBubble({
   return (
     <div
       className={cn([
-        "select-text-deep text-sm",
+        "select-text-deep text-[13px] leading-5",
         variant === "user" &&
           "w-fit max-w-full rounded-2xl bg-blue-100 px-3 py-1 text-neutral-800 [&_p]:[text-wrap:wrap]",
         variant === "assistant" &&
           (isDarkAppearance
-            ? "bg-accent text-accent-foreground rounded-2xl px-3 py-1"
-            : "text-foreground"),
+            ? "bg-accent text-accent-foreground min-w-0 overflow-hidden rounded-2xl px-3 py-1"
+            : "text-foreground min-w-0 overflow-hidden"),
         variant === "loading" &&
-          (isDarkAppearance
-            ? "bg-accent text-accent-foreground w-fit rounded-2xl px-3 py-1"
-            : "text-foreground"),
+          "border-border bg-background text-foreground w-fit rounded-2xl border px-3 py-1.5 shadow-xs",
         variant === "error" &&
           "rounded-2xl border border-red-200 bg-red-50 px-3 py-1 text-red-600",
         withActionButton && "group relative",

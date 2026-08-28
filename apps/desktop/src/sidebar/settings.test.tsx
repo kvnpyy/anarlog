@@ -140,6 +140,7 @@ describe("SettingsNav", () => {
     [
       "App",
       "General",
+      "Profile",
       "Appearance",
       "Account",
       "Team",
@@ -180,6 +181,17 @@ describe("SettingsNav", () => {
       screen.getByTestId(`settings-nav-destination-icon-${destination.type}`),
     ).toBeTruthy();
     expect(mocks.openNew).toHaveBeenCalledWith(destination);
+  });
+
+  it("opens Profile inside settings", () => {
+    render(<SettingsNav />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Profile" }));
+
+    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
+      mocks.currentTab,
+      { tab: "profile" },
+    );
   });
 
   it("opens runtime audio capabilities from the Permissions item", () => {

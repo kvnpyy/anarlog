@@ -167,22 +167,23 @@ async function enableReactScanInDev() {
   } catch (error) {
     console.warn("Failed to start React Scan:", error);
   }
-
-  startInteractionProfiler();
 }
 
 async function renderApp() {
-  await Promise.all([
-    bootstrapThemeFromSettings(),
-    enableReactScanInDev(),
-    initializeAppStoreBuild(),
-  ]);
+  await Promise.all([bootstrapThemeFromSettings(), initializeAppStoreBuild()]);
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
       <AppRoot />
     </StrictMode>,
   );
+
+  if (import.meta.env.DEV) {
+    startInteractionProfiler();
+    if (import.meta.env.VITE_REACT_SCAN === "1") {
+      void enableReactScanInDev();
+    }
+  }
 }
 
 if (!rootElement.innerHTML) {

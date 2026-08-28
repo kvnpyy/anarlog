@@ -44,6 +44,15 @@ vi.mock("streamdown", () => ({
   Streamdown: ({ children }: { children: string }) => <div>{children}</div>,
 }));
 
+vi.mock("@anlg/editor/markdown", () => ({
+  md2json: (markdown: string) => ({
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: markdown }] },
+    ],
+  }),
+}));
+
 vi.mock("~/ai/hooks", () => ({
   useLLMConnection: () => ({ conn: null }),
   useAITaskTask: (_taskId: string, taskType: "enhance" | "title") => {
@@ -175,7 +184,7 @@ describe("Enhanced", () => {
     ).not.toBeNull();
   });
 
-  it("renders streamed summary in the generating view", () => {
+  it("renders streamed summary in the enhanced editor", () => {
     hoisted.enhanceTask = {
       status: "generating",
       error: undefined,
@@ -186,14 +195,13 @@ describe("Enhanced", () => {
 
     render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
 
-    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
     expect(screen.getByText("Streaming summary")).not.toBeNull();
-    expect(screen.getByTestId("summary-title-space")).not.toBeNull();
-    expect(screen.getByText("Generating title...")).not.toBeNull();
+    expect(screen.queryByTestId("summary-title-space")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("keeps the completed stream visible until SQLite content arrives", () => {
+  it("keeps the completed stream visible in the editor until SQLite content arrives", () => {
     hoisted.enhanceTask = {
       status: "success",
       error: undefined,
@@ -206,7 +214,7 @@ describe("Enhanced", () => {
       <Enhanced sessionId="session-1" enhancedNoteId="note-1" />,
     );
 
-    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
     expect(screen.getByText("Generated summary")).not.toBeNull();
 
     hoisted.content = "Stored summary";
@@ -214,7 +222,7 @@ describe("Enhanced", () => {
 
     expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
     expect(screen.getByText("Stored summary")).not.toBeNull();
-    expect(hoisted.enhancedEditorMountCount).toBe(1);
+    expect(hoisted.enhancedEditorMountCount).toBe(2);
   });
 
   it("remounts the editor with persisted content after generation", () => {
@@ -233,7 +241,8 @@ describe("Enhanced", () => {
     };
     view.rerender(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
 
-    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
+    expect(screen.getByText("Streaming summary")).not.toBeNull();
 
     hoisted.content = "Updated summary";
     hoisted.enhanceTask = {
@@ -247,7 +256,7 @@ describe("Enhanced", () => {
 
     expect(screen.getByTestId("enhanced-editor")).not.toBe(editor);
     expect(screen.getByText("Updated summary")).not.toBeNull();
-    expect(hoisted.enhancedEditorMountCount).toBe(2);
+    expect(hoisted.enhancedEditorMountCount).toBe(3);
   });
 
   it("keeps the completed stream visible over an empty stored document", () => {
@@ -265,51 +274,12 @@ describe("Enhanced", () => {
 
     render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
 
-    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
     expect(screen.getByText("Generated summary")).not.toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
   });
-  it("keeps the title row while streaming for an already titled session", () => {
+  it("streams enhance text into the editor without leaking title-task reasoning", () => {
     hoisted.sessionTitle = "Existing title";
-    hoisted.enhanceTask = {
-      status: "generating",
-      error: undefined,
-      streamedText: "Streaming summary",
-      currentStep: undefined,
-      isGenerating: true,
-    };
-
-    render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
-
-    expect(screen.getByText("Streaming summary")).not.toBeNull();
-    expect(screen.getByTestId("summary-title-space")).not.toBeNull();
-    expect(screen.getByText("Existing title")).not.toBeNull();
-    expect(screen.queryByText("Generating title...")).toBeNull();
-  });
-
-  it("shows the generated title while the summary is still streaming", () => {
-    hoisted.enhanceTask = {
-      status: "generating",
-      error: undefined,
-      streamedText: "Streaming summary",
-      currentStep: undefined,
-      isGenerating: true,
-    };
-    hoisted.titleTask = {
-      status: "success",
-      error: undefined,
-      streamedText: "Generated Session Title",
-      currentStep: undefined,
-      isGenerating: false,
-    };
-
-    render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
-
-    expect(screen.getByTestId("summary-title-space")).not.toBeNull();
-    expect(screen.getByText("Generated Session Title")).not.toBeNull();
-    expect(screen.queryByText("Generating title...")).toBeNull();
-  });
-
-  it("hides in-progress title reasoning while the summary is streaming", () => {
     hoisted.enhanceTask = {
       status: "generating",
       error: undefined,
@@ -327,8 +297,11 @@ describe("Enhanced", () => {
 
     render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
 
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
+    expect(screen.getByText("Streaming summary")).not.toBeNull();
     expect(screen.queryByText("We need to output a concise title.")).toBeNull();
-    expect(screen.getByText("Generating title...")).not.toBeNull();
+    expect(screen.queryByTestId("summary-title-space")).toBeNull();
+    expect(screen.queryByText("Generating title...")).toBeNull();
   });
 
   it("renders the editor after an empty enhance task returns idle", () => {

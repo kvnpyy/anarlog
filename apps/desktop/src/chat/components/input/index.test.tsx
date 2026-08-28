@@ -295,6 +295,22 @@ describe("ChatMessageInput", () => {
     expect(sendButton.disabled).toBe(true);
   });
 
+  it("shows thinking in the composer while a reply is in flight", () => {
+    shellState.mode = "RightPanelOpen";
+    render(
+      <ChatMessageInput
+        draftKey="chat-input-thinking"
+        layout="right-panel"
+        isStreaming
+        onSendMessage={vi.fn()}
+        onStop={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Thinking...")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Stop response" })).toBeTruthy();
+  });
+
   it("submits drafts while streaming so the caller can queue them", () => {
     shellState.mode = "RightPanelOpen";
     const onSendMessage = vi.fn();

@@ -1,10 +1,12 @@
-import { ArrowElbowDownRight, Trash } from "@phosphor-icons/react";
+import { t } from "@lingui/core/macro";
+import { ArrowElbowDownRight, CircleNotch, Trash } from "@phosphor-icons/react";
 import type { ChatStatus } from "ai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatBody } from "./body";
 import { ContextBar } from "./context-bar";
 import { ChatMessageInput } from "./input";
+import { LiveAskRail } from "./live-ask-rail";
 
 import type { useLanguageModel } from "~/ai/hooks";
 import { dedupeByKey, type ContextRef } from "~/chat/context/entities";
@@ -13,7 +15,12 @@ import {
   readSessionContextDragData,
 } from "~/chat/context/session-drag";
 import type { DisplayEntity } from "~/chat/context/use-chat-context-pipeline";
+import { hasRenderableContent } from "~/chat/message-content";
 import type { ChatMessageSender, AnlgUIMessage } from "~/chat/types";
+import {
+  isWaitingForAssistantContent,
+  shouldShowChatThinking,
+} from "~/chat/waiting";
 import { id } from "~/shared/utils";
 
 type QueuedChatMessage = {
@@ -43,9 +50,12 @@ export function ChatContent({
   onDraftContentChange,
   onDraftContextRefsChange,
   isSystemPromptReady,
+  isRecording = false,
+  isBatchOnly = false,
+  placeholder,
   children,
 }: {
-  layout?: "floating" | "right-panel";
+  layout?: "floating" | "right-panel" | "inline";
   sessionId: string;
   messages: AnlgUIMessage[];
   sendMessage: ChatMessageSender;
@@ -67,12 +77,24 @@ export function ChatContent({
   onDraftContentChange?: (hasDraftContent: boolean) => void;
   onDraftContextRefsChange?: (refs: ContextRef[]) => void;
   isSystemPromptReady: boolean;
+  isRecording?: boolean;
+  isBatchOnly?: boolean;
+  placeholder?: string;
   children?: React.ReactNode;
 }) {
   const isModelConfigured = !!model;
   const isFloating = layout === "floating";
+  const isInline = layout === "inline";
   const disabled = !isSystemPromptReady;
   const isBusy = status === "submitted" || status === "streaming";
+  const hideEmptyLiveBody = isInline && messages.length === 0 && !isBusy;
+  const [awaitingReply, setAwaitingReply] = useState(false);
+  const showThinking = shouldShowChatThinking(status, messages, awaitingReply);
+  const inputPlaceholder =
+    placeholder ??
+    (!isRecording && contextEntities.length === 0
+      ? t`Ask across your meetings`
+      : undefined);
   const [queueState, setQueueState] = useState<{
     sessionId: string;
     messages: QueuedChatMessage[];
@@ -125,6 +147,7 @@ export function ChatContent({
         return;
       }
 
+      setAwaitingReply(true);
       handleSendMessage(content, parts, sendMessage, mergedContextRefs);
     },
     [
@@ -162,6 +185,7 @@ export function ChatContent({
     dequeueInFlightRef.current = true;
     setQueuedMessages((messages) => messages.slice(1));
     try {
+      setAwaitingReply(true);
       handleSendMessage(
         nextMessage.content,
         nextMessage.parts,
@@ -179,6 +203,27 @@ export function ChatContent({
     setQueuedMessages,
     status,
   ]);
+
+  useEffect(() => {
+    setAwaitingReply(false);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (status === "error") {
+      setAwaitingReply(false);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (
+      last?.role === "assistant" &&
+      hasRenderableContent(last) &&
+      !isWaitingForAssistantContent(last)
+    ) {
+      setAwaitingReply(false);
+    }
+  }, [messages]);
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     if (!onAddContextEntity || !hasSessionContextDragData(event.dataTransfer)) {
@@ -209,22 +254,35 @@ export function ChatContent({
       className={
         isFloating
           ? "flex max-h-full min-h-0 flex-col overflow-hidden"
-          : "flex min-h-0 flex-1 flex-col overflow-hidden"
+          : isInline
+            ? "flex min-h-0 flex-col overflow-hidden"
+            : "flex min-h-0 flex-1 flex-col overflow-hidden"
       }
       data-chat-content
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {children ?? (
-        <ChatBody
-          messages={messages}
-          status={status}
-          error={error}
-          onReload={regenerate}
-          isModelConfigured={isModelConfigured}
+      {children ??
+        (hideEmptyLiveBody ? null : (
+          <ChatBody
+            messages={messages}
+            status={status}
+            error={error}
+            onReload={regenerate}
+            isModelConfigured={isModelConfigured}
+            hasContext={contextEntities.length > 0}
+            onSendMessage={submitOrQueueMessage}
+            isRecording={isRecording}
+            layout={layout}
+          />
+        ))}
+      {isRecording ? (
+        <LiveAskRail
+          isBatchOnly={isBatchOnly}
+          showRecipes={isModelConfigured}
           onSendMessage={submitOrQueueMessage}
         />
-      )}
+      ) : null}
       {isModelConfigured && (
         <>
           <ContextBar
@@ -235,6 +293,7 @@ export function ChatContent({
             messages={queuedMessages}
             onRemoveMessage={removeQueuedMessage}
           />
+          {showThinking ? <ChatThinkingStatus /> : null}
           <ChatMessageInput
             draftKey={sessionId}
             layout={layout}
@@ -242,11 +301,33 @@ export function ChatContent({
             onSendMessage={submitOrQueueMessage}
             onDraftContentChange={onDraftContentChange}
             onContextRefsChange={onDraftContextRefsChange}
-            isStreaming={status === "streaming" || status === "submitted"}
+            isStreaming={
+              awaitingReply || status === "streaming" || status === "submitted"
+            }
             onStop={stop}
+            placeholder={inputPlaceholder}
           />
         </>
       )}
+    </div>
+  );
+}
+
+function ChatThinkingStatus() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-chat-thinking-status
+      className="text-foreground flex shrink-0 items-center gap-2 px-4 py-2 text-sm"
+    >
+      <CircleNotch className="size-3.5 shrink-0 animate-spin" />
+      <span>{t`Thinking...`}</span>
+      <span aria-hidden="true" className="flex items-center gap-0.5">
+        <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+        <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+        <span className="size-1 animate-bounce rounded-full bg-current" />
+      </span>
     </div>
   );
 }

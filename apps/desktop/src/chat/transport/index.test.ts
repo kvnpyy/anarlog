@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   agentStream: vi.fn(),
+  getRecentLiveTranscriptContext: vi.fn(() => null as string | null),
   smoothStream: vi.fn(),
   streamTransform: vi.fn(),
+}));
+
+vi.mock("~/chat/context/live-transcript-snippet", () => ({
+  getRecentLiveTranscriptContext: mocks.getRecentLiveTranscriptContext,
 }));
 
 vi.mock("ai", async (importOriginal) => ({
@@ -19,6 +24,7 @@ import { CustomChatTransport } from "./index";
 describe("CustomChatTransport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getRecentLiveTranscriptContext.mockReturnValue(null);
     mocks.smoothStream.mockReturnValue(mocks.streamTransform);
     mocks.agentStream.mockResolvedValue({
       toUIMessageStream: vi.fn(
@@ -58,5 +64,48 @@ describe("CustomChatTransport", () => {
         experimental_transform: mocks.streamTransform,
       }),
     );
+  });
+
+  it("prepends in-progress transcript context to the last user message", async () => {
+    mocks.getRecentLiveTranscriptContext.mockReturnValue(
+      "IN-PROGRESS TRANSCRIPT (last 10 minutes):\nYou: Let's ship Friday",
+    );
+
+    const transport = new CustomChatTransport({} as never, {});
+
+    await transport.sendMessages({
+      abortSignal: new AbortController().signal,
+      chatId: "chat-1",
+      messageId: undefined,
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "Catch me up" }],
+          metadata: {
+            contextRefs: [
+              {
+                kind: "session",
+                key: "session:auto:session-1",
+                source: "auto-current",
+                sessionId: "session-1",
+              },
+            ],
+          },
+        },
+      ],
+      trigger: "submit-message",
+    });
+
+    expect(mocks.getRecentLiveTranscriptContext).toHaveBeenCalledWith(
+      "session-1",
+    );
+    const streamArgs = mocks.agentStream.mock.calls[0]?.[0] as {
+      messages: unknown;
+    };
+    const serialized = JSON.stringify(streamArgs.messages);
+    expect(serialized).toContain("IN-PROGRESS TRANSCRIPT (last 10 minutes):");
+    expect(serialized).toContain("Let's ship Friday");
+    expect(serialized).toContain("Catch me up");
   });
 });

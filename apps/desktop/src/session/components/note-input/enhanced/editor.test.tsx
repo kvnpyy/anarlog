@@ -168,6 +168,7 @@ describe("EnhancedEditor", () => {
     expect(screen.getByTestId("summary-comments-layer")).toBeTruthy();
     expect(props?.placeholderComponent).toEqual(expect.any(Function));
     expect(props?.syncContentWhenFocused).toBe(false);
+    expect(props?.readOnly).toBe(false);
     expect(props?.handleChange).not.toBe(hoisted.persistContent);
     expect(props?.taskSource).toEqual({ type: "enhanced_note", id: "note-1" });
     expect(props?.initialContent).toMatchObject({
@@ -437,6 +438,7 @@ describe("EnhancedEditor", () => {
 
     expect(props?.syncContentWhenFocused).toBe(true);
     expect(props?.handleChange).toBeUndefined();
+    expect(props?.readOnly).toBe(true);
     expect(props?.taskSource).toBeUndefined();
     expect(props?.initialContent).toMatchObject({
       type: "doc",

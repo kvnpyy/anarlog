@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const scriptPath = fileURLToPath(import.meta.url);
 const [command, ...args] = process.argv.slice(2);
 const signalExitCodes = { SIGINT: 130, SIGTERM: 143 };
+const DEV_IDENTIFIER = "com.hyprnote.dev";
 
 if (!command) {
   console.error("Expected a Cargo command or Tauri application binary path.");
@@ -30,7 +31,50 @@ if (command === "run" || command === "build") {
   runChild(command, args);
 }
 
+function codesignOutput(binary, extraArgs) {
+  const result = spawnSync("codesign", extraArgs.concat(binary), {
+    encoding: "utf8",
+  });
+  return {
+    status: result.status ?? 1,
+    text: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+  };
+}
+
+function preferredSigningIdentity() {
+  const result = spawnSync(
+    "security",
+    ["find-identity", "-v", "-p", "codesigning"],
+    { encoding: "utf8" },
+  );
+  const match = (result.stdout ?? "").match(/"(Apple Development:[^"]+)"/);
+  return match?.[1] ?? "-";
+}
+
+function hasReusableDevSignature(binary, identity) {
+  const verified = codesignOutput(binary, ["--verify"]);
+  if (verified.status !== 0) {
+    return false;
+  }
+
+  const details = codesignOutput(binary, ["-d", "--verbose=2"]);
+  if (!details.text.includes(`Identifier=${DEV_IDENTIFIER}`)) {
+    return false;
+  }
+
+  if (identity === "-") {
+    return /Signature=adhoc|flags=adhoc/.test(details.text);
+  }
+
+  return details.text.includes("Authority=Apple Development");
+}
+
 function signBinary(binary) {
+  const identity = preferredSigningIdentity();
+  if (hasReusableDevSignature(binary, identity)) {
+    return;
+  }
+
   const scriptDirectory = dirname(scriptPath);
   const entitlements = resolve(
     scriptDirectory,
@@ -41,11 +85,11 @@ function signBinary(binary) {
     [
       "--force",
       "--sign",
-      "-",
+      identity,
       "--identifier",
-      "com.hyprnote.dev",
+      DEV_IDENTIFIER,
       "--requirements",
-      '=designated => identifier "com.hyprnote.dev"',
+      `=designated => identifier "${DEV_IDENTIFIER}"`,
       "--entitlements",
       entitlements,
       binary,

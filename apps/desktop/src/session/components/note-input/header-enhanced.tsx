@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { CaretDown, Sparkle } from "@phosphor-icons/react";
 import { useCallback, useMemo } from "react";
 
@@ -25,6 +26,59 @@ import {
 } from "~/shared/hooks/useNativeContextMenu";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 import { useUserTemplate } from "~/templates";
+
+export function EnhancedPaneHeader({
+  sessionId,
+  enhancedNoteIds,
+  selectedNoteId,
+  onSelectNote,
+  onRemoveNote,
+}: {
+  sessionId: string;
+  enhancedNoteIds: readonly string[];
+  selectedNoteId: string | null;
+  onSelectNote?: (enhancedNoteId: string) => void;
+  onRemoveNote?: (enhancedNoteId: string) => void;
+}) {
+  const primaryEnhancedNoteId = enhancedNoteIds[0] ?? null;
+  const extraNoteIds = enhancedNoteIds.slice(1);
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-1">
+      {selectedNoteId ? (
+        <HeaderViewEnhanced
+          isActive
+          sessionId={sessionId}
+          enhancedNoteId={selectedNoteId}
+          canRemove={
+            Boolean(onRemoveNote) && selectedNoteId !== primaryEnhancedNoteId
+          }
+          onRemove={
+            selectedNoteId !== primaryEnhancedNoteId && onRemoveNote
+              ? () => onRemoveNote(selectedNoteId)
+              : undefined
+          }
+          onSelectNote={onSelectNote}
+        />
+      ) : (
+        <span className="text-muted-foreground truncate text-xs font-medium">
+          <Trans>Enhanced</Trans>
+        </span>
+      )}
+      {extraNoteIds.map((noteId) =>
+        noteId === selectedNoteId ? null : (
+          <HeaderViewEnhanced
+            key={noteId}
+            isActive={false}
+            sessionId={sessionId}
+            enhancedNoteId={noteId}
+            onClick={() => onSelectNote?.(noteId)}
+          />
+        ),
+      )}
+    </div>
+  );
+}
 
 export function HeaderViewEnhanced({
   isActive,
@@ -133,10 +187,7 @@ function HeaderViewEnhancedActive({
   onRemove?: () => void;
   onSelectNote?: (enhancedNoteId: string) => void;
 }) {
-  const { isGenerating, isError, onRegenerate } = useEnhanceLogic(
-    sessionId,
-    enhancedNoteId,
-  );
+  const { isGenerating, isError } = useEnhanceLogic(sessionId, enhancedNoteId);
   const enhancedNote = useEnhancedNote(enhancedNoteId);
   const content = enhancedNote?.content;
   const usedTemplateId = enhancedNote?.templateId?.trim() || null;
@@ -149,9 +200,6 @@ function HeaderViewEnhancedActive({
       error: `Failed to copy ${viewTitle}`,
     });
   }, [noteMarkdown, viewTitle]);
-  const handleRegenerate = useCallback(() => {
-    void onRegenerate(null);
-  }, [onRegenerate]);
   const handleSelectTemplate = useCallback(
     (selection: TemplateSelection) => {
       if (isGenerating) {
@@ -196,12 +244,6 @@ function HeaderViewEnhancedActive({
         },
         disabled: noteMarkdown.length === 0,
       },
-      {
-        id: `regenerate-enhanced-${enhancedNoteId}`,
-        text: "Regenerate",
-        action: handleRegenerate,
-        disabled: isGenerating,
-      },
     ];
 
     if (canRemove) {
@@ -221,7 +263,6 @@ function HeaderViewEnhancedActive({
     canRemove,
     enhancedNoteId,
     handleCopy,
-    handleRegenerate,
     isGenerating,
     noteMarkdown.length,
     onRemove,
@@ -274,8 +315,6 @@ function HeaderViewEnhancedActive({
     <TemplatePickerPopover
       onSelectTemplate={handleSelectTemplate}
       usedTemplateId={usedTemplateId}
-      onRegenerateUsed={handleRegenerate}
-      isRegenerating={isGenerating}
       trigger={templateMenuTrigger}
     />
   );

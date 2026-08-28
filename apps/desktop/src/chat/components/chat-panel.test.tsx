@@ -85,6 +85,7 @@ vi.mock("~/stt/contexts", () => ({
     selector({
       getSessionMode: () => mocks.sessionMode,
       live: {
+        sessionId: "session-1",
         requestedLiveTranscription: mocks.requestedLiveTranscription,
         liveTranscriptionActive: mocks.liveTranscriptionActive,
         batchTranscriptionPendingBySession: {},
@@ -117,6 +118,7 @@ describe("ChatView", () => {
       expect.objectContaining({
         hasAvailableTranscript: false,
         isBatchTranscriptionPending: true,
+        isLiveAsk: true,
       }),
     );
   });
@@ -149,6 +151,7 @@ describe("ChatView", () => {
         currentSessionId: undefined,
         hasAvailableTranscript: false,
         isBatchTranscriptionPending: false,
+        isLiveAsk: false,
       }),
     );
     expect(screen.queryByTestId("chat-toolbar")).toBeNull();

@@ -26,6 +26,7 @@ pub fn persisted_window_state_flags() -> tauri_plugin_window_state::StateFlags {
 }
 
 const WEBVIEW_RECOVERY_GRACE_PERIOD: Duration = Duration::from_secs(10);
+const WEBVIEW_HEALTH_MISSES_BEFORE_RELOAD: u8 = 2;
 
 #[derive(Clone, Copy)]
 pub struct SavedFrame {
@@ -104,6 +105,7 @@ struct WebviewHealthState {
     next_registration_id: AtomicU64,
     pending: Mutex<HashMap<String, (u64, String, oneshot::Sender<()>)>>,
     recovering_since: Mutex<HashMap<String, Instant>>,
+    missed_checks: Mutex<HashMap<String, u8>>,
 }
 
 impl WebviewHealthState {
@@ -142,6 +144,8 @@ impl WebviewHealthState {
         if let Some((_, _, tx)) = pending.remove(label) {
             let _ = tx.send(());
         }
+        drop(pending);
+        self.clear_misses(label);
         true
     }
 
@@ -157,21 +161,42 @@ impl WebviewHealthState {
         is_match
     }
 
+    #[cfg_attr(debug_assertions, allow(dead_code))]
+    fn record_miss(&self, label: &str) -> bool {
+        let mut missed_checks = self.missed_checks.lock().unwrap();
+        let count = missed_checks.entry(label.to_string()).or_insert(0);
+        *count = count.saturating_add(1);
+        *count >= WEBVIEW_HEALTH_MISSES_BEFORE_RELOAD
+    }
+
+    fn clear_misses(&self, label: &str) {
+        self.missed_checks.lock().unwrap().remove(label);
+    }
+
+    #[cfg_attr(debug_assertions, allow(dead_code))]
     fn begin_recovery(&self, label: &str) {
         let mut recovering_since = self.recovering_since.lock().unwrap();
         recovering_since.insert(label.to_string(), Instant::now());
         self.pending.lock().unwrap().remove(label);
+        self.clear_misses(label);
     }
 
     fn ready(&self, label: &str) {
         self.recovering_since.lock().unwrap().remove(label);
+        self.clear_misses(label);
     }
 
     fn remove(&self, label: &str) {
         let mut recovering_since = self.recovering_since.lock().unwrap();
         recovering_since.remove(label);
         self.pending.lock().unwrap().remove(label);
+        self.clear_misses(label);
     }
+}
+
+#[cfg_attr(debug_assertions, allow(dead_code))]
+pub(crate) fn is_recoverable_webview_url(url: &url::Url) -> bool {
+    matches!(url.scheme(), "http" | "https" | "tauri") && url.host_str().is_some()
 }
 
 impl WindowReadyState {
@@ -394,6 +419,40 @@ mod test {
         assert!(state.register("main".into()).is_none());
         state.ready("main");
         assert!(state.register("main".into()).is_some());
+    }
+
+    #[test]
+    fn webview_health_requires_consecutive_misses_before_reload() {
+        let state = WebviewHealthState::default();
+
+        assert!(!state.record_miss("main"));
+        assert!(state.record_miss("main"));
+
+        state.clear_misses("main");
+        assert!(!state.record_miss("main"));
+    }
+
+    #[test]
+    fn webview_health_ack_clears_missed_checks() {
+        let state = WebviewHealthState::default();
+        let (_, request_id, _) = state.register("main".into()).unwrap();
+
+        assert!(!state.record_miss("main"));
+        assert!(state.acknowledge("main", &request_id));
+        assert!(!state.record_miss("main"));
+    }
+
+    #[test]
+    fn recoverable_webview_urls_exclude_about_blank() {
+        assert!(is_recoverable_webview_url(
+            &url::Url::parse("http://localhost:1422/").unwrap()
+        ));
+        assert!(is_recoverable_webview_url(
+            &url::Url::parse("https://tauri.localhost/").unwrap()
+        ));
+        assert!(!is_recoverable_webview_url(
+            &url::Url::parse("about:blank").unwrap()
+        ));
     }
 
     #[test]

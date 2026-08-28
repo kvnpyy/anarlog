@@ -9,7 +9,7 @@ Ship a **local-first** meeting notepad that feels as close as possible to Granol
 
 1. No bot — system audio + mic (already in Anarlog)
 2. Scratch notes while listening (RawEditor / Memos)
-3. One-click **Enhance** into a clean note (EnhancedEditor)
+3. One notepad: type during the call; after stop, auto-enhance from your notes + transcript
 4. **Always-on Ask rail** during the meeting, bound to the **live transcript**
 5. Recipes: *Catch me up* · *Sound smart* · *Draft email*
 6. Auto-delete sessions/audio older than **365 days**
@@ -20,10 +20,11 @@ Ship a **local-first** meeting notepad that feels as close as possible to Granol
 ## Product layout (target)
 
 ```
-[ notes / calendar list — narrow ]
-[ raw memo  |  enhanced note ]
-[ live transcript — collapsible ]
-[ ASK rail always open during recording ]
+[ compact window: top-right, ~33% of screen height, notes list open ]
+[ one notepad column ]
+  during call: your personal notes (or transcript if you open it)
+  Ask rail docked under the notes in the same column
+  after stop: auto-enhanced note (your notes + transcript, nothing left behind)
 [ floating record control ]
 ```
 
@@ -45,7 +46,7 @@ Find existing Chat UI under `apps/desktop` (session / right panel / chat view).
 
 Changes:
 
-- While a session is **recording**, force the chat panel open (or a dedicated Ask rail)
+- While a session is **recording**, dock Ask under the notepad in the **same column** (not a second pane)
 - On every user message (and recipe buttons), prepend the **last N minutes** of the in-progress transcript as context
 - Three fixed buttons above the input:
   - **Catch me up** → short bullets of what was said in the last ~5–10 min + what I should say next
@@ -58,8 +59,8 @@ Transcription: only models marked **live** during recording. Batch-after-stop mo
 
 ### Phase 2 — Enhance flow
 
-- One primary **Enhance** control after stop (or mid-meeting if transcript is rich enough)
-- Stream into EnhancedEditor; keep user memo as “your ink”
+- After stop, auto-enhance into the same notepad (no split panes, no Enhance / retry chrome)
+- Merge the user's personal notes with the transcript so nothing is left behind
 - Do not invent a second note system — use existing Raw + Enhanced paths
 
 ### Phase 3 — 365-day retention
@@ -71,7 +72,7 @@ Transcription: only models marked **live** during recording. Batch-after-stop mo
 ### Phase 4 — UI cleanup (only after 1–3 work in real meetings)
 
 - Strip non-essential chrome during a meeting session
-- Default to memo + ask rail + transcript
+- Default to one notepad + ask rail
 - Hide cloud upsell / account noise for local-only use
 
 ## Cursor rules for this fork

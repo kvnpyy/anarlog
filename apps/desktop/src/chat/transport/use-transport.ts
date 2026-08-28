@@ -9,9 +9,13 @@ import type { ResolvedChatContext } from "./index";
 import { useLanguageModel } from "~/ai/hooks";
 import type { ContextRef } from "~/chat/context/entities";
 import { hydrateSessionContext } from "~/chat/context/session-context-hydrator";
+import {
+  formatUserProfileGuidance,
+  readUserProfile,
+} from "~/chat/context/user-profile";
 import { loadHuman, loadOrganization } from "~/contacts/queries";
 import { useToolRegistry } from "~/contexts/tool";
-import { useConfigValue } from "~/shared/config";
+import { useConfigValue, useConfigValues } from "~/shared/config";
 
 export const MEETING_CONTEXT_TOOL_GUIDANCE = `
 Context and local meeting tool guidance:
@@ -28,6 +32,12 @@ Context and local meeting tool guidance:
 - Do not ask the user to open or share a meeting until list_meetings, search_meetings, search_meeting_content, and get_meeting cannot find enough local context.
 - Use typed meeting tools instead of constructing shell commands, crawling files, or accessing SQLite directly.
 - Do not assume meeting contents from chat history when a typed tool can read the current source of truth.
+
+Copy-ready draft guidance:
+- When drafting an email, Slack message, text, or anything the user will paste elsewhere, write plain text only.
+- Do not use markdown: no asterisks, underscores, headings, backticks, or fenced code blocks.
+- For emails, start with "Subject:" on its own line, then a blank line, then the body.
+- The whole draft should copy-paste into Gmail or Slack without cleanup.
 
 Web search guidance:
 - Use web_search for public websites, URLs, companies, products, people, news, or current facts that may be outside local notes.
@@ -47,6 +57,66 @@ export function appendMeetingContextToolGuidance(
   }
 
   return `${prompt.trim()}\n\n${MEETING_CONTEXT_TOOL_GUIDANCE}`;
+}
+
+export const LIVE_ASK_TOOL_GUIDANCE = `
+Live Ask rail guidance:
+- You are answering in a narrow side rail during a live meeting.
+- Reply only in this chat. Do not call edit_memo, edit_summary, apply_session_correction, or move_meeting_contents.
+- Do not open editor tabs or rewrite the note unless the user explicitly asks to change it after the meeting.
+- Keep answers short: tight bullets, no large headings, no long preambles.
+`.trim();
+
+const LIVE_ASK_OMITTED_TOOLS = [
+  "edit_memo",
+  "edit_summary",
+  "apply_session_correction",
+  "move_meeting_contents",
+] as const;
+
+export function appendLiveAskToolGuidance(
+  prompt: string | undefined,
+): string | undefined {
+  if (prompt === undefined) {
+    return undefined;
+  }
+
+  if (!prompt.trim()) {
+    return LIVE_ASK_TOOL_GUIDANCE;
+  }
+
+  return `${prompt.trim()}\n\n${LIVE_ASK_TOOL_GUIDANCE}`;
+}
+
+export const GLOBAL_ASK_TOOL_GUIDANCE = `
+Workspace Ask guidance:
+- No specific meeting is attached. Search across all local meetings to answer questions about past conversations, people, decisions, or prep.
+- Prefer search_meetings for topics, quotes, and open-ended recall. Use list_meetings for recent or titled meetings, then get_meeting or get_meeting_transcript for details.
+- When the user is preparing for an upcoming meeting, search related past meetings first and summarize what they should remember.
+`.trim();
+
+export function appendGlobalAskToolGuidance(
+  prompt: string | undefined,
+): string | undefined {
+  if (prompt === undefined) {
+    return undefined;
+  }
+
+  if (!prompt.trim()) {
+    return GLOBAL_ASK_TOOL_GUIDANCE;
+  }
+
+  return `${prompt.trim()}\n\n${GLOBAL_ASK_TOOL_GUIDANCE}`;
+}
+
+export function omitLiveAskTools<T extends Record<string, unknown>>(
+  tools: T,
+): T {
+  const next = { ...tools };
+  for (const name of LIVE_ASK_OMITTED_TOOLS) {
+    delete next[name];
+  }
+  return next;
 }
 
 async function renderHumanContext(humanId: string): Promise<string | null> {
@@ -88,11 +158,21 @@ export function useTransport(
   extraTools?: ToolSet,
   systemPromptOverride?: string,
   userId?: string,
+  isLiveAsk = false,
+  isWorkspaceAsk = false,
 ) {
   const registry = useToolRegistry();
   const configuredModel = useLanguageModel("chat");
   const model = modelOverride ?? configuredModel;
   const language = useConfigValue("ai_language") || "en";
+  const profile = readUserProfile(
+    useConfigValues([
+      "user_profile_name",
+      "user_profile_role",
+      "user_profile_department",
+      "user_profile_context",
+    ]),
+  );
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>();
 
   useEffect(() => {
@@ -132,9 +212,14 @@ export function useTransport(
     };
   }, [language, systemPromptOverride]);
 
-  const effectiveSystemPrompt = appendMeetingContextToolGuidance(
-    systemPromptOverride ?? systemPrompt,
+  const meetingSystemPrompt = appendMeetingContextToolGuidance(
+    formatUserProfileGuidance(systemPromptOverride ?? systemPrompt, profile),
   );
+  const effectiveSystemPrompt = isLiveAsk
+    ? appendLiveAskToolGuidance(meetingSystemPrompt)
+    : isWorkspaceAsk
+      ? appendGlobalAskToolGuidance(meetingSystemPrompt)
+      : meetingSystemPrompt;
   const isSystemPromptReady =
     typeof systemPromptOverride === "string" || systemPrompt !== undefined;
 
@@ -151,11 +236,13 @@ export function useTransport(
       }
     }
 
-    return {
+    const merged = {
       ...localTools,
       ...extraTools,
     };
-  }, [registry, extraTools]);
+
+    return isLiveAsk ? omitLiveAskTools(merged) : merged;
+  }, [registry, extraTools, isLiveAsk]);
 
   const transport = useMemo(() => {
     if (!model) {

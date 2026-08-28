@@ -10,6 +10,7 @@ import {
   DownloadSimple,
   FileText,
   Gear,
+  IdentificationCard,
   Lightning,
   type Icon,
   Lock,
@@ -81,6 +82,7 @@ export function SettingsNav() {
       label: t`App`,
       items: [
         { id: "app", label: t`General`, icon: Gear },
+        { id: "profile", label: t`Profile`, icon: IdentificationCard },
         { id: "account", label: t`Account`, icon: User },
         {
           id: "team",

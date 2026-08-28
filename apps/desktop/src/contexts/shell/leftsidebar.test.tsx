@@ -16,6 +16,12 @@ describe("useLeftSidebar", () => {
     mocks.useHotkeys.mockClear();
   });
 
+  it("starts with the notes sidebar open", () => {
+    const { result } = renderHook(() => useLeftSidebar());
+
+    expect(result.current.expanded).toBe(true);
+  });
+
   it("registers the sidebar toggle hotkey", () => {
     renderHook(() => useLeftSidebar());
 

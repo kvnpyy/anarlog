@@ -302,4 +302,39 @@ describe("ChatToolbarControls", () => {
 
     expect(mocks.useRecentChatGroups).toHaveBeenCalledWith("automations", 5);
   });
+
+  it("hides float and close while the Ask rail is pinned during recording", () => {
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        layout="right-panel"
+        pinned
+        onClose={vi.fn()}
+        onNewChat={vi.fn()}
+        onOpenFloating={vi.fn()}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Float chat" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close chat" })).toBeNull();
+    expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
+  });
+
+  it("hides chat history while a meeting has its own conversation", () => {
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        isolateConversation
+        onNewChat={vi.fn()}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Chat history" })).toBeNull();
+    expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
+    expect(mocks.useRecentChatGroups).not.toHaveBeenCalled();
+  });
 });

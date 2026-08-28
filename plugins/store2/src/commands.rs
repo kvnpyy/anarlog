@@ -1,5 +1,9 @@
 use crate::Store2PluginExt;
 
+#[cfg(target_os = "macos")]
+#[path = "macos_keychain.rs"]
+mod macos_keychain;
+
 const SECURE_STORE_SUFFIX: &str = "secure-store";
 const NATIVE_SECRET_ACCOUNT_PREFIXES: &[&str] = &["e2ee:"];
 #[cfg(target_os = "macos")]
@@ -54,6 +58,21 @@ fn secure_store_account(identifier: &str, scope: &str, key: &str) -> String {
     }
 }
 
+fn secret_locations(identifier: &str, scope: &str, key: &str) -> Vec<(String, String)> {
+    let service = secure_store_service(identifier);
+    let account = secure_store_account(identifier, scope, key);
+    let mut locations = vec![(service, account)];
+    locations.extend(legacy_secret_locations(identifier, scope, key));
+    locations
+}
+
+#[cfg(target_os = "macos")]
+fn macos_secrets_file_path<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<std::path::PathBuf, String> {
+    crate::ext::secrets_file_path(app).map_err(|error| error.to_string())
+}
+
 fn secure_store_error(error: keyring::Error) -> String {
     #[cfg(target_os = "macos")]
     if keychain_error_code(&error) == Some(ERR_SEC_AUTH_FAILED) {
@@ -90,34 +109,7 @@ fn keychain_error_code(error: &keyring::Error) -> Option<i32> {
 
 #[cfg(target_os = "macos")]
 fn repair_macos_keychain_access() -> Result<(), String> {
-    use objc2_security::SecKeychain;
-
-    const ERR_SEC_SUCCESS: i32 = 0;
-    const ERR_SEC_USER_CANCELED: i32 = -128;
-
-    #[allow(deprecated)]
-    let lock_status = unsafe { SecKeychain::lock(None) };
-    if lock_status != ERR_SEC_SUCCESS {
-        return Err(format!(
-            "macOS couldn't lock your login Keychain (OSStatus {lock_status})."
-        ));
-    }
-
-    #[allow(deprecated)]
-    let unlock_status = unsafe { SecKeychain::unlock(None, 0, std::ptr::null(), false) };
-    if unlock_status == ERR_SEC_USER_CANCELED {
-        return Err(
-            "Keychain unlock was cancelled. Your login Keychain is still locked; run the repair again to unlock it."
-                .to_string(),
-        );
-    }
-    if unlock_status != ERR_SEC_SUCCESS {
-        return Err(format!(
-            "macOS couldn't unlock your login Keychain (OSStatus {unlock_status}). Your login Keychain is still locked."
-        ));
-    }
-
-    Ok(())
+    macos_keychain::probe_protected_keychain()
 }
 
 fn legacy_secret_locations(identifier: &str, scope: &str, key: &str) -> Vec<(String, String)> {
@@ -137,6 +129,7 @@ fn legacy_secret_locations(identifier: &str, scope: &str, key: &str) -> Vec<(Str
     locations
 }
 
+#[cfg(not(target_os = "macos"))]
 fn legacy_secret_entries<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     scope: &str,
@@ -150,6 +143,7 @@ fn legacy_secret_entries<R: tauri::Runtime>(
         .collect()
 }
 
+#[cfg(not(target_os = "macos"))]
 fn secret_entry<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     scope: &str,
@@ -163,6 +157,21 @@ fn secret_entry<R: tauri::Runtime>(
     let service = secure_store_service(identifier);
     let account = secure_store_account(identifier, scope, key);
     keyring::Entry::new(&service, &account).map_err(secure_store_error)
+}
+
+fn secret_coordinates<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    scope: &str,
+    key: &str,
+) -> Result<(String, String, String), String> {
+    if scope.trim().is_empty() || key.trim().is_empty() {
+        return Err("secure-store scope and key must not be empty".to_string());
+    }
+
+    let identifier = app.config().identifier.clone();
+    let service = secure_store_service(&identifier);
+    let account = secure_store_account(&identifier, scope, key);
+    Ok((identifier, service, account))
 }
 
 #[tauri::command]
@@ -325,25 +334,38 @@ fn read_secret_blocking_for<R: tauri::Runtime>(
     key: &str,
 ) -> Result<Option<String>, String> {
     validate_secret_coordinate(caller, scope, key)?;
-    let entry = secret_entry(app, scope, key)?;
-    match entry.get_password() {
-        Ok(secret) => Ok(Some(secret)),
-        Err(keyring::Error::NoEntry) => {
-            for legacy_entry in legacy_secret_entries(app, scope, key)? {
-                match legacy_entry.get_password() {
-                    Ok(secret) => {
-                        if entry.set_password(&secret).is_ok() {
-                            let _ = legacy_entry.delete_credential();
+    let (identifier, service, account) = secret_coordinates(app, scope, key)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let file_path = macos_secrets_file_path(app)?;
+        let locations = secret_locations(&identifier, scope, key);
+        return macos_keychain::get_password(&(service, account), &locations, &file_path);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = identifier;
+        let entry = secret_entry(app, scope, key)?;
+        match entry.get_password() {
+            Ok(secret) => Ok(Some(secret)),
+            Err(keyring::Error::NoEntry) => {
+                for legacy_entry in legacy_secret_entries(app, scope, key)? {
+                    match legacy_entry.get_password() {
+                        Ok(secret) => {
+                            if entry.set_password(&secret).is_ok() {
+                                let _ = legacy_entry.delete_credential();
+                            }
+                            return Ok(Some(secret));
                         }
-                        return Ok(Some(secret));
+                        Err(keyring::Error::NoEntry | keyring::Error::PlatformFailure(_)) => {}
+                        Err(error) => return Err(secure_store_error(error)),
                     }
-                    Err(keyring::Error::NoEntry | keyring::Error::PlatformFailure(_)) => {}
-                    Err(error) => return Err(secure_store_error(error)),
                 }
+                Ok(None)
             }
-            Ok(None)
+            Err(error) => Err(secure_store_error(error)),
         }
-        Err(error) => Err(secure_store_error(error)),
     }
 }
 
@@ -399,12 +421,25 @@ fn write_secret_blocking_for<R: tauri::Runtime>(
     value: &str,
 ) -> Result<(), String> {
     validate_secret_coordinate(caller, scope, key)?;
-    let entry = secret_entry(app, scope, key)?;
-    entry.set_password(value).map_err(secure_store_error)?;
-    for legacy_entry in legacy_secret_entries(app, scope, key)? {
-        let _ = legacy_entry.delete_credential();
+    let (identifier, service, account) = secret_coordinates(app, scope, key)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let file_path = macos_secrets_file_path(app)?;
+        let stale = legacy_secret_locations(&identifier, scope, key);
+        return macos_keychain::set_password(&service, &account, value, &file_path, &stale);
     }
-    Ok(())
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = identifier;
+        let entry = secret_entry(app, scope, key)?;
+        entry.set_password(value).map_err(secure_store_error)?;
+        for legacy_entry in legacy_secret_entries(app, scope, key)? {
+            let _ = legacy_entry.delete_credential();
+        }
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -446,18 +481,29 @@ fn delete_secret_blocking_for<R: tauri::Runtime>(
     key: &str,
 ) -> Result<(), String> {
     validate_secret_coordinate(caller, scope, key)?;
-    for legacy_entry in legacy_secret_entries(app, scope, key)? {
-        match legacy_entry.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry | keyring::Error::PlatformFailure(_)) => {}
+
+    #[cfg(target_os = "macos")]
+    {
+        let file_path = macos_secrets_file_path(app)?;
+        let locations = secret_locations(&app.config().identifier, scope, key);
+        return macos_keychain::delete_password(&locations, &file_path);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        for legacy_entry in legacy_secret_entries(app, scope, key)? {
+            match legacy_entry.delete_credential() {
+                Ok(()) | Err(keyring::Error::NoEntry | keyring::Error::PlatformFailure(_)) => {}
+                Err(error) => return Err(secure_store_error(error)),
+            }
+        }
+        let entry = secret_entry(app, scope, key)?;
+        match entry.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => {}
             Err(error) => return Err(secure_store_error(error)),
         }
+        Ok(())
     }
-    let entry = secret_entry(app, scope, key)?;
-    match entry.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => {}
-        Err(error) => return Err(secure_store_error(error)),
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -501,6 +547,27 @@ mod tests {
         assert_eq!(
             secure_store_account("com.hyprnote.stable", "provider", "deepgram"),
             "provider:deepgram"
+        );
+    }
+
+    #[test]
+    fn includes_current_and_legacy_secret_locations() {
+        assert_eq!(
+            secret_locations("com.hyprnote.dev", "provider", "deepgram"),
+            vec![
+                (
+                    "com.anarlog.dev.secure-store".to_string(),
+                    "v2:provider:deepgram".to_string(),
+                ),
+                (
+                    "com.anarlog.dev.secure-store".to_string(),
+                    "provider:deepgram".to_string(),
+                ),
+                (
+                    "com.hyprnote.dev.secure-store".to_string(),
+                    "provider:deepgram".to_string(),
+                ),
+            ]
         );
     }
 

@@ -45,6 +45,12 @@ pub fn store_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<PathBu
     Ok(resolve_store_dir(app)?.join(FILENAME))
 }
 
+pub fn secrets_file_path<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<PathBuf, crate::Error> {
+    Ok(resolve_store_dir(app)?.join("secure-store.secrets.json"))
+}
+
 fn save_store<R: tauri::Runtime>(
     store: &tauri_plugin_store::Store<R>,
     path: &std::path::Path,

@@ -16,7 +16,11 @@ import type { Tab } from "~/store/zustand/tabs/schema";
 import { type EditorView } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
 
-export { computeCurrentNoteTab } from "./compute-note-tab";
+export {
+  computeCurrentNoteTab,
+  getMeetingNotePane,
+  getSelectedEnhancedNoteId,
+} from "./compute-note-tab";
 
 export function useHasTranscript(sessionId: string): boolean {
   return useSessionHasTranscript(sessionId);

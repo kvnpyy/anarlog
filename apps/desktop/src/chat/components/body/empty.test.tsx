@@ -58,4 +58,25 @@ describe("ChatBodyEmpty", () => {
       ],
     );
   });
+
+  it("offers workspace-wide prompts when no meeting is attached", () => {
+    const onSendMessage = vi.fn();
+
+    render(<ChatBodyEmpty onSendMessage={onSendMessage} />);
+
+    expect(screen.getByText("Ask across all your meetings.")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Catch me up on recent meetings." }),
+    );
+
+    expect(onSendMessage).toHaveBeenCalledWith(
+      expect.stringContaining("Catch me up on my recent meetings"),
+      [
+        {
+          type: "text",
+          text: expect.stringContaining("Catch me up on my recent meetings"),
+        },
+      ],
+    );
+  });
 });

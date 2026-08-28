@@ -37,7 +37,9 @@ export function MainChatPanels({
   const currentTab = useTabs((state) => state.currentTab);
   const bodyPanelContainerRef = useRef<HTMLDivElement>(null);
   const isAutomationsTab = currentTab?.type === "automations";
-  const isRightPanelOpen = isAutomationsTab || chat.mode === "RightPanelOpen";
+  const showInlineAsk = Boolean(chat.inlineAsk);
+  const isRightPanelOpen =
+    !showInlineAsk && (isAutomationsTab || chat.mode === "RightPanelOpen");
   const leftSidebarExpanded = leftSidebarAvailable && leftsidebar.expanded;
   const reserveNoteSurfaceMinWidth = usesNoteSurfaceMinWidth(currentTab);
   const collapseLeftSidebar = useCallback(() => {
@@ -75,9 +77,28 @@ export function MainChatPanels({
               <div
                 ref={bodyPanelContainerRef}
                 data-main-body-panel-container
-                className="h-full min-h-0 min-w-0 flex-1 overflow-hidden"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               >
-                {children}
+                <div
+                  className={
+                    showInlineAsk
+                      ? "min-h-0 flex-1 overflow-hidden"
+                      : "h-full min-h-0 min-w-0 flex-1 overflow-hidden"
+                  }
+                >
+                  {children}
+                </div>
+                {showInlineAsk ? (
+                  <div
+                    data-live-ask-column
+                    className="border-border/70 bg-background shrink-0 border-t"
+                  >
+                    <ChatPanelFrame
+                      layout="inline"
+                      sessionProps={sessionProps}
+                    />
+                  </div>
+                ) : null}
               </div>
             </ResizablePanel>
             {isRightPanelOpen ? (
@@ -92,7 +113,7 @@ export function MainChatPanels({
                 >
                   <div
                     data-chat-right-panel
-                    className="border-border bg-card -mb-1 h-[calc(100%+0.25rem)] min-h-0 overflow-hidden rounded-tr-xl border-x"
+                    className="border-border bg-card -mb-1 h-[calc(100%+0.25rem)] min-h-0 min-w-0 overflow-hidden rounded-tr-xl border-x"
                   >
                     <ChatPanelFrame
                       layout="right-panel"
@@ -105,7 +126,7 @@ export function MainChatPanels({
             ) : null}
           </ResizablePanelGroup>
 
-          {isAutomationsTab ? null : (
+          {isAutomationsTab || showInlineAsk ? null : (
             <PersistentChatPanel
               floatingContainerRef={bodyPanelContainerRef}
               sessionProps={sessionProps}

@@ -3,8 +3,11 @@ use tauri_specta::Event;
 
 use crate::{AppWindow, SavedFrame, WebviewHealthState, WindowImpl, WindowReadyState, events};
 
-#[cfg(target_os = "macos")]
-const WEBVIEW_HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+#[cfg(all(target_os = "macos", debug_assertions))]
+const WEBVIEW_HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(12);
+
+#[cfg(all(target_os = "macos", not(debug_assertions)))]
+const WEBVIEW_HEALTH_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(8);
 
 #[cfg(target_os = "macos")]
 pub(crate) fn run_on_main_thread<R: Send + 'static>(
@@ -30,22 +33,63 @@ impl AppWindow {
             return;
         }
 
+        if cfg!(debug_assertions) {
+            tracing::warn!(
+                request_id,
+                "main webview missed health check; skipping reload in debug"
+            );
+            return;
+        }
+
         let Some(state) = app.try_state::<WebviewHealthState>() else {
             return;
         };
+
+        #[cfg(not(debug_assertions))]
+        Self::recover_unresponsive_webview_release(&window, &state, label, request_id);
+    }
+
+    #[cfg(all(target_os = "macos", not(debug_assertions)))]
+    fn recover_unresponsive_webview_release(
+        window: &WebviewWindow,
+        state: &WebviewHealthState,
+        label: &str,
+        request_id: &str,
+    ) {
+        if !state.record_miss(label) {
+            tracing::warn!(request_id, "main webview missed health check");
+            return;
+        }
+
+        let Ok(url) = window.url() else {
+            tracing::warn!(
+                request_id,
+                "main webview missed health check; current url unavailable"
+            );
+            return;
+        };
+        if !crate::is_recoverable_webview_url(&url) {
+            tracing::warn!(
+                request_id,
+                %url,
+                "main webview missed health check; skipping reload for non-app url"
+            );
+            return;
+        }
+
         state.begin_recovery(label);
 
-        match window.reload() {
+        match window.navigate(url) {
             Ok(()) => tracing::warn!(
                 request_id,
-                "reloaded unresponsive main webview after reopen"
+                "recovered unresponsive main webview after reopen"
             ),
             Err(error) => {
                 state.ready(label);
                 tracing::error!(
                     %error,
                     request_id,
-                    "failed to reload unresponsive main webview after reopen"
+                    "failed to recover unresponsive main webview after reopen"
                 );
             }
         }

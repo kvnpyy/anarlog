@@ -13,13 +13,6 @@ export function useSessionTab() {
       ? currentTab.state.view.id
       : undefined;
 
-  const stickySessionIdRef = useRef(sessionTabId);
-  if (currentTab?.type === "empty") {
-    stickySessionIdRef.current = undefined;
-  } else if (sessionTabId) {
-    stickySessionIdRef.current = sessionTabId;
-  }
-
   const activeSessionIdRef = useRef(sessionTabId);
   activeSessionIdRef.current = sessionTabId;
 
@@ -30,7 +23,7 @@ export function useSessionTab() {
   const getEnhancedNoteId = useCallback(() => enhancedNoteIdRef.current, []);
 
   return {
-    currentSessionId: stickySessionIdRef.current,
+    currentSessionId: sessionTabId,
     getSessionId,
     getEnhancedNoteId,
   };

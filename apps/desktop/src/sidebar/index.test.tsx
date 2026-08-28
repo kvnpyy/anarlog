@@ -3,12 +3,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   currentTab: { type: "empty" } as { type: string } | null,
+  openNew: vi.fn(),
 }));
 
 vi.mock("~/store/zustand/tabs", () => ({
   useTabs: (
-    selector: (state: { currentTab: typeof mocks.currentTab }) => unknown,
-  ) => selector({ currentTab: mocks.currentTab }),
+    selector: (state: {
+      currentTab: typeof mocks.currentTab;
+      openNew: typeof mocks.openNew;
+    }) => unknown,
+  ) => selector({ currentTab: mocks.currentTab, openNew: mocks.openNew }),
+}));
+
+vi.mock("~/shared/config", () => ({
+  useConfigValues: () => ({
+    user_profile_name: "",
+    user_profile_role: "",
+    user_profile_department: "",
+    user_profile_context: "",
+  }),
 }));
 
 vi.mock("~/sidebar/timeline", () => ({
@@ -84,6 +97,13 @@ describe("LeftSidebar", () => {
     ).toBe("false");
     expect(container.firstElementChild?.className).toContain("pt-0");
     expect(container.firstElementChild?.className).not.toContain("pr-1");
+    expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
+    const footer = document.querySelector("[data-sidebar-user-footer]");
+    const overflow = footer?.previousElementSibling;
+    expect(footer).toBeTruthy();
+    expect(overflow?.className).toContain("overflow-hidden");
+    expect(overflow?.contains(screen.getByTestId("timeline-view"))).toBe(true);
+    expect(footer && overflow?.contains(footer)).toBe(false);
   });
 
   it("renders timeline header as normal sidebar content", () => {
@@ -111,6 +131,7 @@ describe("LeftSidebar", () => {
 
     expect(screen.queryByTestId("timeline-view")).toBeNull();
     expect(screen.getByTestId("shared-notes-nav")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
   });
 
   it.each([
@@ -128,6 +149,7 @@ describe("LeftSidebar", () => {
       const classList = container.firstElementChild?.className.split(" ") ?? [];
 
       expect(screen.getByTestId(testId)).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
       expect(classList).toContain("pt-0");
       expect(classList).toContain("pr-1");
       expect(classList).not.toContain("pt-11");

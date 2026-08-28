@@ -10,6 +10,8 @@ const hoisted = vi.hoisted(() => ({
   hotkeys: [] as Array<{ keys: string; callback: () => void }>,
   enhancedHasProseMirror: true,
   enhancedEditorProps: [] as Record<string, unknown>[],
+  enhancedContent: "",
+  isEnhancing: false,
   focusAtTrailingEmptyLine: vi.fn(),
   flushPendingChanges: vi.fn(),
   onBeforeTabChange: vi.fn(),
@@ -41,31 +43,6 @@ vi.mock("./enhanced", async () => {
 
 vi.mock("./header", () => ({
   Header: () => <div data-testid="folder-header" />,
-  SessionViewSwitcher: ({
-    currentTab,
-    editorTabs,
-    handleTabChange,
-    isTranscribing,
-  }: {
-    currentTab: EditorView;
-    editorTabs: EditorView[];
-    handleTabChange: (view: EditorView) => void;
-    isTranscribing?: boolean;
-  }) => (
-    <div>
-      <div data-testid="current-tab">{formatEditorView(currentTab)}</div>
-      <div data-testid="is-transcribing">{String(isTranscribing)}</div>
-      {editorTabs.map((editorTab) => (
-        <button
-          key={formatEditorView(editorTab)}
-          type="button"
-          onClick={() => handleTabChange(editorTab)}
-        >
-          {formatEditorView(editorTab)}
-        </button>
-      ))}
-    </div>
-  ),
   useEditorTabs: () => hoisted.editorTabs,
 }));
 
@@ -104,6 +81,16 @@ vi.mock("./transcript", () => ({
 
 vi.mock("~/session/components/shared", () => ({
   useCurrentNoteTab: () => ({ type: "raw" }),
+  hasStoredNoteContent: (value: unknown) =>
+    typeof value === "string" && value.trim().length > 0,
+}));
+
+vi.mock("~/session/queries", () => ({
+  useEnhancedNote: () => ({ content: hoisted.enhancedContent }),
+}));
+
+vi.mock("~/session/hooks/useEnhancedNotes", () => ({
+  useIsSessionEnhancing: () => hoisted.isEnhancing,
 }));
 
 vi.mock("~/session-sharing/editor-activity", () => ({
@@ -142,10 +129,6 @@ vi.mock("react-hotkeys-hook", () => ({
     hoisted.hotkeys.push({ keys, callback });
   },
 }));
-
-function formatEditorView(view: EditorView) {
-  return view.type === "enhanced" ? `enhanced:${view.id}` : view.type;
-}
 
 function createEditorRef() {
   return {
@@ -212,6 +195,8 @@ describe("NoteInput tab selection", () => {
     hoisted.hotkeys = [];
     hoisted.enhancedHasProseMirror = true;
     hoisted.enhancedEditorProps = [];
+    hoisted.enhancedContent = "";
+    hoisted.isEnhancing = false;
     hoisted.focusAtTrailingEmptyLine.mockClear();
     hoisted.flushPendingChanges.mockClear();
     hoisted.onBeforeTabChange.mockClear();
@@ -222,13 +207,21 @@ describe("NoteInput tab selection", () => {
     hoisted.updateSessionTabState.mockClear();
   });
 
-  it("does not move the header ahead of the parent tab state", () => {
-    const { handleTabChange } = renderNoteInput();
+  it("shows only personal notes on the meeting page", () => {
+    renderNoteInput();
 
-    fireEvent.click(screen.getByRole("button", { name: "transcript" }));
+    expect(screen.getByTestId("raw-editor")).not.toBeNull();
+    expect(screen.getByTestId("memo-pane")).not.toBeNull();
+    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.queryByTestId("transcript")).toBeNull();
+  });
 
-    expect(handleTabChange).toHaveBeenCalledWith({ type: "transcript" });
-    expect(screen.getByTestId("current-tab").textContent).toBe("raw");
+  it("replaces the notepad with the transcript when that view is selected", () => {
+    renderNoteInput({ currentTab: { type: "transcript" } });
+
+    expect(screen.getByTestId("transcript")).not.toBeNull();
+    expect(screen.queryByTestId("raw-editor")).toBeNull();
+    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
   });
 
   it("switches to the next note view with Command+Option+Right", () => {
@@ -266,31 +259,6 @@ describe("NoteInput tab selection", () => {
     expect(hoisted.onBeforeTabChange).toHaveBeenCalledOnce();
   });
 
-  it("reflects the parent-selected tab in the header", () => {
-    const { rerender, handleTabChange } = renderNoteInput();
-    const currentTab = { type: "transcript" } satisfies EditorView;
-
-    rerender(
-      <NoteInput
-        tab={{
-          active: true,
-          id: "session-1",
-          pinned: false,
-          slotId: "slot-1",
-          state: { autoStart: null, view: currentTab },
-          type: "sessions",
-        }}
-        rawMd="stored memo"
-        sessionTitle="Stored title"
-        editorTabs={hoisted.editorTabs}
-        currentTab={currentTab}
-        handleTabChange={handleTabChange}
-      />,
-    );
-
-    expect(screen.getByTestId("current-tab").textContent).toBe("transcript");
-  });
-
   it("passes transcript edit mode into the transcript view", () => {
     renderNoteInput({
       currentTab: { type: "transcript" },
@@ -302,28 +270,60 @@ describe("NoteInput tab selection", () => {
     ).toBe("true");
   });
 
-  it("does not show the transcript spinner while a meeting is active", () => {
+  it("can show the live transcript while a meeting is active", () => {
     hoisted.sessionMode = "active";
 
-    renderNoteInput();
+    renderNoteInput({ currentTab: { type: "transcript" } });
 
-    expect(screen.getByTestId("is-transcribing").textContent).toBe("false");
+    expect(screen.getByTestId("transcript")).not.toBeNull();
+    expect(screen.queryByTestId("raw-editor")).toBeNull();
   });
 
-  it("keeps the transcript spinner while finalizing", () => {
-    hoisted.sessionMode = "finalizing";
+  it("keeps personal notes visible while a meeting is active", () => {
+    hoisted.sessionMode = "active";
+    hoisted.editorTabs = [
+      { type: "enhanced", id: "summary-1" },
+      { type: "raw" },
+      { type: "transcript" },
+    ];
+    hoisted.enhancedContent = "Summary";
 
-    renderNoteInput();
+    renderNoteInput({
+      currentTab: { type: "enhanced", id: "summary-1" },
+    });
 
-    expect(screen.getByTestId("is-transcribing").textContent).toBe("true");
+    expect(screen.getByTestId("raw-editor")).not.toBeNull();
+    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
   });
 
-  it("keeps the transcript spinner while batch transcription is running", () => {
-    hoisted.sessionMode = "running_batch";
+  it("shows the enhanced note in the same pane after it is ready", () => {
+    hoisted.editorTabs = [
+      { type: "enhanced", id: "summary-1" },
+      { type: "raw" },
+    ];
+    hoisted.enhancedContent = "Summary";
 
-    renderNoteInput();
+    renderNoteInput({
+      currentTab: { type: "enhanced", id: "summary-1" },
+    });
 
-    expect(screen.getByTestId("is-transcribing").textContent).toBe("true");
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
+    expect(screen.queryByTestId("raw-editor")).toBeNull();
+  });
+
+  it("shows the enhanced note while it is streaming", () => {
+    hoisted.editorTabs = [
+      { type: "enhanced", id: "summary-1" },
+      { type: "raw" },
+    ];
+    hoisted.isEnhancing = true;
+
+    renderNoteInput({
+      currentTab: { type: "enhanced", id: "summary-1" },
+    });
+
+    expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
+    expect(screen.queryByTestId("raw-editor")).toBeNull();
   });
 
   it("passes hydrated session content to the memo editor", () => {
@@ -369,6 +369,7 @@ describe("NoteInput tab selection", () => {
       { type: "enhanced", id: "summary-1" },
       { type: "raw" },
     ];
+    hoisted.enhancedContent = "Summary";
     renderNoteInput({
       currentTab: { type: "enhanced", id: "summary-1" },
     });
@@ -391,6 +392,7 @@ describe("NoteInput tab selection", () => {
       { type: "enhanced", id: "summary-1" },
       { type: "raw" },
     ];
+    hoisted.enhancedContent = "Summary";
 
     renderNoteInput({
       currentTab: { type: "enhanced", id: "summary-1" },
@@ -400,6 +402,7 @@ describe("NoteInput tab selection", () => {
       hoisted.enhancedEditorProps[hoisted.enhancedEditorProps.length - 1],
     ).toMatchObject({
       sessionTitle: "Stored title",
+      enhancedNoteId: "summary-1",
     });
   });
 
@@ -428,6 +431,7 @@ describe("NoteInput tab selection", () => {
       { type: "raw" },
     ];
     hoisted.enhancedHasProseMirror = false;
+    hoisted.enhancedContent = "Summary";
     renderNoteInput({
       currentTab: { type: "enhanced", id: "summary-1" },
     });

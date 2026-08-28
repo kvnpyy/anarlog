@@ -397,6 +397,18 @@ describe("Basic Tab Actions", () => {
     ]);
   });
 
+  test("openNew preserves profile settings tab requests", () => {
+    useTabs.getState().openNew({ type: "settings", state: { tab: "profile" } });
+
+    expect(useTabs.getState()).toHaveCurrentTab({
+      type: "settings",
+      state: { tab: "profile" },
+    });
+    expect(useTabs.getState()).toMatchTabsInOrder([
+      { type: "settings", active: true, state: { tab: "profile" } },
+    ]);
+  });
+
   test("openNew preserves account settings tab requests", () => {
     useTabs.getState().openNew({ type: "settings", state: { tab: "account" } });
 

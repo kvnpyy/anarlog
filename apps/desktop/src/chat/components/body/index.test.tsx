@@ -18,6 +18,14 @@ vi.mock("./non-empty", () => ({
   ChatBodyNonEmpty: () => <div data-testid="chat-body-non-empty" />,
 }));
 
+vi.mock("~/chat/components/message/loading", () => ({
+  LoadingMessage: () => (
+    <div role="status" data-testid="chat-body-thinking">
+      Thinking...
+    </div>
+  ),
+}));
+
 vi.mock("./use-chat-auto-scroll", () => ({
   useChatAutoScroll: () => ({
     contentRef: { current: null },
@@ -66,6 +74,14 @@ describe("ChatBody", () => {
     expect(content?.className).not.toContain("pr-0");
   });
 
+  it("shows thinking when a reply is in flight before any messages exist", () => {
+    render(<ChatBody messages={[]} status="submitted" />);
+
+    expect(screen.queryByTestId("chat-body-empty")).toBeNull();
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.getByText("Thinking...")).toBeTruthy();
+  });
+
   it("uses balanced content padding in the right panel", () => {
     shellState.mode = "RightPanelOpen";
 
@@ -76,7 +92,7 @@ describe("ChatBody", () => {
     const root = scrollArea?.parentElement;
 
     expect(content?.className).toContain("px-3");
-    expect(content?.className).toContain("py-5");
+    expect(content?.className).toContain("py-3");
     expect(content?.className).toContain("min-h-full");
     expect(scrollArea?.className).toContain("flex-1");
     expect(root?.className).toContain("flex-1");

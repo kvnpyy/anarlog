@@ -155,6 +155,7 @@ const EnhancedEditorInner = forwardRef<
             initialContent={initialContent}
             resolveAttachment={resolveAttachment}
             handleChange={persistChanges ? handleChange : undefined}
+            readOnly={!persistChanges}
             placeholderComponent={documentTitlePlaceholder}
             mentionConfig={mentionConfig}
             sessionMentionDropConfig={sessionMentionDropConfig}

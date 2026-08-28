@@ -211,6 +211,35 @@ describe("enhanceTransform.transformArgs", () => {
     });
   });
 
+  it("includes the note author from the saved profile", async () => {
+    mocks.loadSessionContentSnapshot.mockResolvedValue({
+      ...createSnapshot(),
+      transcripts: [
+        {
+          ...createSnapshot().transcripts[0],
+          memo: "Agenda: launch",
+        },
+      ],
+    });
+
+    const result = await enhanceTransform.transformArgs(
+      { sessionId: "session-1", enhancedNoteId: "note-1" },
+      {
+        ...settingsValues,
+        user_profile_name: "Kevin Payoyo",
+        user_profile_role: "Product",
+        user_profile_department: "Engineering",
+      },
+    );
+
+    expect(result.participants[0]).toEqual({
+      name: "Kevin Payoyo",
+      jobTitle: "Product · Engineering",
+    });
+    expect(result.preMeetingMemo).toContain("Note author: Kevin Payoyo");
+    expect(result.preMeetingMemo).toContain("Agenda: launch");
+  });
+
   it("uses the saved format override for Auto summaries", async () => {
     const result = await enhanceTransform.transformArgs(
       { sessionId: "session-1", enhancedNoteId: "note-1" },

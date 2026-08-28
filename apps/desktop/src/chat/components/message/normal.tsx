@@ -15,6 +15,7 @@ import { Tool } from "./tool";
 import type { Part } from "./types";
 
 import { hasRenderableContent } from "~/chat/components/shared";
+import { toCopyableChatText } from "~/chat/copy-text";
 import type { AnlgUIMessage } from "~/chat/types";
 
 function getMessageText(message: AnlgUIMessage): string {
@@ -47,7 +48,7 @@ export function NormalMessage({
   }, []);
 
   const handleCopy = useCallback(async () => {
-    const text = getMessageText(message);
+    const text = toCopyableChatText(getMessageText(message));
     try {
       await navigator.clipboard.writeText(text);
       if (copiedResetTimeoutRef.current !== null) {
@@ -71,8 +72,8 @@ export function NormalMessage({
     <MessageContainer align={isUser ? "end" : "start"}>
       <div
         className={cn([
-          "flex min-w-0 flex-col",
-          isUser ? "max-w-[85%] items-end" : "group w-full",
+          "flex min-w-0 flex-col overflow-hidden",
+          isUser ? "max-w-[85%] items-end" : "group w-full max-w-full",
         ])}
       >
         <MessageBubble variant={isUser ? "user" : "assistant"}>
@@ -154,45 +155,59 @@ function Reasoning({ part }: { part: Extract<Part, { type: "reasoning" }> }) {
 const chatComponents = {
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
     return (
-      <h1 className="mt-3 mb-1 text-base font-semibold first:mt-0">
+      <h1 className="mt-2 mb-1 text-sm font-semibold first:mt-0">
         {props.children as React.ReactNode}
       </h1>
     );
   },
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
     return (
-      <h2 className="mt-3 mb-1 text-base font-semibold first:mt-0">
+      <h2 className="mt-2 mb-1 text-sm font-semibold first:mt-0">
         {props.children as React.ReactNode}
       </h2>
     );
   },
   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => {
     return (
-      <h3 className="mt-2 mb-1 text-sm font-semibold first:mt-0">
+      <h3 className="mt-1.5 mb-1 text-[13px] font-semibold first:mt-0">
         {props.children as React.ReactNode}
       </h3>
     );
   },
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => {
     return (
-      <ul className="mb-1 list-disc pl-5">
+      <ul className="mb-1 list-disc pl-4">
         {props.children as React.ReactNode}
       </ul>
     );
   },
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => {
     return (
-      <ol className="mb-1 list-decimal pl-5">
+      <ol className="mb-1 list-decimal pl-4">
         {props.children as React.ReactNode}
       </ol>
     );
   },
   li: (props: React.HTMLAttributes<HTMLLIElement>) => {
-    return <li className="mb-1">{props.children as React.ReactNode}</li>;
+    return <li className="mb-0.5">{props.children as React.ReactNode}</li>;
   },
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
     return (
-      <p className="mb-1.5 last:mb-0">{props.children as React.ReactNode}</p>
+      <p className="mb-1 last:mb-0">{props.children as React.ReactNode}</p>
+    );
+  },
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => {
+    return (
+      <pre className="bg-muted/60 my-1.5 max-w-full overflow-x-auto rounded-md p-2 text-xs">
+        {props.children as React.ReactNode}
+      </pre>
+    );
+  },
+  table: (props: React.HTMLAttributes<HTMLTableElement>) => {
+    return (
+      <div className="my-1.5 max-w-full overflow-x-auto">
+        <table className="w-max min-w-full text-xs">{props.children}</table>
+      </div>
     );
   },
 } as const;
@@ -203,7 +218,7 @@ function Text({ part }: { part: Extract<Part, { type: "text" }> }) {
   return (
     <Streamdown
       components={chatComponents}
-      className="px-0.5 py-1"
+      className="max-w-full overflow-hidden px-0.5 py-0.5 [overflow-wrap:anywhere] break-words"
       caret="block"
       isAnimating={isAnimating}
       linkSafety={{ enabled: false }}

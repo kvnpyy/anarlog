@@ -535,3 +535,16 @@ fn test_append_provider_param_no_existing_provider() {
     assert!(url.contains("provider=anarlog"));
     assert_eq!(url.matches("provider=").count(), 1);
 }
+
+#[test]
+fn test_maybe_append_provider_param_skips_direct_provider_hosts() {
+    let url = maybe_append_provider_param("https://api.deepgram.com/v1", "deepgram");
+    assert_eq!(url, "https://api.deepgram.com/v1");
+    assert!(!url.contains("provider="));
+}
+
+#[test]
+fn test_maybe_append_provider_param_keeps_proxy_provider() {
+    let url = maybe_append_provider_param("https://api.anarlog.so/stt", "deepgram");
+    assert!(url.contains("provider=deepgram"));
+}

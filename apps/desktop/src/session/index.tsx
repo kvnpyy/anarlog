@@ -5,15 +5,8 @@ import React, { useEffect, useRef } from "react";
 import { commands as fsSyncCommands } from "@anlg/plugin-fs-sync";
 
 import { FloatingActionButton } from "./components/floating";
-import {
-  NoteInput,
-  shouldShowTranscriptTabSpinner,
-  type NoteInputHandle,
-} from "./components/note-input";
-import {
-  createEditorTabs,
-  SessionViewSwitcher,
-} from "./components/note-input/header";
+import { NoteInput, type NoteInputHandle } from "./components/note-input";
+import { createEditorTabs } from "./components/note-input/header";
 import { SearchProvider } from "./components/note-input/search/context";
 import { OuterHeader } from "./components/outer-header";
 import { SessionSurface } from "./components/session-surface";
@@ -260,7 +253,6 @@ function TabContentNoteInner({
   const updateSessionTabState = useTabs((state) => state.updateSessionTabState);
 
   const { skipReason } = useAutoEnhance(tab);
-  const isTranscribing = shouldShowTranscriptTabSpinner(sessionMode);
   const isLiveSessionActive = sessionMode === "active";
   const editorTabs = React.useMemo(
     () =>
@@ -324,15 +316,9 @@ function TabContentNoteInner({
               standaloneWindow={standaloneWindow}
               transcriptEditMode={transcriptEditMode}
               onTranscriptEditModeChange={handleTranscriptEditModeChange}
-              viewSwitcher={
-                <SessionViewSwitcher
-                  sessionId={sessionId}
-                  editorTabs={editorTabs}
-                  currentTab={currentView}
-                  handleTabChange={handleTabChange}
-                  isTranscribing={isTranscribing}
-                />
-              }
+              onViewChange={handleTabChange}
+              enhancedNoteIds={enhancedNoteIds}
+              canShowTranscript={canShowTranscript}
             />
           )
         }

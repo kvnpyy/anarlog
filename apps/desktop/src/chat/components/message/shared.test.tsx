@@ -39,10 +39,26 @@ describe("MessageBubble", () => {
 
     const bubble = container.firstChild as HTMLElement;
 
-    expect(bubble.className).toContain("bg-accent");
+    expect(bubble.className).toContain("text-[13px]");
+    expect(bubble.className).toContain("leading-5");
     expect(bubble.className).toContain("text-accent-foreground");
     expect(bubble.className).not.toContain("bg-card/95");
     expect(bubble.className).not.toContain("text-foreground");
+  });
+
+  it("gives loading bubbles a visible muted surface on light chat", () => {
+    appearanceState.isDarkAppearance = false;
+
+    const { container } = render(
+      <MessageBubble variant="loading">Thinking...</MessageBubble>,
+    );
+
+    const bubble = container.firstChild as HTMLElement;
+
+    expect(bubble.className).toContain("bg-background");
+    expect(bubble.className).toContain("text-foreground");
+    expect(bubble.className).toContain("border");
+    expect(bubble.className).toContain("rounded-2xl");
   });
 
   it("keeps dark text on light-blue user bubbles", () => {
