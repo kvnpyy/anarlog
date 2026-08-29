@@ -9,7 +9,7 @@ vi.mock("@tauri-apps/plugin-os", () => ({
   platform: mocks.platform,
 }));
 
-import { AppSettingsView } from "./app-settings";
+import { AppSettingsView, AcornProSettingsCard } from "./app-settings";
 
 function setting(value = true) {
   return {
@@ -46,8 +46,8 @@ describe("AppSettingsView", () => {
     renderAppSettings();
 
     expect(
-      screen.getByRole("switch", { name: "Start Anarlog at login" })
-        .parentElement?.className,
+      screen.getByRole("switch", { name: "Start Acorn at login" }).parentElement
+        ?.className,
     ).not.toContain("w-48");
   });
 
@@ -58,7 +58,7 @@ describe("AppSettingsView", () => {
     expect(
       screen.queryByRole("switch", { name: "Show app in Dock" }),
     ).toBeNull();
-    expect(screen.queryByText("Open Anarlog from the menu bar.")).toBeNull();
+    expect(screen.queryByText("Open Acorn from the menu bar.")).toBeNull();
     expect(screen.getByRole("switch", { name: "Show tray icon" })).toBeTruthy();
   });
 
@@ -72,7 +72,7 @@ describe("AppSettingsView", () => {
 
     expect(automaticUpdates.onChange).toHaveBeenCalledWith(true);
     expect(
-      screen.getByText(/installed the next time Anarlog opens/),
+      screen.getByText(/installed the next time Acorn opens/),
     ).toBeTruthy();
   });
 
@@ -80,7 +80,7 @@ describe("AppSettingsView", () => {
     renderAppSettings({ appStoreBuild: true });
 
     expect(
-      screen.queryByRole("switch", { name: "Start Anarlog at login" }),
+      screen.queryByRole("switch", { name: "Start Acorn at login" }),
     ).toBeNull();
     expect(
       screen.queryByRole("switch", { name: "Automatically install updates" }),
@@ -100,5 +100,36 @@ describe("AppSettingsView", () => {
       screen.queryByRole("switch", { name: "Share usage data (PostHog)" }),
     ).toBeNull();
     expect(screen.queryByRole("switch", { name: "Sentry" })).toBeNull();
+  });
+
+  it("shows About and license attribution", () => {
+    renderAppSettings();
+
+    expect(screen.getByText("About")).toBeTruthy();
+    expect(screen.getByText("Local meeting notes. Live Ask.")).toBeTruthy();
+    expect(screen.getByText("Acorn is built on Anarlog (MIT).")).toBeTruthy();
+    expect(
+      screen.getByText(/Copyright \(c\) 2023-present Fastrepl, Inc./),
+    ).toBeTruthy();
+    expect(screen.getByText(/MIT License/)).toBeTruthy();
+  });
+});
+
+describe("AcornProSettingsCard", () => {
+  afterEach(cleanup);
+
+  it("shows Free vs Pro copy and an inert upgrade action", () => {
+    const onUpgrade = vi.fn();
+    render(<AcornProSettingsCard isPro={false} onUpgrade={onUpgrade} />);
+
+    expect(screen.getByRole("heading", { name: "Acorn Pro" })).toBeTruthy();
+    expect(screen.getByText(/AI memory: 14 days vs 365 days/)).toBeTruthy();
+    expect(
+      screen.getByText(/Teams & shared notes: coming on Pro/),
+    ).toBeTruthy();
+    expect(screen.getByText(/CLI, MCP & webhooks: coming on Pro/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Acorn Pro" }));
+    expect(onUpgrade).toHaveBeenCalledOnce();
   });
 });

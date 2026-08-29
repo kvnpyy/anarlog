@@ -33,24 +33,15 @@ impl AppWindow {
             return;
         }
 
-        if cfg!(debug_assertions) {
-            tracing::warn!(
-                request_id,
-                "main webview missed health check; skipping reload in debug"
-            );
-            return;
-        }
-
         let Some(state) = app.try_state::<WebviewHealthState>() else {
             return;
         };
 
-        #[cfg(not(debug_assertions))]
-        Self::recover_unresponsive_webview_release(&window, &state, label, request_id);
+        Self::recover_unresponsive_webview(&window, &state, label, request_id);
     }
 
-    #[cfg(all(target_os = "macos", not(debug_assertions)))]
-    fn recover_unresponsive_webview_release(
+    #[cfg(target_os = "macos")]
+    fn recover_unresponsive_webview(
         window: &WebviewWindow,
         state: &WebviewHealthState,
         label: &str,

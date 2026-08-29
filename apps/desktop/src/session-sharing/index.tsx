@@ -65,6 +65,7 @@ import {
   useManagedDurableSharedNote,
 } from "~/shared-notes/cache";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
+import { LOCAL_ONLY } from "~/shared/product";
 
 export { sessionShareManagementQueryKey };
 
@@ -479,6 +480,7 @@ export function SessionShareButton({ sessionId }: { sessionId: string }) {
       ? sharePanelIdentity
       : cachedSharePanelIdentity;
   const showUpgradePrompt = Boolean(
+    !LOCAL_ONLY &&
     activeSharePreparationIdentity &&
     !activeSharePanelIdentity &&
     !managedNoteQuery.isLoading &&
@@ -559,6 +561,15 @@ export function SessionShareButton({ sessionId }: { sessionId: string }) {
   };
 
   const handleShare = () => {
+    if (
+      LOCAL_ONLY &&
+      !billing.isPaid &&
+      !managedNoteQuery.isLoading &&
+      !managedNoteQuery.data
+    ) {
+      billing.upgradeToPro();
+      return;
+    }
     if (sharePopoverOpen) {
       closeSharePopover();
       return;

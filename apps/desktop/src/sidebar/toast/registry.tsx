@@ -5,6 +5,7 @@ import type { ServerStatus } from "@anlg/plugin-local-stt";
 import type { DownloadProgress, ToastCondition, ToastType } from "./types";
 
 import type { DesktopUpdateControl } from "~/main/update-banner";
+import { LOCAL_ONLY, PRODUCT_NAME } from "~/shared/product";
 import type { DevtoolsToastPreview } from "~/store/zustand/devtools-toast-preview";
 
 const ANARLOG_ICON_SRC = "/assets/anarlog-icon.png";
@@ -133,7 +134,7 @@ export function createToastRegistry({
         icon: (
           <img
             src={ANARLOG_ICON_SRC}
-            alt="Anarlog"
+            alt={LOCAL_ONLY ? "Acorn" : "Anarlog"}
             className="size-5 object-contain object-center"
           />
         ),
@@ -148,7 +149,7 @@ export function createToastRegistry({
           dismissalId: "auth-promotion",
         },
       },
-      condition: () => !isAuthLoading && !isAuthenticated,
+      condition: () => !LOCAL_ONLY && !isAuthLoading && !isAuthenticated,
     },
     {
       toast: {
@@ -193,6 +194,7 @@ export function createToastRegistry({
       },
       // suppress until auth resolves to avoid flash on startup
       condition: () =>
+        !LOCAL_ONLY &&
         !isAuthLoading &&
         !isAuthenticated &&
         hasLLMConfigured &&
@@ -221,7 +223,7 @@ export function createDesktopUpdateToast(
       // A new ID prevents Sonner from retaining the loading state used while
       // this update was downloading.
       id: `${id}:ready`,
-      description: t`Anarlog ${update.version} is ready to install`,
+      description: `${PRODUCT_NAME} ${update.version} is ready to install`,
       primaryAction: busy
         ? undefined
         : { label: t`Restart`, onClick: update.installUpdate },
@@ -236,7 +238,7 @@ export function createDesktopUpdateToast(
         : ` (${Math.round(update.progress * 100)}%)`;
     return {
       id: `${id}:downloading`,
-      description: t`Downloading Anarlog ${update.version}${progress}`,
+      description: `Downloading ${PRODUCT_NAME} ${update.version}${progress}`,
       lifecycle: { type: "persistent", dismissal: "session" },
       loading: true,
     };
@@ -256,7 +258,7 @@ export function createDesktopUpdateToast(
 
   return {
     id: `${id}:available`,
-    description: t`Anarlog ${update.version} is available`,
+    description: `${PRODUCT_NAME} ${update.version} is available`,
     primaryAction: busy
       ? undefined
       : { label: t`Download`, onClick: update.downloadUpdate },

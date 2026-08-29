@@ -51,6 +51,7 @@ import {
 } from "~/shared/hooks/useNativeContextMenu";
 import { usePermission } from "~/shared/hooks/usePermissions";
 import { useOpenIntegrationUrl } from "~/shared/integration";
+import { LOCAL_ONLY } from "~/shared/product";
 
 function getProviderBadgeClassName(badge: string) {
   if (badge === "Beta") {
@@ -122,13 +123,12 @@ export function CalendarSidebarContent({
 }) {
   const isMacos = platform() === "macos";
   const calendar = usePermission("calendar");
-  const { isPaid } = useBillingAccess();
   const [connectionPollUntil, setConnectionPollUntil] = useState<number | null>(
     null,
   );
   const connectionKeyWhenPollStartedRef = useRef("");
   const isPollingConnections = connectionPollUntil !== null;
-  const { data: connections } = useConnections(isPaid, {
+  const { data: connections } = useConnections(true, {
     refetchInterval: isPollingConnections ? CONNECTION_POLL_INTERVAL_MS : false,
   });
   const connectionKey = getCalendarConnectionKey(connections);
@@ -229,9 +229,13 @@ function ProviderAccordionItem({
 }) {
   const { t } = useLingui();
   const auth = useAuth();
-  const { isPaid, isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
+  const { isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
   const { openIntegration, openingAction } = useOpenIntegrationUrl();
-  const { data: connections, isPending, isError } = useConnections(isPaid);
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useConnections(Boolean(auth.session));
   const [isApplePermissionDialogOpen, setIsApplePermissionDialogOpen] =
     useState(false);
   const providerConnections =
@@ -239,16 +243,12 @@ function ProviderAccordionItem({
       (connection) => connection.integration_id === provider.nangoIntegrationId,
     ) ?? [];
 
-  const requiresPro = !!provider.nangoIntegrationId && !isPro;
+  const requiresPro = !LOCAL_ONLY && !!provider.nangoIntegrationId && !isPro;
   const appleNeedsPermission =
     provider.id === "apple" && calendar.status !== "authorized";
 
   const canAddAccount =
-    !!provider.nangoIntegrationId &&
-    !!auth.session &&
-    isPaid &&
-    !isPending &&
-    !isError;
+    !!provider.nangoIntegrationId && !!auth.session && !isPending && !isError;
   const shouldConnectOnClick =
     canAddAccount && providerConnections.length === 0;
 
@@ -284,6 +284,7 @@ function ProviderAccordionItem({
     (event: MouseEvent<HTMLButtonElement>) => {
       if (requiresPro) {
         event.preventDefault();
+        upgradeToPro();
         return;
       }
       if (appleNeedsPermission) {
@@ -309,6 +310,7 @@ function ProviderAccordionItem({
       requiresPro,
       returnTo,
       shouldConnectOnClick,
+      upgradeToPro,
     ],
   );
   const handleAddAccount = useCallback(

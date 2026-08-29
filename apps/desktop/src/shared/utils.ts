@@ -1,6 +1,7 @@
 import { getIdentifier } from "@tauri-apps/api/app";
 
 import { env } from "~/env";
+import { LOCAL_ONLY } from "~/shared/product";
 
 // export * from "../shared/config/configure-pro-settings";
 // export * from "~/sidebar/timeline/utils";
@@ -9,6 +10,27 @@ import { env } from "~/env";
 export const id = () => crypto.randomUUID() as string;
 
 export type DesktopScheme = "anarlog" | "anarlog-staging" | "anarlog-dev";
+
+function isLoopbackWebAppOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]"
+    );
+  } catch {
+    return true;
+  }
+}
+
+export const hostedDesktopWebFlowsEnabled = (): boolean => {
+  if (!LOCAL_ONLY) {
+    return true;
+  }
+
+  return !isLoopbackWebAppOrigin(env.VITE_APP_URL);
+};
 
 export const getScheme = async (): Promise<DesktopScheme> => {
   const id = await getIdentifier();
@@ -37,6 +59,11 @@ export const buildWebAppUrl = async (
   path: DesktopFlowPath,
   params?: Record<string, string>,
 ): Promise<string> => {
+  const oauthPath = path === "/auth" || path === "/app/integration";
+  if (!hostedDesktopWebFlowsEnabled() || (LOCAL_ONLY && !oauthPath)) {
+    throw new Error("Web app URLs are disabled in local-only mode");
+  }
+
   const scheme = await getScheme();
   const url = new URL(path, env.VITE_APP_URL);
   url.searchParams.set("flow", "desktop");

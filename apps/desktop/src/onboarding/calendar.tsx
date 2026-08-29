@@ -9,7 +9,6 @@ import type { ConnectionItem } from "@anlg/api-client";
 import { OnboardingButton } from "./shared";
 
 import { useAuth } from "~/auth";
-import { useBillingAccess } from "~/auth/billing-context";
 import { useConnections } from "~/auth/useConnections";
 import { useAppleCalendarSelection } from "~/calendar/components/apple/calendar-selection";
 import { TroubleShootingLink } from "~/calendar/components/apple/permission";
@@ -388,8 +387,11 @@ function OAuthCalendarProviderAction({
 
 function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
   const auth = useAuth();
-  const { isPro, isReady, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isPending, isError } = useConnections(isPro);
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useConnections(Boolean(auth.session));
   const [isHovered, setHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   // State alone cannot gate re-entry: a second click can land before the
@@ -410,11 +412,6 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       return;
     }
 
-    if (!isPro) {
-      upgradeToPro();
-      return;
-    }
-
     if (openInFlightRef.current) {
       return;
     }
@@ -429,7 +426,7 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       openInFlightRef.current = false;
       setIsOpening(false);
     });
-  }, [auth.getHeaders, auth.session, isPro, onSignIn, upgradeToPro]);
+  }, [auth.getHeaders, auth.session, onSignIn]);
 
   if (!OUTLOOK_PROVIDER) {
     return null;
@@ -461,9 +458,9 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
         connectLabel={<Trans>Connect Outlook</Trans>}
         isConnected={isConnected}
         isHovered={isHovered}
-        isOpening={isOpening || isUpgradingToPro}
+        isOpening={isOpening}
         isPending={isPending}
-        isReady={isReady}
+        isReady={true}
         isSignedIn={isSignedIn}
         onConnect={handleConnect}
         onHoverChange={setHovered}
@@ -474,8 +471,11 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
 
 function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
   const auth = useAuth();
-  const { isPro, isReady, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isPending, isError } = useConnections(isPro);
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useConnections(Boolean(auth.session));
   const [isHovered, setHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   // State alone cannot gate re-entry: a second click can land before the
@@ -496,11 +496,6 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       return;
     }
 
-    if (!isPro) {
-      upgradeToPro();
-      return;
-    }
-
     if (openInFlightRef.current) {
       return;
     }
@@ -515,7 +510,7 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       openInFlightRef.current = false;
       setIsOpening(false);
     });
-  }, [auth.getHeaders, auth.session, isPro, onSignIn, upgradeToPro]);
+  }, [auth.getHeaders, auth.session, onSignIn]);
 
   if (!GOOGLE_PROVIDER) {
     return null;
@@ -547,9 +542,9 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
         connectLabel={<Trans>Connect Google Calendar</Trans>}
         isConnected={isConnected}
         isHovered={isHovered}
-        isOpening={isOpening || isUpgradingToPro}
+        isOpening={isOpening}
         isPending={isPending}
-        isReady={isReady}
+        isReady={true}
         isSignedIn={isSignedIn}
         onConnect={handleConnect}
         onHoverChange={setHovered}

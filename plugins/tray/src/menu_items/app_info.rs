@@ -25,8 +25,8 @@ impl MenuItemHandler for AppInfo {
         let app_commit = app.misc().get_git_hash();
 
         let message = format!(
-            "- App Name: {}\n- App Version: {}\n- SHA:\n  {}",
-            app_name, app_version, app_commit
+            "{}\n\nAcorn is built on Anarlog (MIT).\n\nMIT License\nCopyright (c) 2023-present Fastrepl, Inc.\n\n- App Name: {}\n- App Version: {}\n- SHA:\n  {}",
+            "Local meeting notes. Live Ask.", app_name, app_version, app_commit
         );
 
         let app_clone = app.clone();

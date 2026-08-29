@@ -23,6 +23,8 @@ import {
   noteFileTestInternals,
 } from "./note-files";
 
+import { unboundedAiKnowledgeWindow } from "~/shared/ai-window";
+
 const snapshot = {
   sessionId: "session-1",
   title: "Customer call",
@@ -101,8 +103,12 @@ describe("note file chat tools", () => {
       "- Slack · Ada\n  Use the canary rollout phrase",
     );
 
-    const tool = buildSearchMeetingContentTool({} as any);
-    const result = await (tool as any).execute({ query: "canary rollout" });
+    const contentSearchTool = buildSearchMeetingContentTool({
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+    } as any);
+    const result = await (contentSearchTool as any).execute({
+      query: "canary rollout",
+    });
 
     expect(result.results[0]?.meeting_id).toBe("session-1");
     expect(
@@ -151,7 +157,9 @@ describe("note file chat tools", () => {
     });
     expect(readResult.contextText).toContain("contract renewal timing");
 
-    const contentSearchTool = buildSearchMeetingContentTool({} as any);
+    const contentSearchTool = buildSearchMeetingContentTool({
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+    } as any);
     const contentSearchResult = await (contentSearchTool as any).execute({
       query: "contract renewal",
     });

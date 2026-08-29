@@ -1,4 +1,5 @@
 import type { SearchFilters, SearchHit } from "~/search/contexts/engine/types";
+import type { AiKnowledgeWindow } from "~/shared/ai-window";
 
 export type ContactSearchResult = {
   id: string;
@@ -54,5 +55,6 @@ export interface ToolDependencies {
   getEnhancedNoteId: () => string | undefined;
   openEditTab: (requestId: string) => void;
   getAuthHeaders: () => Record<string, string> | null | undefined;
+  getAiKnowledgeWindow?: () => AiKnowledgeWindow;
   fetch?: typeof fetch;
 }

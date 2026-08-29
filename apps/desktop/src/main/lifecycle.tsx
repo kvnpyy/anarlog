@@ -18,6 +18,7 @@ import { OwnedSharedNotePublisher } from "~/session-sharing/sync";
 import { SharedAttachmentCacheLifecycle } from "~/shared-notes/attachment-cache-lifecycle";
 import { SharedNotePreviewAuthLifecycle } from "~/shared-notes/preview";
 import { DurableSharedNoteCacheSync } from "~/shared-notes/sync";
+import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue } from "~/shared/config";
 import { useDesktopTabLifecycle } from "~/shared/desktop-tab-lifecycle";
 import { useTabs } from "~/store/zustand/tabs";
@@ -74,6 +75,11 @@ function ToolRegistration() {
   const getCalendarEventSearchResults = searchCalendarEvents;
 
   const { getSessionId, getEnhancedNoteId } = useSessionTab();
+  const acornPro = useConfigValue("acorn_pro") === true;
+  const getAiKnowledgeWindowForTools = useCallback(
+    () => getAiKnowledgeWindow(acornPro),
+    [acornPro],
+  );
   const getAuthHeaders = useCallback(() => auth?.getHeaders(), [auth]);
   const openEditTab = useCallback((requestId: string) => {
     useTabs.getState().openNew({ type: "edit", requestId });
@@ -90,6 +96,7 @@ function ToolRegistration() {
         getEnhancedNoteId,
         openEditTab,
         getAuthHeaders,
+        getAiKnowledgeWindow: getAiKnowledgeWindowForTools,
       }),
     [
       search,
@@ -99,6 +106,7 @@ function ToolRegistration() {
       getEnhancedNoteId,
       openEditTab,
       getAuthHeaders,
+      getAiKnowledgeWindowForTools,
     ],
   );
 

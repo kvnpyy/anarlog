@@ -142,21 +142,17 @@ describe("SettingsNav", () => {
       "General",
       "Profile",
       "Appearance",
-      "Account",
-      "Team",
       "Notifications",
       "Workspace",
       "Meetings",
       "Calendar",
       "Contacts",
       "Templates",
-      "Automations",
       "AI",
       "Transcription",
       "Intelligence",
       "Dictionary",
       "Data",
-      "Sync",
       "Imports",
       "Advanced",
       "Privacy",
@@ -165,13 +161,16 @@ describe("SettingsNav", () => {
     ].forEach((label) => {
       expect(screen.getByText(label)).toBeTruthy();
     });
+    ["Account", "Automations", "Sync"].forEach((label) => {
+      expect(screen.queryByText(label)).toBeNull();
+    });
+    expect(screen.getByText("Teams")).toBeTruthy();
   });
 
   it.each([
     ["Calendar", { type: "calendar" }],
     ["Contacts", { type: "contacts" }],
     ["Templates", { type: "templates" }],
-    ["Automations", { type: "automations" }],
   ] as const)("opens the %s workspace", (label, destination) => {
     render(<SettingsNav />);
 
@@ -274,91 +273,54 @@ describe("SettingsNav", () => {
     );
   });
 
-  it("opens Sync inside settings", () => {
-    render(<SettingsNav />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Sync" }));
-
-    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
-      mocks.currentTab,
-      { tab: "sync" },
-    );
-  });
-
-  it("shows locked Pro features and opens the upgrade flow", () => {
+  it("hides cloud settings and keeps Teams locked in local-only mode", () => {
     mocks.isPro = false;
 
     render(<SettingsNav />);
 
-    expect(screen.getByText("Sync")).toBeTruthy();
-    expect(screen.getByText("Imports")).toBeTruthy();
+    expect(screen.queryByText("Account")).toBeNull();
+    expect(screen.queryByText("Sync")).toBeNull();
+    expect(screen.queryByText("Automations")).toBeNull();
+    expect(screen.getByText("Teams")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Acorn Pro for Teams" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Dictionary" })).toBeTruthy();
+  });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Upgrade to Pro for Sync" }),
-    );
+  it("opens the Acorn Pro dialog from the locked Teams row", () => {
+    mocks.isPro = false;
+
+    render(<SettingsNav />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Teams" }));
 
     expect(mocks.upgradeToPro).toHaveBeenCalledOnce();
     expect(mocks.updateSettingsTabState).not.toHaveBeenCalled();
   });
 
-  it.each(["Team", "Automations", "Dictionary", "Sync"])(
-    "does not open locked %s navigation",
-    (label) => {
-      mocks.isPro = false;
-
-      render(<SettingsNav />);
-
-      fireEvent.click(screen.getByRole("button", { name: label }));
-
-      expect(mocks.openNew).not.toHaveBeenCalled();
-      expect(mocks.updateSettingsTabState).not.toHaveBeenCalled();
-    },
-  );
-
-  it("shows Team with the Pro lock on the free plan", () => {
+  it("opens Developers even on the free plan", () => {
     mocks.isPro = false;
 
     render(<SettingsNav />);
 
-    expect(screen.getByRole("button", { name: "Team" })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Upgrade to Pro for Team" }),
-    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Developers" }));
+
+    expect(mocks.upgradeToPro).not.toHaveBeenCalled();
+    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
+      mocks.currentTab,
+      { tab: "developers" },
+    );
   });
 
-  it("opens Team for free members of an existing workspace", () => {
+  it("keeps Teams locked even when a workspace already exists", () => {
     mocks.isPro = false;
     mocks.workspaces = [{ workspaceId: "ws-1" }];
 
     render(<SettingsNav />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Team" }));
-
-    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
-      mocks.currentTab,
-      { tab: "team" },
-    );
-    expect(
-      screen.queryByRole("button", { name: "Upgrade to Pro for Team" }),
-    ).toBeNull();
-  });
-
-  it("does not lock Team while workspaces are still loading", () => {
-    mocks.isPro = false;
-    mocks.workspaces = undefined;
-    mocks.workspacesLoading = true;
-
-    render(<SettingsNav />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Team" }));
-
-    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
-      mocks.currentTab,
-      { tab: "team" },
-    );
-    expect(
-      screen.queryByRole("button", { name: "Upgrade to Pro for Team" }),
-    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+    expect(mocks.upgradeToPro).toHaveBeenCalledOnce();
   });
 
   it("opens Imports inside settings", () => {
@@ -391,11 +353,9 @@ describe("SettingsNav", () => {
       target: { value: "workspace" },
     });
 
-    ["Meetings", "Calendar", "Contacts", "Templates", "Automations"].forEach(
-      (label) => {
-        expect(screen.getByText(label)).toBeTruthy();
-      },
-    );
+    ["Meetings", "Calendar", "Contacts", "Templates"].forEach((label) => {
+      expect(screen.getByText(label)).toBeTruthy();
+    });
     expect(screen.queryByText("Appearance")).toBeNull();
   });
 

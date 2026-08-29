@@ -15,17 +15,19 @@ import { useBillingAccess } from "~/auth/billing-context";
 import { SettingsPageTitle } from "~/settings/page-title";
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { LOCAL_ONLY } from "~/shared/product";
 import { normalizeKeywordList, parseDictionaryTermsText } from "~/stt/keywords";
 
 export function SettingsDictionary() {
   const terms = useConfigValue("personalization_dictionary_terms");
   const setTerms = useSetSettingValue("personalization_dictionary_terms");
   const { isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
+  const canUseDictionary = LOCAL_ONLY || isPro;
 
   return (
     <div className="flex flex-col gap-8">
       <SettingsPageTitle title={<Trans>Dictionary</Trans>} />
-      {isPro ? (
+      {canUseDictionary ? (
         <DictionarySettings terms={terms} onSave={setTerms} />
       ) : (
         <div className="border-border bg-card flex items-start justify-between gap-4 rounded-2xl border p-5">

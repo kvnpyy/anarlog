@@ -24,8 +24,10 @@ import { TrialEndedDialog } from "../billing/trial-ended-dialog";
 import { TrialPaymentReminderDialog } from "../billing/trial-payment-reminder-dialog";
 import { TrialStartedDialog } from "../billing/trial-started-dialog";
 import { env } from "../env";
+import { AcornPlansDialog } from "../shared/acorn-pro-dialog";
 import { waitForBillingUpdate } from "../shared/billing";
 import { configurePaidSettings } from "../shared/config/configure-paid-settings";
+import { LOCAL_ONLY } from "../shared/product";
 import { startTrialOnce } from "../shared/trial-start";
 import { buildWebAppUrl } from "../shared/utils";
 import { useAuth } from "./auth-context";
@@ -88,19 +90,20 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   const claimsQuery = useQuery({
     queryKey: ["tokenInfo", auth?.session?.access_token ?? ""],
     queryFn: () => getClaimsFromToken(auth!.session!.access_token),
-    enabled: !!auth?.session?.access_token,
+    enabled: !LOCAL_ONLY && !!auth?.session?.access_token,
     placeholderData: (previous) =>
       previous?.sub === auth?.session?.user.id ? previous : undefined,
   });
 
   const billing = deriveBillingInfo(claimsQuery.data ?? null);
-  const isReady = !claimsQuery.isPending && !claimsQuery.isError;
+  const isReady =
+    LOCAL_ONLY || (!claimsQuery.isPending && !claimsQuery.isError);
   const claimsAreCurrent =
     !claimsQuery.isFetching && !claimsQuery.isPlaceholderData;
 
   // eslint-disable-next-line @tanstack/query/exhaustive-deps -- Auth supplies request headers; the user ID is the eligibility identity.
   const canTrialQuery = useQuery({
-    enabled: !!auth?.session && !billing.isPaid,
+    enabled: !LOCAL_ONLY && !!auth?.session && !billing.isPaid,
     queryKey: [auth?.session?.user.id ?? "", "canStartTrial"],
     queryFn: async () => {
       const headers = auth?.getHeaders();
@@ -136,6 +139,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps -- The user ID owns one automatic attempt; a refreshed token must not trigger another start.
   useQuery({
     enabled:
+      !LOCAL_ONLY &&
       !!auth?.session &&
       isReady &&
       claimsAreCurrent &&
@@ -171,6 +175,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   });
 
   const [isUpgradingToPro, setIsUpgradingToPro] = useState(false);
+  const [acornProDialogOpen, setAcornProDialogOpen] = useState(false);
   // State alone cannot gate re-entry: a second click can land before the
   // disabled state renders, and its finally would re-enable the buttons
   // while the first open is still in flight.
@@ -178,7 +183,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   const openUpgrade = useCallback(
     async (source: "feature_gate" | "trial_ended") => {
-      if (upgradeInFlightRef.current) {
+      if (LOCAL_ONLY || upgradeInFlightRef.current) {
         return;
       }
       upgradeInFlightRef.current = true;
@@ -208,11 +213,19 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   );
 
   const upgradeToPro = useCallback(() => {
+    if (LOCAL_ONLY) {
+      setAcornProDialogOpen(true);
+      return;
+    }
     void openUpgrade("feature_gate");
   }, [openUpgrade]);
 
   const openBillingPortal = useCallback(
     async (intent: "manage" | "payment_method_update" = "manage") => {
+      if (LOCAL_ONLY) {
+        return;
+      }
+
       const url = await buildWebAppUrl(
         "/app/portal",
         intent === "manage" ? undefined : { intent },
@@ -401,30 +414,39 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   return (
     <BillingContext.Provider value={value}>
       {children}
-      <TrialStartedDialog
-        open={trialStartedOpen}
-        onOpenChange={setTrialStartedOpen}
-        trialDaysRemaining={billing.trialDaysRemaining}
-        hasPaymentMethod={billing.hasPaymentMethod}
-      />
-      <TrialPaymentReminderDialog
-        open={trialPaymentReminderOpen}
-        onOpenChange={setTrialPaymentReminderOpen}
-        daysRemaining={billing.trialDaysRemaining ?? 0}
-        onAddPaymentMethod={() => {
-          void analyticsCommands.event({
-            event: "trial_payment_method_clicked",
-            days_remaining: billing.trialDaysRemaining,
-            reminder_threshold: trialPaymentReminderThreshold,
-          });
-          void openBillingPortal("payment_method_update");
-        }}
-      />
-      <TrialEndedDialog
-        open={trialEndedOpen}
-        onOpenChange={setTrialEndedOpen}
-        onUpgrade={() => void openUpgrade("trial_ended")}
-      />
+      {LOCAL_ONLY && acornProDialogOpen ? (
+        <AcornPlansDialog
+          open={acornProDialogOpen}
+          onOpenChange={setAcornProDialogOpen}
+        />
+      ) : LOCAL_ONLY ? null : (
+        <>
+          <TrialStartedDialog
+            open={trialStartedOpen}
+            onOpenChange={setTrialStartedOpen}
+            trialDaysRemaining={billing.trialDaysRemaining}
+            hasPaymentMethod={billing.hasPaymentMethod}
+          />
+          <TrialPaymentReminderDialog
+            open={trialPaymentReminderOpen}
+            onOpenChange={setTrialPaymentReminderOpen}
+            daysRemaining={billing.trialDaysRemaining ?? 0}
+            onAddPaymentMethod={() => {
+              void analyticsCommands.event({
+                event: "trial_payment_method_clicked",
+                days_remaining: billing.trialDaysRemaining,
+                reminder_threshold: trialPaymentReminderThreshold,
+              });
+              void openBillingPortal("payment_method_update");
+            }}
+          />
+          <TrialEndedDialog
+            open={trialEndedOpen}
+            onOpenChange={setTrialEndedOpen}
+            onUpgrade={() => void openUpgrade("trial_ended")}
+          />
+        </>
+      )}
     </BillingContext.Provider>
   );
 }

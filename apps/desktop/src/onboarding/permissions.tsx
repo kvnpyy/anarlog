@@ -23,6 +23,7 @@ import {
   usePermission,
   usePermissionGuidance,
 } from "~/shared/hooks/usePermissions";
+import { PRODUCT_NAME } from "~/shared/product";
 
 function PermissionBlock({
   enabledLabel,
@@ -198,8 +199,8 @@ function PermissionsSectionContent({
 
       <div className="flex flex-col gap-2">
         <PermissionBlock
-          enabledLabel={t`Anarlog can hear your voice`}
-          enableLabel={t`Help Anarlog listen to you`}
+          enabledLabel={`${PRODUCT_NAME} can hear your voice`}
+          enableLabel={`Help ${PRODUCT_NAME} listen to you`}
           enabledBody={t`Microphone access turned on`}
           enableBody={mic.error ?? t`Use your microphone to capture your voice`}
           Icon={Microphone}
@@ -216,8 +217,8 @@ function PermissionsSectionContent({
         />
 
         <PermissionBlock
-          enabledLabel={t`Anarlog can hear others`}
-          enableLabel={t`Help Anarlog listen to others`}
+          enabledLabel={`${PRODUCT_NAME} can hear others`}
+          enableLabel={`Help ${PRODUCT_NAME} listen to others`}
           enabledBody={t`System audio enabled`}
           enableBody={
             systemAudio.error ?? t`Use system audio to capture other speakers`
@@ -239,12 +240,12 @@ function PermissionsSectionContent({
 
         {accessibility && (
           <PermissionBlock
-            enabledLabel={t`Anarlog can read meeting details`}
-            enableLabel={t`Help Anarlog read meeting activity`}
+            enabledLabel={`${PRODUCT_NAME} can read meeting details`}
+            enableLabel={`Help ${PRODUCT_NAME} read meeting activity`}
             enabledBody={t`Meeting details access turned on`}
             enableBody={
               accessibilityGuidance
-                ? t`Opens System Settings and guides you to add Anarlog to the ${accessibilityGuidance.paneTitle ?? "Privacy"} list`
+                ? `Opens System Settings and guides you to add ${PRODUCT_NAME} to the ${accessibilityGuidance.paneTitle ?? "Privacy"} list`
                 : t`Read meeting controls, visible chat, and participant status`
             }
             Icon={Cursor}

@@ -173,7 +173,7 @@ describe("Auto format editor", () => {
     expect(screen.queryByText("Variables")).toBeNull();
   });
 
-  it("keeps the format visible and read-only for Free users", () => {
+  it("keeps the format editable without a Pro upgrade in local-only mode", () => {
     mocks.billing.isPro = false;
 
     renderWithQueryClient(
@@ -184,22 +184,14 @@ describe("Auto format editor", () => {
       screen.getByRole("textbox", {
         name: "Auto summary format",
       }) as HTMLTextAreaElement,
-    ).toHaveProperty("readOnly", true);
+    ).toHaveProperty("readOnly", false);
     expect(
-      screen.getByText(
-        "Preview the summary format, then upgrade to Pro to customize it.",
-      ),
-    ).toBeTruthy();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Get Pro to customize" }),
-    );
-
-    expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
-    expect(mocks.setSettingValue).not.toHaveBeenCalled();
+      screen.queryByRole("button", { name: "Get Pro to customize" }),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
   });
 
-  it("routes example generation to the Pro upgrade for Free users", () => {
+  it("opens example generation without a Pro upgrade in local-only mode", () => {
     mocks.billing.isPro = false;
 
     renderWithQueryClient(
@@ -210,10 +202,10 @@ describe("Auto format editor", () => {
       screen.getByRole("button", { name: "Improve with examples" }),
     );
 
-    expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
+    expect(mocks.billing.upgradeToPro).not.toHaveBeenCalled();
     expect(
-      screen.queryByRole("dialog", { name: "Improve summary format" }),
-    ).toBeNull();
+      screen.getByRole("dialog", { name: "Improve summary format" }),
+    ).toBeTruthy();
   });
 
   it("generates an editable format from up to three transient examples", async () => {

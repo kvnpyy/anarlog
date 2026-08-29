@@ -33,6 +33,7 @@ import { CustomSidebarHeader } from "./custom-sidebar-header";
 import { useBillingAccess } from "~/auth/billing-context";
 import { privacyMessages } from "~/settings/general/app-settings";
 import { useMyWorkspacesWithMirror } from "~/settings/team/mirror";
+import { LOCAL_ONLY } from "~/shared/product";
 import { type SettingsTab, type TabInput, useTabs } from "~/store/zustand/tabs";
 
 type SettingsNavItem =
@@ -83,13 +84,24 @@ export function SettingsNav() {
       items: [
         { id: "app", label: t`General`, icon: Gear },
         { id: "profile", label: t`Profile`, icon: IdentificationCard },
-        { id: "account", label: t`Account`, icon: User },
-        {
-          id: "team",
-          label: t`Team`,
-          icon: UsersThree,
-          requiresPro: !workspaces.isLoading && !hasExistingWorkspace,
-        },
+        ...(LOCAL_ONLY
+          ? [
+              {
+                id: "team" as const,
+                label: "Teams",
+                icon: UsersThree,
+                requiresPro: true,
+              },
+            ]
+          : [
+              { id: "account" as const, label: t`Account`, icon: User },
+              {
+                id: "team" as const,
+                label: t`Team`,
+                icon: UsersThree,
+                requiresPro: !workspaces.isLoading && !hasExistingWorkspace,
+              },
+            ]),
         { id: "appearance", label: t`Appearance`, icon: Sun },
         { id: "notifications", label: t`Notifications`, icon: Bell },
       ],
@@ -116,13 +128,17 @@ export function SettingsNav() {
           icon: FileText,
           destination: { type: "templates" },
         },
-        {
-          id: "automations",
-          label: t`Automations`,
-          icon: Lightning,
-          destination: { type: "automations" },
-          requiresPro: true,
-        },
+        ...(LOCAL_ONLY
+          ? []
+          : [
+              {
+                id: "automations" as const,
+                label: t`Automations`,
+                icon: Lightning,
+                destination: { type: "automations" as const },
+                requiresPro: true,
+              },
+            ]),
       ],
     },
     {
@@ -134,19 +150,23 @@ export function SettingsNav() {
           id: "dictionary",
           label: t`Dictionary`,
           icon: BookOpen,
-          requiresPro: true,
+          requiresPro: !LOCAL_ONLY,
         },
       ],
     },
     {
       label: t`Data`,
       items: [
-        {
-          id: "sync",
-          label: t`Sync`,
-          icon: ArrowsClockwise,
-          requiresPro: true,
-        },
+        ...(LOCAL_ONLY
+          ? []
+          : [
+              {
+                id: "sync" as const,
+                label: t`Sync`,
+                icon: ArrowsClockwise,
+                requiresPro: true,
+              },
+            ]),
         { id: "imports", label: t`Imports`, icon: DownloadSimple },
       ],
     },
@@ -238,7 +258,9 @@ export function SettingsNav() {
                 {group.label}
               </span>
               {group.items.map((item) => {
-                const requiresPro = Boolean(item.requiresPro && !isPro);
+                const requiresPro = Boolean(
+                  item.requiresPro && (LOCAL_ONLY ? true : !isPro),
+                );
 
                 return (
                   <div key={item.id} className="group/row relative">
@@ -246,7 +268,10 @@ export function SettingsNav() {
                       type="button"
                       aria-disabled={requiresPro}
                       onClick={() => {
-                        if (requiresPro) return;
+                        if (requiresPro) {
+                          upgradeToPro();
+                          return;
+                        }
 
                         if ("destination" in item) {
                           openNew(item.destination);
@@ -296,7 +321,7 @@ export function SettingsNav() {
                         onClick={upgradeToPro}
                         disabled={isUpgradingToPro}
                         className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring pointer-events-none absolute top-1/2 right-1 flex translate-x-1 -translate-y-1/2 items-center gap-1 rounded-full border-2 px-3 py-1 text-xs font-medium opacity-0 shadow-[0_4px_14px_rgba(87,83,78,0.18)] transition-all duration-150 group-focus-within/row:pointer-events-auto group-focus-within/row:translate-x-0 group-focus-within/row:opacity-100 group-hover/row:pointer-events-auto group-hover/row:translate-x-0 group-hover/row:opacity-100 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-70"
-                        aria-label={t`Upgrade to Pro for ${item.label}`}
+                        aria-label={t`Acorn Pro for ${item.label}`}
                       >
                         {isUpgradingToPro ? (
                           <CircleNotch
@@ -304,7 +329,7 @@ export function SettingsNav() {
                             aria-hidden
                           />
                         ) : null}
-                        <Trans>Upgrade to Pro</Trans>
+                        <Trans>Acorn Pro</Trans>
                       </button>
                     ) : null}
                   </div>

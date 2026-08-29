@@ -13,13 +13,16 @@ import {
   StyledStreamdown,
 } from "~/settings/ai/shared";
 import { useConfigValue } from "~/shared/config";
+import { withoutHostedCloudProviders } from "~/shared/product";
 
 export function ConfigureProviders() {
   const { accordionValue, setAccordionValue } = useSttSettings();
   const currentProvider = useConfigValue("current_stt_provider");
   const [search, setSearch] = useState("");
   const providers = filterProviders(
-    PROVIDERS.filter((provider) => !("builtIn" in provider)),
+    withoutHostedCloudProviders(
+      PROVIDERS.filter((provider) => !("builtIn" in provider)),
+    ),
     search,
   );
 

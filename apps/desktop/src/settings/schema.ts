@@ -162,6 +162,11 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "cloud_sync_enabled"],
     default: true as boolean,
   },
+  acorn_pro: {
+    type: "boolean",
+    path: ["general", "acorn_pro"],
+    default: false as boolean,
+  },
   ai_language: {
     type: "string",
     path: ["language", "ai_language"],

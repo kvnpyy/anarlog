@@ -7,6 +7,7 @@ import { WindowsTitleBar } from "./windows-title-bar";
 import { useShell } from "~/contexts/shell";
 import { usesWindowsStyleTitleBar } from "~/shared/hooks/useWindowControlsGutter";
 import { MainShellBodyFrame, MainShellScaffold } from "~/shared/main";
+import { LOCAL_ONLY } from "~/shared/product";
 import { ToastNotifications } from "~/sidebar/toast";
 import {
   hasCustomSidebarTab,
@@ -21,7 +22,8 @@ export function ClassicMainShellFrame() {
   const isOnboarding = currentTab?.type === "onboarding";
   const isChangelog = currentTab?.type === "changelog";
   const showSyncStatus =
-    currentTab?.type === "empty" || currentTab?.type === "sessions";
+    !LOCAL_ONLY &&
+    (currentTab?.type === "empty" || currentTab?.type === "sessions");
   const hasCustomSidebar = hasCustomSidebarTab(currentTab);
   const hasLeftSurfaceCustomSidebar =
     hasLeftSurfaceCustomSidebarTab(currentTab);

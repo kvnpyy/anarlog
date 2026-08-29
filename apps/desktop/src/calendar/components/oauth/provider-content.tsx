@@ -3,11 +3,6 @@ import { CircleNotch } from "@phosphor-icons/react";
 import { useCallback, useMemo } from "react";
 
 import type { ConnectionItem } from "@anlg/api-client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@anlg/ui/components/ui/tooltip";
 
 import {
   OAuthCalendarSelection,
@@ -16,7 +11,6 @@ import {
 import { ReconnectRequiredIndicator } from "./status";
 
 import { useAuth } from "~/auth";
-import { useBillingAccess } from "~/auth/billing-context";
 import { useConnections } from "~/auth/useConnections";
 import type { CalendarProvider } from "~/calendar/components/shared";
 import { useOpenIntegrationUrl } from "~/shared/integration";
@@ -31,9 +25,8 @@ export function OAuthProviderContent({
   onConnectStarted?: () => void;
 }) {
   const auth = useAuth();
-  const { isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isError } = useConnections(isPro);
   const { openIntegration, openingAction } = useOpenIntegrationUrl();
+  const { data: connections, isError } = useConnections(Boolean(auth.session));
   const providerConnections = useMemo(
     () =>
       connections?.filter(
@@ -54,35 +47,12 @@ export function OAuthProviderContent({
   if (!auth.session) {
     return (
       <div className="pt-1 pb-2">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <span
-              tabIndex={0}
-              className="text-muted-foreground cursor-not-allowed text-xs opacity-50"
-            >
-              {t`Connect ${config.displayName} Calendar`}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t`Sign in to connect your calendar`}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  }
-
-  if (!isPro) {
-    return (
-      <div className="pt-1 pb-2">
         <button
-          onClick={upgradeToPro}
-          disabled={isUpgradingToPro}
-          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-xs underline transition-colors disabled:opacity-50"
+          type="button"
+          onClick={() => void auth.signIn()}
+          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-xs underline transition-colors"
         >
-          {isUpgradingToPro && (
-            <CircleNotch className="size-3 animate-spin" aria-hidden="true" />
-          )}
-          {t`Upgrade to connect`}
+          {t`Connect ${config.displayName} Calendar`}
         </button>
       </div>
     );

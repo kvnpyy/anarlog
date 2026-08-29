@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appendAiKnowledgeWindowGuidance,
   appendGlobalAskToolGuidance,
   appendLiveAskToolGuidance,
   appendMeetingContextToolGuidance,
@@ -51,7 +52,9 @@ describe("chat transport prompt guidance", () => {
 
     expect(prompt).toContain("Base prompt");
     expect(prompt).toContain("No specific meeting is attached");
-    expect(prompt).toContain("Search across all local meetings");
+    expect(prompt).toContain(
+      "Search across meetings in the AI knowledge window",
+    );
     expect(prompt).toContain("Prefer search_meetings");
   });
 
@@ -64,6 +67,16 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Reply only in this chat");
     expect(prompt).toContain("Do not call edit_memo");
     expect(prompt).toContain("Keep answers short");
+  });
+
+  it("tells the model about the Free 14-day AI window", () => {
+    const prompt = appendAiKnowledgeWindowGuidance("Base prompt", {
+      days: 14,
+      isPro: false,
+    });
+
+    expect(prompt).toContain("last 14 days");
+    expect(prompt).toContain("Acorn Pro remembers 365 days");
   });
 
   it("omits note-editing tools while Live Ask is active", () => {

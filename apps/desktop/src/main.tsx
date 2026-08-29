@@ -1,5 +1,6 @@
 import "./styles/globals.css";
 import "./styles/cursor.css";
+import "./styles/brand.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";

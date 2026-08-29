@@ -20,6 +20,7 @@ import {
   StyledStreamdown,
 } from "~/settings/ai/shared";
 import { useConfigValue } from "~/shared/config";
+import { withoutHostedCloudProviders } from "~/shared/product";
 
 export function ConfigureProviders() {
   const { accordionValue, setAccordionValue } = useLlmSettings();
@@ -28,7 +29,7 @@ export function ConfigureProviders() {
   const [connectingId, setConnectingId] =
     useState<SubscriptionProviderId | null>(null);
   const providers = filterProviders(
-    PROVIDERS.filter((provider) =>
+    withoutHostedCloudProviders(PROVIDERS).filter((provider) =>
       shouldShowInProviderList(provider.id, search),
     ),
     search,

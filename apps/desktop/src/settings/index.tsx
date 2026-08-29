@@ -21,6 +21,7 @@ import { SettingsProfile } from "~/settings/profile";
 import { SettingsSync } from "~/settings/sync";
 import { SettingsTeam } from "~/settings/team";
 import { StandardContentWrapper } from "~/shared/main";
+import { LOCAL_ONLY } from "~/shared/product";
 import { type Tab } from "~/store/zustand/tabs";
 
 export function TabContentSettings({
@@ -46,7 +47,12 @@ function SettingsView({ tab }: { tab: Extract<Tab, { type: "settings" }> }) {
         ? "dictionary"
         : requestedTab === "audio"
           ? "meetings"
-          : (tab.state.tab ?? "app");
+          : LOCAL_ONLY &&
+              (tab.state.tab === "account" ||
+                tab.state.tab === "sync" ||
+                tab.state.tab === "team")
+            ? "app"
+            : (tab.state.tab ?? "app");
 
   const renderContent = () => {
     switch (activeTab) {

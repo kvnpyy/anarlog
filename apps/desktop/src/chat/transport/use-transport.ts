@@ -15,11 +15,13 @@ import {
 } from "~/chat/context/user-profile";
 import { loadHuman, loadOrganization } from "~/contacts/queries";
 import { useToolRegistry } from "~/contexts/tool";
+import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue, useConfigValues } from "~/shared/config";
 
 export const MEETING_CONTEXT_TOOL_GUIDANCE = `
 Context and local meeting tool guidance:
 - Use list_meetings for recent meetings, title or ID lookup, pagination, and exact recurring-series filtering. Never guess a meeting ID.
+- Meeting search tools only include meetings inside the current AI knowledge window. If a tool result includes notice or error "outside_ai_window", tell the user that Free only searches the last 14 days and that Acorn Pro remembers 365 days. Do not claim you searched older meetings.
 - Use search_meetings for open-ended questions about topics, people, decisions, or date ranges across meeting content. Use search_meeting_content when the user needs exact wording from notes or transcripts.
 - After resolving an ID, use get_meeting for the canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for bounded transcript pages, following pagination.next_offset only when more context is needed.
 - Use get_recurring_meeting_history for meetings in the same recurring series. Use find_related_meetings only for broader relationships such as shared participants or nearby dates.
@@ -90,7 +92,7 @@ export function appendLiveAskToolGuidance(
 
 export const GLOBAL_ASK_TOOL_GUIDANCE = `
 Workspace Ask guidance:
-- No specific meeting is attached. Search across all local meetings to answer questions about past conversations, people, decisions, or prep.
+- No specific meeting is attached. Search across meetings in the AI knowledge window to answer questions about past conversations, people, decisions, or prep.
 - Prefer search_meetings for topics, quotes, and open-ended recall. Use list_meetings for recent or titled meetings, then get_meeting or get_meeting_transcript for details.
 - When the user is preparing for an upcoming meeting, search related past meetings first and summarize what they should remember.
 `.trim();
@@ -153,6 +155,25 @@ async function renderOrganizationContext(
   return name ? `Referenced organization: ${name}` : null;
 }
 
+export function appendAiKnowledgeWindowGuidance(
+  prompt: string | undefined,
+  window: { days: number; isPro: boolean },
+): string | undefined {
+  const guidance = window.isPro
+    ? `AI knowledge window:\n- Meeting search tools include meetings from the last ${window.days} days.`
+    : `AI knowledge window:\n- Meeting search tools only include meetings from the last ${window.days} days.\n- If the user asks about something older than that, tell them Free only searches the last 14 days and that Acorn Pro remembers 365 days. Do not invent older meeting content.`;
+
+  if (prompt === undefined) {
+    return undefined;
+  }
+
+  if (!prompt.trim()) {
+    return guidance;
+  }
+
+  return `${prompt.trim()}\n\n${guidance}`;
+}
+
 export function useTransport(
   modelOverride?: LanguageModel,
   extraTools?: ToolSet,
@@ -165,6 +186,8 @@ export function useTransport(
   const configuredModel = useLanguageModel("chat");
   const model = modelOverride ?? configuredModel;
   const language = useConfigValue("ai_language") || "en";
+  const acornPro = useConfigValue("acorn_pro") === true;
+  const knowledgeWindow = getAiKnowledgeWindow(acornPro);
   const profile = readUserProfile(
     useConfigValues([
       "user_profile_name",
@@ -212,8 +235,11 @@ export function useTransport(
     };
   }, [language, systemPromptOverride]);
 
-  const meetingSystemPrompt = appendMeetingContextToolGuidance(
-    formatUserProfileGuidance(systemPromptOverride ?? systemPrompt, profile),
+  const meetingSystemPrompt = appendAiKnowledgeWindowGuidance(
+    appendMeetingContextToolGuidance(
+      formatUserProfileGuidance(systemPromptOverride ?? systemPrompt, profile),
+    ),
+    knowledgeWindow,
   );
   const effectiveSystemPrompt = isLiveAsk
     ? appendLiveAskToolGuidance(meetingSystemPrompt)

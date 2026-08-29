@@ -164,6 +164,15 @@ msgstr "Account"
 msgid "Acme"
 msgstr "Acme"
 
+#: src/sidebar/settings.tsx
+msgid "Acorn Pro"
+msgstr "Acorn Pro"
+
+#. placeholder {0}: item.label
+#: src/sidebar/settings.tsx
+msgid "Acorn Pro for {0}"
+msgstr "Acorn Pro for {0}"
+
 #: src/settings/automations/index.tsx
 #: src/settings/automations/workflow-builder.tsx
 msgid "Action"
@@ -296,6 +305,10 @@ msgstr "Add step"
 msgid "Add webhook"
 msgstr "Add webhook"
 
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Add your own LLM API key to generate a summary from this transcript."
+msgstr "Add your own LLM API key to generate a summary from this transcript."
+
 #: src/sidebar/settings-link.tsx
 msgid "Add your profile"
 msgstr "Add your profile"
@@ -365,28 +378,6 @@ msgstr "Anagram"
 msgid "Analyzing structure..."
 msgstr "Analyzing structure..."
 
-#. placeholder {0}: update.version
-#: src/sidebar/toast/registry.tsx
-msgid "Anarlog {0} is available"
-msgstr "Anarlog {0} is available"
-
-#. placeholder {0}: update.version
-#: src/sidebar/toast/registry.tsx
-msgid "Anarlog {0} is ready to install"
-msgstr "Anarlog {0} is ready to install"
-
-#: src/onboarding/permissions.tsx
-msgid "Anarlog can hear others"
-msgstr "Anarlog can hear others"
-
-#: src/onboarding/permissions.tsx
-msgid "Anarlog can hear your voice"
-msgstr "Anarlog can hear your voice"
-
-#: src/onboarding/permissions.tsx
-msgid "Anarlog can read meeting details"
-msgstr "Anarlog can read meeting details"
-
 #: src/settings/developers/cli.tsx
 msgid "Anarlog CLI"
 msgstr "Anarlog CLI"
@@ -427,14 +418,6 @@ msgstr "Anarlog is repairing cloud sync in the background. Your notes remain ava
 msgid "Anarlog member"
 msgstr "Anarlog member"
 
-#: src/onboarding/index.tsx
-msgid "Anarlog needs access to your microphone and system audio to record and transcribe your meetings"
-msgstr "Anarlog needs access to your microphone and system audio to record and transcribe your meetings"
-
-#: src/onboarding/index.tsx
-msgid "Anarlog needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat, and participant status."
-msgstr "Anarlog needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat, and participant status."
-
 #: src/main/sync-status.tsx
 msgid "Anarlog Pro is required to use cloud sync."
 msgstr "Anarlog Pro is required to use cloud sync."
@@ -474,10 +457,6 @@ msgstr "Anarlog will retry automatically."
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Anarlog will retry automatically. This does not affect your notes."
 msgstr "Anarlog will retry automatically. This does not affect your notes."
-
-#: src/onboarding/index.tsx
-msgid "Anarlog will sync your calendar to get meeting reminders"
-msgstr "Anarlog will sync your calendar to get meeting reminders"
 
 #: src/templates/template-icon-picker.tsx
 msgid "Animals & Nature"
@@ -558,10 +537,6 @@ msgstr "Ask across all your meetings."
 #: src/shared/chat-cta.tsx
 msgid "Ask across your meetings"
 msgstr "Ask across your meetings"
-
-#: src/composer/index.tsx
-msgid "Ask Anarlog AI anything"
-msgstr "Ask Anarlog AI anything"
 
 #: src/shared/chat-cta.tsx
 msgid "Ask Anarlog anything"
@@ -925,12 +900,12 @@ msgid "Choose folder"
 msgstr "Choose folder"
 
 #: src/settings/appearance/app-icon.tsx
-msgid "Choose how Anarlog appears in the Dock."
-msgstr "Choose how Anarlog appears in the Dock."
+msgid "Choose how Acorn appears in the Dock."
+msgstr "Choose how Acorn appears in the Dock."
 
 #: src/settings/appearance/theme.tsx
-msgid "Choose how Anarlog looks on this device."
-msgstr "Choose how Anarlog looks on this device."
+msgid "Choose how Acorn looks on this device."
+msgstr "Choose how Acorn looks on this device."
 
 #: src/templates/auto-form.tsx
 msgid "Choose how Auto structures and styles your summaries."
@@ -1757,11 +1732,6 @@ msgstr "Downloading {0} models"
 msgid "Downloading {downloadingModel}"
 msgstr "Downloading {downloadingModel}"
 
-#. placeholder {0}: update.version
-#: src/sidebar/toast/registry.tsx
-msgid "Downloading Anarlog {0}{progress}"
-msgstr "Downloading Anarlog {0}{progress}"
-
 #: src/sidebar/toast/registry.tsx
 msgid "Downloading model"
 msgstr "Downloading model"
@@ -2150,10 +2120,6 @@ msgstr "Got it"
 msgid "Guide"
 msgstr "Guide"
 
-#: src/settings/general/app-settings.tsx
-msgid "Have Anarlog ready when you sign in."
-msgstr "Have Anarlog ready when you sign in."
-
 #: src/calendar/components/apple/permission.tsx
 msgid "Having trouble?"
 msgstr "Having trouble?"
@@ -2165,18 +2131,6 @@ msgstr "Having trouble? Paste the redirect URL"
 #: src/main/windows-title-bar.tsx
 msgid "Help"
 msgstr "Help"
-
-#: src/onboarding/permissions.tsx
-msgid "Help Anarlog listen to others"
-msgstr "Help Anarlog listen to others"
-
-#: src/onboarding/permissions.tsx
-msgid "Help Anarlog listen to you"
-msgstr "Help Anarlog listen to you"
-
-#: src/onboarding/permissions.tsx
-msgid "Help Anarlog read meeting activity"
-msgstr "Help Anarlog read meeting activity"
 
 #: src/settings/general/app-settings.tsx
 msgid "Help improve Anarlog with anonymous usage data."
@@ -2197,10 +2151,6 @@ msgstr "Help me sound smart in this meeting. Using only the in-progress transcri
 #: src/settings/dictionary/index.tsx
 msgid "Help transcription recognize names, jargon, and product terms."
 msgstr "Help transcription recognize names, jargon, and product terms."
-
-#: src/chat/components/body/empty.tsx
-msgid "Hi, I'm Anarlog AI. Set up a language model and I'll be ready to help."
-msgstr "Hi, I'm Anarlog AI. Set up a language model and I'll be ready to help."
 
 #: src/sidebar/timeline/index.tsx
 msgid "Hide Deleted Events"
@@ -2727,10 +2677,6 @@ msgstr "Merge"
 msgid "Merged"
 msgstr "Merged"
 
-#: src/composer/index.tsx
-msgid "Message Anarlog AI"
-msgstr "Message Anarlog AI"
-
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "Metadata"
 msgstr "Metadata"
@@ -3128,17 +3074,11 @@ msgstr "Open {0} settings"
 msgid "Open AI Settings"
 msgstr "Open AI Settings"
 
-#: src/composer/index.tsx
-#: src/onboarding/final.tsx
 #: src/services/enhancer/summary-notification.ts
 #: src/services/event-notification/index.ts
 #: src/store/zustand/listener/general-batch.ts
 msgid "Open Anarlog"
 msgstr "Open Anarlog"
-
-#: src/settings/general/app-settings.tsx
-msgid "Open Anarlog from the menu bar."
-msgstr "Open Anarlog from the menu bar."
 
 #: src/main/sync-status.tsx
 #: src/settings/sync/index.tsx
@@ -3200,11 +3140,6 @@ msgstr "Opening sign-in…"
 #: src/shared-notes/index.tsx
 msgid "Opening…"
 msgstr "Opening…"
-
-#. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
-#: src/onboarding/permissions.tsx
-msgid "Opens System Settings and guides you to add Anarlog to the {0} list"
-msgstr "Opens System Settings and guides you to add Anarlog to the {0} list"
 
 #. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
 #: src/settings/general/permissions.tsx
@@ -4119,10 +4054,6 @@ msgid "Show All Recurring Events"
 msgstr "Show All Recurring Events"
 
 #: src/settings/general/app-settings.tsx
-msgid "Show Anarlog in the Dock and app switcher."
-msgstr "Show Anarlog in the Dock and app switcher."
-
-#: src/settings/general/app-settings.tsx
 msgid "Show app in Dock"
 msgstr "Show app in Dock"
 
@@ -4214,10 +4145,6 @@ msgstr "Sign in to connect"
 #: src/settings/todo/provider-content.tsx
 msgid "Sign in to connect {0}"
 msgstr "Sign in to connect {0}"
-
-#: src/calendar/components/oauth/provider-content.tsx
-msgid "Sign in to connect your calendar"
-msgstr "Sign in to connect your calendar"
 
 #: src/settings/team/index.tsx
 msgid "Sign in to create a shared workspace for your team."
@@ -4363,10 +4290,6 @@ msgstr "Stack another destination. Steps run top to bottom."
 msgid "Start a Pro trial or add your own LLM API key to generate a summary from this transcript."
 msgstr "Start a Pro trial or add your own LLM API key to generate a summary from this transcript."
 
-#: src/settings/general/app-settings.tsx
-msgid "Start Anarlog at login"
-msgstr "Start Anarlog at login"
-
 #: src/settings/general/meeting-settings.tsx
 msgid "Start listening when a scheduled meeting begins."
 msgstr "Start listening when a scheduled meeting begins."
@@ -4422,10 +4345,6 @@ msgstr "Starting your trial..."
 #: src/chat/components/input/index.tsx
 msgid "Starting…"
 msgstr "Starting…"
-
-#: src/settings/general/app-settings.tsx
-msgid "Stay current with updates installed the next time Anarlog opens."
-msgstr "Stay current with updates installed the next time Anarlog opens."
 
 #: src/settings/automations/index.tsx
 msgid "Steps run from top to bottom."
@@ -4961,7 +4880,6 @@ msgstr "Upgrade"
 msgid "Upgrade for private repos."
 msgstr "Upgrade for private repos."
 
-#: src/calendar/components/oauth/provider-content.tsx
 #: src/settings/todo/provider-content.tsx
 msgid "Upgrade to connect"
 msgstr "Upgrade to connect"
@@ -4980,14 +4898,11 @@ msgstr "Upgrade to enable"
 #: src/settings/developers/cloud-api.tsx
 #: src/settings/dictionary/index.tsx
 #: src/settings/team/index.tsx
-#: src/sidebar/settings.tsx
 msgid "Upgrade to Pro"
 msgstr "Upgrade to Pro"
 
-#. placeholder {0}: item.label
 #. placeholder {0}: provider.displayName
 #: src/calendar/components/sidebar.tsx
-#: src/sidebar/settings.tsx
 msgid "Upgrade to Pro for {0}"
 msgstr "Upgrade to Pro for {0}"
 
@@ -5160,10 +5075,6 @@ msgstr "Webhooks"
 #: src/settings/general/week-start.tsx
 msgid "Week starts on"
 msgstr "Week starts on"
-
-#: src/onboarding/index.tsx
-msgid "Welcome to Anarlog"
-msgstr "Welcome to Anarlog"
 
 #: src/chat/components/body/empty.tsx
 msgid "What are my action items from this meeting?"

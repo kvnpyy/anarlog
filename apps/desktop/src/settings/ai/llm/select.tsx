@@ -66,6 +66,7 @@ import {
 import { useAiProvidersState } from "~/settings/providers";
 import { setSettingValues, useSettingsReady } from "~/settings/queries";
 import { useConfigValues } from "~/shared/config";
+import { LOCAL_ONLY, withoutHostedCloudProviders } from "~/shared/product";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
 
 export function SelectProviderAndModel() {
@@ -97,11 +98,11 @@ export function SelectProviderAndModel() {
     selectedProviderConfigured,
   );
   const providerOptions = getConfiguredProviders(
-    PROVIDERS,
+    withoutHostedCloudProviders(PROVIDERS),
     configuredProviders,
   );
   const configuredProviderIds = getConfiguredProviderIds(
-    PROVIDERS,
+    withoutHostedCloudProviders(PROVIDERS),
     configuredProviders,
     current_llm_provider,
   );
@@ -252,7 +253,7 @@ export function SelectProviderAndModel() {
       : undefined;
 
   const handleProviderChange = (provider: string) => {
-    if (provider === "anarlog" && !billing.isPaid) {
+    if (!LOCAL_ONLY && provider === "anarlog" && !billing.isPaid) {
       billing.upgradeToPro();
       return;
     }
@@ -379,7 +380,7 @@ export function SelectProviderAndModel() {
                   provider.requirements,
                   "pro",
                 );
-                const locked = requiresPro && !billing.isPaid;
+                const locked = !LOCAL_ONLY && requiresPro && !billing.isPaid;
                 const configured =
                   configuredProviders[provider.id]?.configured ?? false;
 
@@ -591,7 +592,7 @@ function useConfiguredMapping(): {
 
   const mapping = useMemo(() => {
     return Object.fromEntries(
-      PROVIDERS.map((provider: Provider) => {
+      withoutHostedCloudProviders(PROVIDERS).map((provider: Provider) => {
         const config = configuredProviders[providerRowId("llm", provider.id)];
         // The selected provider bypasses the reachability gate: a temporarily
         // stopped local server should surface as a connection error, not

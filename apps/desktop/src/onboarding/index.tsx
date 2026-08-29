@@ -24,6 +24,7 @@ import { OnboardingSection } from "./shared";
 
 import { trackAnalyticsEvent } from "~/analytics";
 import { useAuth } from "~/auth";
+import { LOCAL_ONLY, PRODUCT_NAME, PRODUCT_TAGLINE } from "~/shared/product";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
@@ -115,7 +116,9 @@ function OnboardingScreenContent({
   }, [currentStep]);
 
   const handleCalendarSignIn = useCallback(() => {
-    setCurrentStep("login");
+    if (!LOCAL_ONLY) {
+      setCurrentStep("login");
+    }
     void auth.signIn();
   }, [auth]);
 
@@ -210,13 +213,25 @@ function OnboardingScreenContent({
       <div
         data-tauri-drag-region={headerDragRegion || undefined}
         className={cn([
-          "relative z-10 flex shrink-0 items-center",
+          "relative z-10 flex shrink-0 flex-col items-start justify-center",
           headerClassName,
         ])}
       >
-        <h1 className="font-hand text-foreground text-4xl leading-none font-semibold tracking-normal">
-          <Trans>Welcome to Anarlog</Trans>
-        </h1>
+        <div className="flex items-center gap-4">
+          <img
+            src="/assets/anarlog-icon.png"
+            alt=""
+            className="size-16 shrink-0 rounded-[14px] object-cover object-center"
+          />
+          <div>
+            <h1 className="font-hand text-foreground text-4xl leading-none font-medium tracking-tight">
+              Welcome to {PRODUCT_NAME}
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {PRODUCT_TAGLINE}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="scroll-fade-y relative z-10 flex-1 overflow-y-auto">
@@ -225,18 +240,9 @@ function OnboardingScreenContent({
             title={<Trans>Start with permissions</Trans>}
             completedTitle={<Trans>Permissions granted</Trans>}
             description={
-              currentPlatform === "macos" ? (
-                <Trans>
-                  Anarlog needs microphone and system audio to transcribe your
-                  meetings, plus Accessibility to read meeting controls, visible
-                  chat, and participant status.
-                </Trans>
-              ) : (
-                <Trans>
-                  Anarlog needs access to your microphone and system audio to
-                  record and transcribe your meetings
-                </Trans>
-              )
+              currentPlatform === "macos"
+                ? `${PRODUCT_NAME} needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat, and participant status.`
+                : `${PRODUCT_NAME} needs access to your microphone and system audio to record and transcribe your meetings`
             }
             status={getStepStatus("permissions", currentStep)}
             skippable={false}
@@ -246,50 +252,48 @@ function OnboardingScreenContent({
             <PermissionsSection onContinue={goNext} />
           </OnboardingSection>
 
-          <OnboardingSection
-            title={<Trans>Create account</Trans>}
-            description={
-              <Trans>
-                Sign in to unlock powerful AI models, sync across devices, and
-                personalization.
-              </Trans>
-            }
-            completedTitle={
-              auth.session ? (
-                <Trans>Signed in</Trans>
-              ) : didSkipLogin ? (
-                <Trans>Skipped</Trans>
-              ) : (
-                <Trans>Account</Trans>
-              )
-            }
-            status={getStepStatus("login", currentStep)}
-            onBack={goBack}
-            onNext={goNext}
-            onSkip={() => {
-              setDidSkipLogin(true);
-              trackAnalyticsEvent("onboarding_login_skipped");
-              trackAnalyticsEvent("onboarding_step_skipped", {
-                step: "login",
-                platform: currentPlatform,
-              });
-              const next = getNextStep("login");
-              if (next) setCurrentStep(next);
-            }}
-          >
-            <LoginSection
-              onContinue={goNext}
-              onSkip={() => setDidSkipLogin(true)}
-            />
-          </OnboardingSection>
+          {!LOCAL_ONLY ? (
+            <OnboardingSection
+              title={<Trans>Create account</Trans>}
+              description={
+                <Trans>
+                  Sign in to unlock powerful AI models, sync across devices, and
+                  personalization.
+                </Trans>
+              }
+              completedTitle={
+                auth.session ? (
+                  <Trans>Signed in</Trans>
+                ) : didSkipLogin ? (
+                  <Trans>Skipped</Trans>
+                ) : (
+                  <Trans>Account</Trans>
+                )
+              }
+              status={getStepStatus("login", currentStep)}
+              onBack={goBack}
+              onNext={goNext}
+              onSkip={() => {
+                setDidSkipLogin(true);
+                trackAnalyticsEvent("onboarding_login_skipped");
+                trackAnalyticsEvent("onboarding_step_skipped", {
+                  step: "login",
+                  platform: currentPlatform,
+                });
+                const next = getNextStep("login");
+                if (next) setCurrentStep(next);
+              }}
+            >
+              <LoginSection
+                onContinue={goNext}
+                onSkip={() => setDidSkipLogin(true)}
+              />
+            </OnboardingSection>
+          ) : null}
 
           <OnboardingSection
             title={<Trans>Connect calendar</Trans>}
-            description={
-              <Trans>
-                Anarlog will sync your calendar to get meeting reminders
-              </Trans>
-            }
+            description={`${PRODUCT_NAME} will use your calendar to get meeting reminders`}
             completedTitle={<Trans>Calendar connected</Trans>}
             status={getStepStatus("calendar", currentStep)}
             onBack={goBack}

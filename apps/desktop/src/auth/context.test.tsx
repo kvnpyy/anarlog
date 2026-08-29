@@ -166,6 +166,7 @@ vi.mock("@tauri-apps/plugin-os", () => ({
 vi.mock("~/shared/utils", () => ({
   buildWebAppUrl: vi.fn(),
   DEVICE_FINGERPRINT_HEADER: "x-device-fingerprint",
+  hostedDesktopWebFlowsEnabled: vi.fn(() => true),
   id: vi.fn(() => "request-id"),
   REQUEST_ID_HEADER: "x-request-id",
 }));

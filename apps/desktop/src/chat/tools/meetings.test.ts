@@ -19,6 +19,8 @@ import {
   buildListMeetingsTool,
 } from "./meetings";
 
+import { getAiKnowledgeWindow } from "~/shared/ai-window";
+
 describe("canonical meeting chat tools", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,6 +76,38 @@ describe("canonical meeting chat tools", () => {
       limit: 20,
       offset: 0,
     });
+  });
+
+  it("omits meetings older than the Free 14-day window", async () => {
+    mocks.listMeetings.mockResolvedValue({
+      meetings: [
+        {
+          id: "recent",
+          title: "Today",
+          started_at: "2026-08-28T10:00:00.000Z",
+          created_at: "2026-08-28T10:00:00.000Z",
+        },
+        {
+          id: "old",
+          title: "Last month",
+          started_at: "2026-07-01T10:00:00.000Z",
+          created_at: "2026-07-01T10:00:00.000Z",
+        },
+      ],
+      pagination: { next_offset: null, returned: 2, limit: 20, offset: 0 },
+    });
+
+    const result = await (
+      buildListMeetingsTool({
+        getAiKnowledgeWindow: () =>
+          getAiKnowledgeWindow(false, new Date("2026-08-28T12:00:00Z")),
+      } as any) as any
+    ).execute({ limit: 20 });
+
+    expect(
+      result.meetings.map((meeting: { id: string }) => meeting.id),
+    ).toEqual(["recent"]);
+    expect(result.notice).toContain("last 14 days");
   });
 
   it("matches the canonical MCP tool names, descriptions, and input schemas", async () => {

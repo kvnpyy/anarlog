@@ -40,6 +40,7 @@ const mocks = vi.hoisted(() => ({
   allowReconnectedCalendarConnections: vi.fn(),
   syncCalendarEvents: vi.fn(),
   contextMenus: [] as ContextMenuItem[][],
+  upgradeToPro: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/plugin-os", () => ({
@@ -54,7 +55,7 @@ vi.mock("~/auth/billing-context", () => ({
   useBillingAccess: () => ({
     isPaid: true,
     isPro: true,
-    upgradeToPro: vi.fn(),
+    upgradeToPro: mocks.upgradeToPro,
     isUpgradingToPro: false,
   }),
 }));
@@ -127,6 +128,8 @@ describe("CalendarSidebarContent", () => {
     mocks.syncCalendarEvents.mockReset();
     mocks.syncCalendarEvents.mockResolvedValue(undefined);
     mocks.contextMenus = [];
+    mocks.upgradeToPro.mockClear();
+    mocks.openIntegration.mockClear();
   });
 
   it("explains how to recover after Apple Calendar access is denied", () => {
@@ -208,5 +211,23 @@ describe("CalendarSidebarContent", () => {
       expect(mocks.syncCalendarEvents).toHaveBeenCalledOnce();
     });
     expect(mocks.calendar.reset).not.toHaveBeenCalled();
+  });
+
+  it("lets Google and Outlook connect without Pro", () => {
+    render(<CalendarSidebarContent />);
+
+    expect(screen.getByText("Google")).toBeTruthy();
+    expect(screen.getByText("Outlook")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Upgrade to Pro for Google" }),
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Google account" }));
+    expect(mocks.openIntegration).toHaveBeenCalledWith({
+      nangoIntegrationId: "google-calendar",
+      action: "connect",
+      returnTo: "calendar",
+    });
+    expect(mocks.upgradeToPro).not.toHaveBeenCalled();
   });
 });

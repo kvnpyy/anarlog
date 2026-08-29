@@ -36,8 +36,9 @@ html[data-live-caption] #root {
 
 @theme {
   --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-hand: "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive;
+    "Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+  --font-hand: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -61,7 +62,7 @@ html[data-live-caption] #root {
 
   --kbd-press-shadow-outer: rgba(0, 0, 0, 0.1);
   --kbd-press-shadow-inset: rgba(255, 255, 255, 0.8);
-  --selection-overlay: rgba(59, 130, 246, 0.3);
+  --selection-overlay: rgb(215 180 138 / 0.55);
 
   --animate-shimmer: shimmer 2s infinite;
   --animate-logo-shimmer-sweep: logo-shimmer-sweep 2.4s ease-in-out infinite;

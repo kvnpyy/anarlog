@@ -163,7 +163,7 @@ function ChatGroups({
 }: {
   chatScope: ChatScope;
   currentChatGroupId: string | undefined;
-  layout: "floating" | "right-panel";
+  layout: "floating" | "right-panel" | "inline";
   onSelectChat: (chatGroupId: string) => void;
   surface?: "light" | "dark";
 }) {

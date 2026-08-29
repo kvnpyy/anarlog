@@ -101,7 +101,7 @@ describe("WindowsTitleBar", () => {
     expect(screen.getByRole("menuitem", { name: "File" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Edit" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "View" })).toBeTruthy();
-    expect(screen.getByRole("menuitem", { name: "Help" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "Help" })).toBeNull();
 
     await waitFor(() => expect(mocks.isMaximized).toHaveBeenCalledOnce());
   });

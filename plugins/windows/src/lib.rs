@@ -161,7 +161,6 @@ impl WebviewHealthState {
         is_match
     }
 
-    #[cfg_attr(debug_assertions, allow(dead_code))]
     fn record_miss(&self, label: &str) -> bool {
         let mut missed_checks = self.missed_checks.lock().unwrap();
         let count = missed_checks.entry(label.to_string()).or_insert(0);
@@ -173,7 +172,6 @@ impl WebviewHealthState {
         self.missed_checks.lock().unwrap().remove(label);
     }
 
-    #[cfg_attr(debug_assertions, allow(dead_code))]
     fn begin_recovery(&self, label: &str) {
         let mut recovering_since = self.recovering_since.lock().unwrap();
         recovering_since.insert(label.to_string(), Instant::now());
@@ -194,7 +192,6 @@ impl WebviewHealthState {
     }
 }
 
-#[cfg_attr(debug_assertions, allow(dead_code))]
 pub(crate) fn is_recoverable_webview_url(url: &url::Url) -> bool {
     matches!(url.scheme(), "http" | "https" | "tauri") && url.host_str().is_some()
 }

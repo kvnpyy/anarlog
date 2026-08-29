@@ -44,10 +44,12 @@ import {
 import { trackAnalyticsEvent } from "~/analytics";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
+import { HOSTED_CONNECT_UNAVAILABLE_MESSAGE } from "~/shared/product";
 import {
   buildWebAppUrl,
   DEVICE_FINGERPRINT_HEADER,
   REQUEST_ID_HEADER,
+  hostedDesktopWebFlowsEnabled,
   id,
 } from "~/shared/utils";
 
@@ -528,6 +530,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [managesCloudsync, rejectAccountMismatch]);
 
   const signIn = useCallback(async () => {
+    if (!hostedDesktopWebFlowsEnabled()) {
+      sonnerToast.message(HOSTED_CONNECT_UNAVAILABLE_MESSAGE);
+      return;
+    }
+
     trackAnalyticsEvent("auth_started", {
       entry_point: "desktop_sign_in",
       method: "browser_handoff",

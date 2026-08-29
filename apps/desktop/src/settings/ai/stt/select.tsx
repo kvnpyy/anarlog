@@ -73,6 +73,7 @@ import { useAiProvidersState } from "~/settings/providers";
 import { useSetSettingValues } from "~/settings/queries";
 import { useConfigValues } from "~/shared/config";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
+import { LOCAL_ONLY, withoutHostedCloudProviders } from "~/shared/product";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
 import {
   canAppleSpeechTranscribe,
@@ -120,7 +121,9 @@ export function SelectProviderAndModel() {
     selectedSttModel,
     selectedProviderConfigured,
   );
-  const selectableProviders = PROVIDERS.filter(({ disabled }) => !disabled);
+  const selectableProviders = withoutHostedCloudProviders(PROVIDERS).filter(
+    ({ disabled }) => !disabled,
+  );
   const configuredProviderIds = getConfiguredProviderIds(
     selectableProviders,
     configuredProviders,
@@ -255,7 +258,7 @@ export function SelectProviderAndModel() {
                   provider.requirements,
                   "pro",
                 );
-                const locked = requiresPro && !billing.isPaid;
+                const locked = !LOCAL_ONLY && requiresPro && !billing.isPaid;
                 return (
                   <SelectItem
                     key={provider.id}
@@ -270,7 +273,7 @@ export function SelectProviderAndModel() {
                       <div className="flex items-center gap-2">
                         <ProviderIconSlot>{provider.icon}</ProviderIconSlot>
                         <span>{provider.displayName}</span>
-                        {requiresPro ? (
+                        {requiresPro && !LOCAL_ONLY ? (
                           <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] tracking-wide uppercase">
                             <Trans>Pro</Trans>
                           </span>
@@ -648,7 +651,7 @@ function useConfiguredMapping(): {
   });
 
   const providers = Object.fromEntries(
-    PROVIDERS.map((provider) => {
+    withoutHostedCloudProviders(PROVIDERS).map((provider) => {
       const config = configuredProviders[providerRowId("stt", provider.id)] as
         | AIProviderStorage
         | undefined;
