@@ -9,6 +9,7 @@ export type ChatScope = "general" | "automations";
 const messageMetadataSchema = z.object({
   chatScope: z.enum(["general", "automations"]).optional(),
   createdAt: z.number().optional(),
+  modelPrompt: z.string().optional(),
   contextRefs: z
     .array(
       z.discriminatedUnion("kind", [

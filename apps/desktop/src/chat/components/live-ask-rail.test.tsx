@@ -18,12 +18,18 @@ describe("LiveAskRail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Draft email" }));
 
     expect(onSendMessage).toHaveBeenCalledTimes(3);
-    expect(onSendMessage.mock.calls[0]?.[0]).toContain(
+    expect(onSendMessage.mock.calls[0]?.[0]).toBe("Catch me up");
+    expect(onSendMessage.mock.calls[0]?.[1]).toEqual([
+      { type: "text", text: "Catch me up" },
+    ]);
+    expect(onSendMessage.mock.calls[0]?.[3]).toContain(
       "Catch me up on this meeting",
     );
-    expect(onSendMessage.mock.calls[1]?.[0]).toContain("sound smart");
-    expect(onSendMessage.mock.calls[2]?.[0]).toContain("follow-up email");
-    expect(onSendMessage.mock.calls[2]?.[0]).toContain("plain text");
+    expect(onSendMessage.mock.calls[1]?.[0]).toBe("Sound smart");
+    expect(onSendMessage.mock.calls[1]?.[3]).toContain("sound smart");
+    expect(onSendMessage.mock.calls[2]?.[0]).toBe("Draft email");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("follow-up email");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("plain text");
   });
 
   it("warns that live ask needs a live STT model during batch-only capture", () => {

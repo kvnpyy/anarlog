@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const pluginCalendar = vi.hoisted(() => ({
   listConnectionIds: vi.fn(),
   listCalendars: vi.fn(),
+  listGoogleCalendarsDirect: vi.fn(),
 }));
 
 const storage = vi.hoisted(() => ({
@@ -14,12 +15,20 @@ const writeQueue = vi.hoisted(() => ({
   enqueueDatabaseWrite: vi.fn(),
 }));
 
+const googleStorage = vi.hoisted(() => ({
+  listGoogleCalendarConnectionIds: vi.fn(async () => [] as string[]),
+  getFreshGoogleCalendarAccessToken: vi.fn(),
+}));
+
 vi.mock("@anlg/plugin-calendar", () => ({
   commands: {
     listConnectionIds: pluginCalendar.listConnectionIds,
     listCalendars: pluginCalendar.listCalendars,
+    listGoogleCalendarsDirect: pluginCalendar.listGoogleCalendarsDirect,
   },
 }));
+
+vi.mock("~/calendar/google-oauth/storage", () => googleStorage);
 
 vi.mock("./storage", () => storage);
 vi.mock("~/db/write-queue", () => writeQueue);
@@ -47,6 +56,7 @@ describe("calendar sync context", () => {
         deleted_at: null,
       },
     ]);
+    googleStorage.listGoogleCalendarConnectionIds.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -162,5 +172,19 @@ describe("calendar sync context", () => {
     );
 
     expect(storage.applyCalendarInventory).not.toHaveBeenCalled();
+  });
+
+  test("discovers locally connected Google accounts without Anarlog login", async () => {
+    googleStorage.listGoogleCalendarConnectionIds.mockResolvedValue([
+      "local-google",
+    ]);
+    pluginCalendar.listConnectionIds.mockResolvedValue({
+      status: "error",
+      error: "not authenticated",
+    });
+
+    await expect(getProviderConnections()).resolves.toEqual([
+      { provider: "google", connection_ids: ["local-google"] },
+    ]);
   });
 });

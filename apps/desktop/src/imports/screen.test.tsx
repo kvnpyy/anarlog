@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   disconnectNangoImport: vi.fn(),
   signIn: vi.fn(),
   signedIn: true,
+  hostedImportConnect: true,
   connections: [] as Array<{
     connection_id: string;
     integration_id: string;
@@ -65,6 +66,10 @@ vi.mock("./connected-import", () => ({
     provider.directImport === "nango-oauth",
   isLocalConnectedImport: (provider: { directImport?: string }) =>
     provider.directImport === "mcp-oauth" || provider.directImport === "cli",
+  offersMeetingImportConnect: (provider: { directImport?: string }) =>
+    provider.directImport === "mcp-oauth" ||
+    provider.directImport === "cli" ||
+    (provider.directImport === "nango-oauth" && mocks.hostedImportConnect),
   nangoConnectionIsReady: (
     connection: { status?: string | null } | undefined,
   ) => Boolean(connection) && connection?.status !== "reconnect_required",
@@ -164,6 +169,7 @@ describe("MeetingImportScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.signedIn = true;
+    mocks.hostedImportConnect = true;
     mocks.connections = [];
     mocks.cancelConnectedImport.mockResolvedValue(true);
     mocks.connectNangoImport.mockResolvedValue({
@@ -405,6 +411,30 @@ describe("MeetingImportScreen", () => {
     ).toBeNull();
   });
 
+  it("treats Zoom and Meet as file import when hosted connect is unavailable", async () => {
+    mocks.hostedImportConnect = false;
+    mockDetected(["zoom", "google-meet", "granola"]);
+
+    renderImports();
+
+    expect(await screen.findByText("Zoom")).toBeTruthy();
+    expect(screen.getByText("Google Meet")).toBeTruthy();
+    expect(
+      screen.getAllByText(/Acorn records .+ on this computer/i),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", { name: "Connect & import" }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole("button", { name: "Choose files" }),
+    ).toHaveLength(2);
+    expect(
+      screen.getByText(/keep new meetings coming in while you switch/i),
+    ).toBeTruthy();
+    expect(mocks.connectNangoImport).not.toHaveBeenCalled();
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
+
   it("connects Plaud by running the local CLI instead of file-only import", async () => {
     mockDetected(["plaud"]);
     mocks.connectConnectedImport.mockResolvedValue({
@@ -425,7 +455,7 @@ describe("MeetingImportScreen", () => {
     expect(mocks.connectNangoImport).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        /Connected · New meetings are imported automatically while Anarlog is running/i,
+        /Connected · New meetings are imported automatically while Acorn is running/i,
       ),
     ).toBeTruthy();
     expect(
@@ -453,7 +483,7 @@ describe("MeetingImportScreen", () => {
     expect(mocks.connectNangoImport).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        /Connected · New meetings are imported automatically while Anarlog is running/i,
+        /Connected · New meetings are imported automatically while Acorn is running/i,
       ),
     ).toBeTruthy();
   });

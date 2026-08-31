@@ -49,13 +49,15 @@ describe("ChatBodyEmpty", () => {
     fireEvent.click(decisions);
 
     expect(onSendMessage).toHaveBeenCalledWith(
-      "What were the key decisions that have been made?",
+      "Find key decisions.",
       [
         {
           type: "text",
-          text: "What were the key decisions that have been made?",
+          text: "Find key decisions.",
         },
       ],
+      undefined,
+      "What were the key decisions that have been made?",
     );
   });
 
@@ -70,13 +72,15 @@ describe("ChatBodyEmpty", () => {
     );
 
     expect(onSendMessage).toHaveBeenCalledWith(
-      expect.stringContaining("Catch me up on my recent meetings"),
+      "Catch me up on recent meetings.",
       [
         {
           type: "text",
-          text: expect.stringContaining("Catch me up on my recent meetings"),
+          text: "Catch me up on recent meetings.",
         },
       ],
+      undefined,
+      expect.stringContaining("Catch me up on my recent meetings"),
     );
   });
 });

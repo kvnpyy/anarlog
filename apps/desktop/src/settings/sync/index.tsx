@@ -213,7 +213,7 @@ function SyncLogEntry({ entry }: { entry: CloudsyncActivityEntry }) {
         {entry.error && (
           <p className="mt-1 text-xs break-words text-red-500">
             <Trans>
-              Anarlog couldn't complete this sync. Your notes are safe on this
+              Acorn couldn't complete this sync. Your notes are safe on this
               device.
             </Trans>
           </p>
@@ -551,7 +551,7 @@ export function SettingsSync() {
             <div>
               <h3 className="text-sm font-medium">
                 {session ? (
-                  <Trans>Cloud sync is available with Anarlog Pro</Trans>
+                  <Trans>Cloud sync is available with Acorn Pro</Trans>
                 ) : (
                   <Trans>Sign in to use cloud sync</Trans>
                 )}
@@ -584,7 +584,7 @@ export function SettingsSync() {
         return {
           kind: "local" as const,
           label: t`Waiting for device approval`,
-          description: t`Open Anarlog on a device that already has access, then approve this device.`,
+          description: t`Open Acorn on a device that already has access, then approve this device.`,
         };
       }
       if (credentialBlock === "device_limit") {
@@ -600,7 +600,7 @@ export function SettingsSync() {
         description:
           credentialBlock === "setup_required"
             ? t`Set up your recovery key to start encrypted cloud sync.`
-            : t`Anarlog could not start cloud sync on this device.`,
+            : t`Acorn could not start cloud sync on this device.`,
       };
     }
     if (statusQuery.isError) {
@@ -623,8 +623,8 @@ export function SettingsSync() {
           status.last_error_kind === "auth"
             ? t`Sign out and sign in again to resume cloud sync.`
             : status.last_error_kind === "transient"
-              ? t`Anarlog will retry automatically.`
-              : t`Anarlog will keep retrying.`,
+              ? t`Acorn will retry automatically.`
+              : t`Acorn will keep retrying.`,
       };
     }
     if (status?.activity_paused) {
@@ -829,8 +829,8 @@ export function SettingsSync() {
                 <Trans>
                   Cloud sync and {cloudStorageService} can both change the same
                   files, which can create conflicted copies and incomplete
-                  recordings. Move your Anarlog storage location to a folder
-                  that {cloudStorageService} does not sync.
+                  recordings. Move your Acorn storage location to a folder that{" "}
+                  {cloudStorageService} does not sync.
                 </Trans>
               </p>
               <Button
@@ -1089,7 +1089,7 @@ export function SettingsSync() {
             </DialogTitle>
             <DialogDescription>
               <Trans>
-                Install Anarlog and sign in with this account on the new device.
+                Install Acorn and sign in with this account on the new device.
                 It will appear here automatically so you can approve it.
               </Trans>
             </DialogDescription>

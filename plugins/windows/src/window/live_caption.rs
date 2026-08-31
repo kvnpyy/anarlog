@@ -263,7 +263,7 @@ mod platform {
             WINDOW_LABEL,
             WebviewUrl::App("app/live-caption".into()),
         )
-        .title("Anarlog")
+        .title(super::product_window_title(app))
         .inner_size(width, height)
         .visible(false)
         .focused(false)

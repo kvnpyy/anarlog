@@ -149,7 +149,6 @@ describe("SettingsNav", () => {
       "Contacts",
       "Templates",
       "AI",
-      "Transcription",
       "Intelligence",
       "Dictionary",
       "Data",
@@ -251,15 +250,11 @@ describe("SettingsNav", () => {
     );
   });
 
-  it("opens Transcription inside settings", () => {
+  it("hides Transcription in local-only mode", () => {
     render(<SettingsNav />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Transcription" }));
-
-    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
-      mocks.currentTab,
-      { tab: "transcription" },
-    );
+    expect(screen.queryByText("Transcription")).toBeNull();
+    expect(screen.getByText("Intelligence")).toBeTruthy();
   });
 
   it("opens Dictionary inside settings", () => {

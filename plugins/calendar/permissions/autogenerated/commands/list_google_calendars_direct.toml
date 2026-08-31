@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-list-google-calendars-direct"
+description = "Enables the list_google_calendars_direct command without any pre-configured scope."
+commands.allow = ["list_google_calendars_direct"]
+
+[[permission]]
+identifier = "deny-list-google-calendars-direct"
+description = "Denies the list_google_calendars_direct command without any pre-configured scope."
+commands.deny = ["list_google_calendars_direct"]

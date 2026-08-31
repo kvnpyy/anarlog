@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
     error: null as string | null,
   },
   openIntegration: vi.fn(),
+  connectGoogle: vi.fn(),
   removeDisconnectedCalendarConnection: vi.fn(),
   allowReconnectedCalendarConnections: vi.fn(),
   syncCalendarEvents: vi.fn(),
@@ -62,6 +63,21 @@ vi.mock("~/auth/billing-context", () => ({
 
 vi.mock("~/auth/useConnections", () => ({
   useConnections: () => ({
+    data: [],
+    isPending: false,
+    isError: false,
+  }),
+}));
+
+vi.mock("~/calendar/google-oauth", () => ({
+  useGoogleCalendarConnect: () => ({
+    connectGoogle: mocks.connectGoogle,
+    openingAction: null,
+  }),
+}));
+
+vi.mock("~/calendar/google-oauth/use-connections", () => ({
+  useMergedCalendarConnections: () => ({
     data: [],
     isPending: false,
     isError: false,
@@ -130,6 +146,7 @@ describe("CalendarSidebarContent", () => {
     mocks.contextMenus = [];
     mocks.upgradeToPro.mockClear();
     mocks.openIntegration.mockClear();
+    mocks.connectGoogle.mockClear();
   });
 
   it("explains how to recover after Apple Calendar access is denied", () => {
@@ -223,11 +240,8 @@ describe("CalendarSidebarContent", () => {
     ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Add Google account" }));
-    expect(mocks.openIntegration).toHaveBeenCalledWith({
-      nangoIntegrationId: "google-calendar",
-      action: "connect",
-      returnTo: "calendar",
-    });
+    expect(mocks.connectGoogle).toHaveBeenCalledWith({ action: "connect" });
+    expect(mocks.openIntegration).not.toHaveBeenCalled();
     expect(mocks.upgradeToPro).not.toHaveBeenCalled();
   });
 });

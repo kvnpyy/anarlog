@@ -47,12 +47,14 @@ function SettingsView({ tab }: { tab: Extract<Tab, { type: "settings" }> }) {
         ? "dictionary"
         : requestedTab === "audio"
           ? "meetings"
-          : LOCAL_ONLY &&
-              (tab.state.tab === "account" ||
-                tab.state.tab === "sync" ||
-                tab.state.tab === "team")
-            ? "app"
-            : (tab.state.tab ?? "app");
+          : LOCAL_ONLY && tab.state.tab === "transcription"
+            ? "intelligence"
+            : LOCAL_ONLY &&
+                (tab.state.tab === "account" ||
+                  tab.state.tab === "sync" ||
+                  tab.state.tab === "team")
+              ? "app"
+              : (tab.state.tab ?? "app");
 
   const renderContent = () => {
     switch (activeTab) {

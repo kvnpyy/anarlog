@@ -30,6 +30,7 @@ import {
   type ProviderEligibilityContext,
 } from "~/settings/ai/shared/eligibility";
 import { useAiProvider } from "~/settings/providers";
+import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
 import { useConfigValues } from "~/shared/config";
 
 type LanguageModelV3 = Parameters<typeof wrapLanguageModel>[0]["model"];
@@ -332,6 +333,35 @@ const createLanguageModel = (
     }
 
     case "openai": {
+      const provider = createOpenAI({
+        fetch: tauriFetch,
+        baseURL: conn.baseUrl,
+        apiKey: conn.apiKey,
+      });
+      return wrapWithThinkingMiddleware(provider(conn.modelId));
+    }
+
+    case "acorn": {
+      const kind = getAcornDefaultLlm()?.kind ?? "openai";
+      if (kind === "anthropic") {
+        const provider = createAnthropic({
+          fetch: tauriFetch,
+          apiKey: conn.apiKey,
+          headers: {
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+          },
+        });
+        return wrapWithThinkingMiddleware(provider(conn.modelId));
+      }
+      if (kind === "google") {
+        const provider = createGoogleGenerativeAI({
+          fetch: tauriFetch,
+          baseURL: conn.baseUrl,
+          apiKey: conn.apiKey,
+        });
+        return wrapWithThinkingMiddleware(provider(conn.modelId));
+      }
       const provider = createOpenAI({
         fetch: tauriFetch,
         baseURL: conn.baseUrl,

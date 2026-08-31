@@ -44,7 +44,7 @@ import {
 import { trackAnalyticsEvent } from "~/analytics";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
-import { HOSTED_CONNECT_UNAVAILABLE_MESSAGE } from "~/shared/product";
+import { HOSTED_SIGN_IN_UNAVAILABLE_MESSAGE } from "~/shared/product";
 import {
   buildWebAppUrl,
   DEVICE_FINGERPRINT_HEADER,
@@ -219,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       sonnerToast.error(
-        t`The notes on this device are linked to another Anarlog account. Sign in with the account previously used here.`,
+        t`The notes on this device are linked to another Acorn account. Sign in with the account previously used here.`,
         { id: ACCOUNT_MISMATCH_TOAST_ID },
       );
       await rejectAuthChange(transition, true);
@@ -531,7 +531,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async () => {
     if (!hostedDesktopWebFlowsEnabled()) {
-      sonnerToast.message(HOSTED_CONNECT_UNAVAILABLE_MESSAGE);
+      sonnerToast.message(HOSTED_SIGN_IN_UNAVAILABLE_MESSAGE);
       return;
     }
 

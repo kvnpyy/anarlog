@@ -9,6 +9,8 @@ Default permissions for the plugin
 - `allow-list-connection-ids`
 - `allow-list-calendars`
 - `allow-list-events`
+- `allow-list-google-calendars-direct`
+- `allow-list-google-events-direct`
 - `allow-open-calendar`
 - `allow-create-event`
 
@@ -173,6 +175,58 @@ Enables the list_events command without any pre-configured scope.
 <td>
 
 Denies the list_events command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:allow-list-google-calendars-direct`
+
+</td>
+<td>
+
+Enables the list_google_calendars_direct command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:deny-list-google-calendars-direct`
+
+</td>
+<td>
+
+Denies the list_google_calendars_direct command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:allow-list-google-events-direct`
+
+</td>
+<td>
+
+Enables the list_google_events_direct command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:deny-list-google-events-direct`
+
+</td>
+<td>
+
+Denies the list_google_events_direct command without any pre-configured scope.
 
 </td>
 </tr>

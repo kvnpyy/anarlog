@@ -129,7 +129,7 @@ export function SyncStatusIndicator() {
         return {
           kind: "connecting" as const,
           label: t`Waiting for device approval`,
-          description: t`Open Anarlog on a device that already has access, then approve this device.`,
+          description: t`Open Acorn on a device that already has access, then approve this device.`,
         };
       case "identity_mismatch":
         return {
@@ -146,8 +146,8 @@ export function SyncStatusIndicator() {
       case "not_entitled":
         return {
           kind: "error" as const,
-          label: t`Anarlog Pro required`,
-          description: t`Anarlog Pro is required to use cloud sync.`,
+          label: t`Acorn Pro required`,
+          description: t`Acorn Pro is required to use cloud sync.`,
         };
       case "reauth_required":
         return {
@@ -175,7 +175,7 @@ export function SyncStatusIndicator() {
       return {
         kind: "error" as const,
         label: t`Sync status unavailable`,
-        description: t`Anarlog couldn't read cloud sync status. Your notes are still available locally.`,
+        description: t`Acorn couldn't read cloud sync status. Your notes are still available locally.`,
       };
     }
 
@@ -218,7 +218,7 @@ export function SyncStatusIndicator() {
       return {
         kind: "error" as const,
         label: t`Sync issue`,
-        description: t`Anarlog will retry automatically. This does not affect your notes.`,
+        description: t`Acorn will retry automatically. This does not affect your notes.`,
       };
     }
 
@@ -226,7 +226,7 @@ export function SyncStatusIndicator() {
       return {
         kind: "error" as const,
         label: t`Cloud sync delayed`,
-        description: t`Anarlog will keep retrying in the background. Your notes remain available locally.`,
+        description: t`Acorn will keep retrying in the background. Your notes remain available locally.`,
       };
     }
 
@@ -234,7 +234,7 @@ export function SyncStatusIndicator() {
       return {
         kind: "syncing" as const,
         label: t`Restoring cloud sync...`,
-        description: t`Anarlog is repairing cloud sync in the background. Your notes remain available locally.`,
+        description: t`Acorn is repairing cloud sync in the background. Your notes remain available locally.`,
       };
     }
 

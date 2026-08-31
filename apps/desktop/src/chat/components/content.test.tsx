@@ -266,6 +266,7 @@ describe("ChatContent", () => {
         [{ type: "text", text: "Queued follow-up" }],
         sendMessage,
         [{ kind: "session", key: "session:auto", sessionId: "s1" }],
+        undefined,
       );
     });
   });
@@ -359,6 +360,36 @@ describe("ChatContent", () => {
     expect(screen.getByRole("status").textContent).toContain(
       "Live Ask needs a live transcription model",
     );
+  });
+
+  it("queues live-ask recipes with the short button label", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="streaming"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        isRecording
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound smart" }));
+
+    expect(
+      screen.getByRole("button", {
+        name: "Remove queued message: Sound smart",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/Using only the in-progress transcript/),
+    ).toBeNull();
   });
 
   it("shows a thinking status above the composer while a reply is in flight", () => {

@@ -129,7 +129,7 @@ export function SettingsTeam() {
             </div>
             <div>
               <h3 className="text-sm font-medium">
-                <Trans>Anarlog Pro required</Trans>
+                <Trans>Acorn Pro required</Trans>
               </h3>
               <p className="text-muted-foreground mt-1 text-xs leading-5">
                 <Trans>

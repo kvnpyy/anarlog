@@ -108,4 +108,33 @@ describe("CustomChatTransport", () => {
     expect(serialized).toContain("Let's ship Friday");
     expect(serialized).toContain("Catch me up");
   });
+
+  it("sends the hidden model prompt while keeping the short label off the model", async () => {
+    const transport = new CustomChatTransport({} as never, {});
+
+    await transport.sendMessages({
+      abortSignal: new AbortController().signal,
+      chatId: "chat-1",
+      messageId: undefined,
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "Sound smart" }],
+          metadata: {
+            modelPrompt:
+              "Help me sound smart in this meeting. Using only the in-progress transcript.",
+          },
+        },
+      ],
+      trigger: "submit-message",
+    });
+
+    const streamArgs = mocks.agentStream.mock.calls[0]?.[0] as {
+      messages: unknown;
+    };
+    const serialized = JSON.stringify(streamArgs.messages);
+    expect(serialized).toContain("Help me sound smart in this meeting");
+    expect(serialized).not.toContain("Sound smart");
+  });
 });

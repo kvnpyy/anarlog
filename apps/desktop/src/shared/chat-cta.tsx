@@ -34,7 +34,7 @@ export function ChatCTA({
       type="button"
       data-chat-cta-trigger
       data-chat-cta-variant={variant}
-      aria-label={ariaLabel ?? t`Ask Anarlog anything`}
+      aria-label={ariaLabel ?? t`Ask Acorn anything`}
       onClick={handleClick}
       className={cn([
         "group/anarlog-chat-cta relative h-10 max-w-full cursor-text focus-visible:outline-none",

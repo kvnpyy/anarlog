@@ -78,7 +78,7 @@ function ProfileSettingsForm({
         <SettingsPageTitle title={<Trans>Profile</Trans>} />
         <p className="text-muted-foreground max-w-xl text-sm leading-6">
           <Trans>
-            Tell Anarlog who you are so Ask, recaps, and drafts can match your
+            Tell Acorn who you are so Ask, recaps, and drafts can match your
             role and the work you care about.
           </Trans>
         </p>
@@ -134,7 +134,7 @@ function ProfileSettingsForm({
           {(field) => (
             <ProfileField
               id="user-profile-context"
-              label={<Trans>What should Anarlog know?</Trans>}
+              label={<Trans>What should Acorn know?</Trans>}
               description={
                 <Trans>
                   Teams you work with, products you own, or how you like notes

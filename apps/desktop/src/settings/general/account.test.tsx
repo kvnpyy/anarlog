@@ -110,7 +110,7 @@ describe("SettingsAccount", () => {
 
     expect(mocks.signOut).not.toHaveBeenCalled();
     expect(
-      screen.getByRole("heading", { name: "Sign out of Anarlog?" }),
+      screen.getByRole("heading", { name: "Sign out of Acorn?" }),
     ).toBeTruthy();
     expect(screen.getByRole("dialog").className).toContain("max-w-[320px]");
 

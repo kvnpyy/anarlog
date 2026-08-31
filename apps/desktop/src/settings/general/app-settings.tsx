@@ -13,7 +13,7 @@ import {
 export const privacyMessages = {
   title: msg`Privacy`,
   posthogTitle: msg`Share usage data`,
-  posthogDescription: msg`Help improve Anarlog with anonymous usage data.`,
+  posthogDescription: msg`Help improve Acorn with anonymous usage data.`,
 };
 
 interface SettingItem {

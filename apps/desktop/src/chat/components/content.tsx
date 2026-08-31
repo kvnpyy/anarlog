@@ -28,6 +28,7 @@ type QueuedChatMessage = {
   content: string;
   parts: AnlgUIMessage["parts"];
   contextRefs: ContextRef[];
+  modelPrompt?: string;
 };
 
 const EMPTY_QUEUED_MESSAGES: readonly QueuedChatMessage[] = Object.freeze([]);
@@ -69,6 +70,7 @@ export function ChatContent({
     parts: AnlgUIMessage["parts"],
     sendMessage: ChatMessageSender,
     contextRefs?: ContextRef[],
+    modelPrompt?: string,
   ) => void;
   contextEntities: DisplayEntity[];
   pendingRefs: ContextRef[];
@@ -131,6 +133,7 @@ export function ChatContent({
       content: string,
       parts: AnlgUIMessage["parts"],
       contextRefs?: ContextRef[],
+      modelPrompt?: string,
     ) => {
       const mergedContextRefs = mergeContextRefs(contextRefs);
 
@@ -142,13 +145,20 @@ export function ChatContent({
             content,
             parts,
             contextRefs: mergedContextRefs,
+            modelPrompt,
           },
         ]);
         return;
       }
 
       setAwaitingReply(true);
-      handleSendMessage(content, parts, sendMessage, mergedContextRefs);
+      handleSendMessage(
+        content,
+        parts,
+        sendMessage,
+        mergedContextRefs,
+        modelPrompt,
+      );
     },
     [
       handleSendMessage,
@@ -191,6 +201,7 @@ export function ChatContent({
         nextMessage.parts,
         sendMessage,
         nextMessage.contextRefs,
+        nextMessage.modelPrompt,
       );
     } finally {
       dequeueInFlightRef.current = false;

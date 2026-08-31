@@ -13,8 +13,13 @@ export function sortProviders<T extends Sortable>(
   );
 
   return [...providers].sort((a, b) => {
-    if (a.id === "anarlog") return -1;
-    if (b.id === "anarlog") return 1;
+    const aPinned = a.id === "anarlog" || a.id === "acorn";
+    const bPinned = b.id === "anarlog" || b.id === "acorn";
+    if (aPinned !== bPinned) {
+      return aPinned ? -1 : 1;
+    }
+    if (a.id === "anarlog" && b.id === "acorn") return -1;
+    if (a.id === "acorn" && b.id === "anarlog") return 1;
 
     if (a.id === "custom") return 1;
     if (b.id === "custom") return -1;

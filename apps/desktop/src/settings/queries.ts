@@ -24,7 +24,12 @@ import {
   type SettingValue,
   type SettingValues,
 } from "~/settings/schema";
+import {
+  getAcornDefaultLlm,
+  getAcornDefaultStt,
+} from "~/shared/acorn-defaults";
 import { isAppStoreBuild } from "~/shared/app-store";
+import { LOCAL_ONLY } from "~/shared/product";
 import { isConfiguredSttModel, isOnDeviceSttModel } from "~/stt/capabilities";
 import {
   getDefaultSttModel,
@@ -145,6 +150,20 @@ export async function initializeApplicationSettings(): Promise<void> {
     const defaultModel = getDefaultSttModel(normalizedSttSelection.provider);
     if (defaultModel) {
       updates.current_stt_model = defaultModel;
+    }
+  }
+
+  if (LOCAL_ONLY) {
+    const defaultStt = getAcornDefaultStt();
+    if (defaultStt && !stored.values.current_stt_provider) {
+      updates.current_stt_provider = defaultStt.providerId;
+      updates.current_stt_model = defaultStt.model;
+    }
+
+    const defaultLlm = getAcornDefaultLlm();
+    if (defaultLlm && !stored.values.current_llm_provider) {
+      updates.current_llm_provider = defaultLlm.providerId;
+      updates.current_llm_model = defaultLlm.model;
     }
   }
 

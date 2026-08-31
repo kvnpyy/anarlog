@@ -8,9 +8,18 @@ const MAX_IMPORT_FILE_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_TOTAL_IMPORT_BYTES: u64 = 100 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS: &[&str] = &["csv", "json", "md", "markdown", "srt", "txt", "vtt"];
 
+fn product_display_name(app: &tauri::AppHandle<tauri::Wry>) -> String {
+    let name = app.config().product_name.as_deref().unwrap_or("Acorn");
+    name.strip_suffix(" Dev")
+        .or_else(|| name.strip_suffix(" Staging"))
+        .unwrap_or(name)
+        .to_string()
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn begin_connected_import(
+    app: tauri::AppHandle<tauri::Wry>,
     provider_id: String,
     mcp_state: tauri::State<'_, crate::connected_mcp::ConnectedImportOAuthState>,
     cli_state: tauri::State<'_, crate::connected_cli::ConnectedImportCliState>,
@@ -18,7 +27,12 @@ pub async fn begin_connected_import(
     if crate::connected_cli::is_cli_provider(&provider_id) {
         crate::connected_cli::begin_connection(&provider_id, &cli_state).await
     } else {
-        crate::connected_mcp::begin_connection(&provider_id, &mcp_state).await
+        crate::connected_mcp::begin_connection(
+            &provider_id,
+            &product_display_name(&app),
+            &mcp_state,
+        )
+        .await
     }
 }
 

@@ -132,7 +132,7 @@ msgid "a week ago"
 msgstr ""
 
 #: src/settings/developers/cloud-api.tsx
-msgid "Access meetings remotely through the REST API and MCP connectors with Anarlog Pro."
+msgid "Access meetings remotely through the REST API and MCP connectors with Acorn Pro."
 msgstr ""
 
 #: src/shared-notes/index.tsx
@@ -164,6 +164,46 @@ msgstr ""
 msgid "Acme"
 msgstr ""
 
+#: src/settings/developers/cli.tsx
+msgid "Acorn CLI"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Acorn could not generate this summary because you were not signed in. Sign in, then try again."
+msgstr ""
+
+#: src/shared-notes/index.tsx
+msgid "Acorn could not read the local shared-note cache."
+msgstr ""
+
+#: src/settings/sync/index.tsx
+msgid "Acorn could not start cloud sync on this device."
+msgstr ""
+
+#: src/settings/sync/index.tsx
+msgid "Acorn couldn't complete this sync. Your notes are safe on this device."
+msgstr ""
+
+#: src/main/sync-status.tsx
+msgid "Acorn couldn't read cloud sync status. Your notes are still available locally."
+msgstr ""
+
+#: src/settings/general/account.tsx
+msgid "Acorn couldn't sign you out. Try again."
+msgstr ""
+
+#: src/lock/gate.tsx
+msgid "Acorn is Locked"
+msgstr ""
+
+#: src/main/sync-status.tsx
+msgid "Acorn is repairing cloud sync in the background. Your notes remain available locally."
+msgstr ""
+
+#: src/session-sharing/access-management.tsx
+msgid "Acorn member"
+msgstr ""
+
 #: src/sidebar/settings.tsx
 msgid "Acorn Pro"
 msgstr ""
@@ -171,6 +211,51 @@ msgstr ""
 #. placeholder {0}: item.label
 #: src/sidebar/settings.tsx
 msgid "Acorn Pro for {0}"
+msgstr ""
+
+#: src/main/sync-status.tsx
+msgid "Acorn Pro is required to use cloud sync."
+msgstr ""
+
+#: src/main/sync-status.tsx
+#: src/settings/team/index.tsx
+msgid "Acorn Pro required"
+msgstr ""
+
+#. placeholder {0}: provider.name
+#: src/imports/screen.tsx
+msgid "Acorn records {0} on this computer. Import past transcripts from files — cloud history isn’t available yet."
+msgstr ""
+
+#. placeholder {0}: statuses[0].displayName
+#: src/settings/developers/skills.tsx
+msgid "Acorn skill added to {0}"
+msgstr ""
+
+#. placeholder {0}: statuses.length
+#: src/settings/developers/skills.tsx
+msgid "Acorn skill added to {0} agents"
+msgstr ""
+
+#: src/session-sharing/access-management.tsx
+msgid "Acorn user"
+msgstr ""
+
+#: src/main/sync-status.tsx
+msgid "Acorn will keep retrying in the background. Your notes remain available locally."
+msgstr ""
+
+#: src/settings/sync/index.tsx
+msgid "Acorn will keep retrying."
+msgstr ""
+
+#: src/settings/sync/index.tsx
+msgid "Acorn will retry automatically."
+msgstr ""
+
+#: src/main/sync-status.tsx
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Acorn will retry automatically. This does not affect your notes."
 msgstr ""
 
 #: src/settings/automations/index.tsx
@@ -378,86 +463,6 @@ msgstr ""
 msgid "Analyzing structure..."
 msgstr ""
 
-#: src/settings/developers/cli.tsx
-msgid "Anarlog CLI"
-msgstr ""
-
-#: src/session/components/note-input/enhanced/enhance-error.tsx
-msgid "Anarlog could not generate this summary because you were not signed in. Sign in, then try again."
-msgstr ""
-
-#: src/shared-notes/index.tsx
-msgid "Anarlog could not read the local shared-note cache."
-msgstr ""
-
-#: src/settings/sync/index.tsx
-msgid "Anarlog could not start cloud sync on this device."
-msgstr ""
-
-#: src/settings/sync/index.tsx
-msgid "Anarlog couldn't complete this sync. Your notes are safe on this device."
-msgstr ""
-
-#: src/main/sync-status.tsx
-msgid "Anarlog couldn't read cloud sync status. Your notes are still available locally."
-msgstr ""
-
-#: src/settings/general/account.tsx
-msgid "Anarlog couldn't sign you out. Try again."
-msgstr ""
-
-#: src/lock/gate.tsx
-msgid "Anarlog is Locked"
-msgstr ""
-
-#: src/main/sync-status.tsx
-msgid "Anarlog is repairing cloud sync in the background. Your notes remain available locally."
-msgstr ""
-
-#: src/session-sharing/access-management.tsx
-msgid "Anarlog member"
-msgstr ""
-
-#: src/main/sync-status.tsx
-msgid "Anarlog Pro is required to use cloud sync."
-msgstr ""
-
-#: src/main/sync-status.tsx
-#: src/settings/team/index.tsx
-msgid "Anarlog Pro required"
-msgstr ""
-
-#. placeholder {0}: statuses[0].displayName
-#: src/settings/developers/skills.tsx
-msgid "Anarlog skill added to {0}"
-msgstr ""
-
-#. placeholder {0}: statuses.length
-#: src/settings/developers/skills.tsx
-msgid "Anarlog skill added to {0} agents"
-msgstr ""
-
-#: src/session-sharing/access-management.tsx
-msgid "Anarlog user"
-msgstr ""
-
-#: src/main/sync-status.tsx
-msgid "Anarlog will keep retrying in the background. Your notes remain available locally."
-msgstr ""
-
-#: src/settings/sync/index.tsx
-msgid "Anarlog will keep retrying."
-msgstr ""
-
-#: src/settings/sync/index.tsx
-msgid "Anarlog will retry automatically."
-msgstr ""
-
-#: src/main/sync-status.tsx
-#: src/settings/general/storage/legacy-cleanup.tsx
-msgid "Anarlog will retry automatically. This does not affect your notes."
-msgstr ""
-
 #: src/templates/template-icon-picker.tsx
 msgid "Animals & Nature"
 msgstr ""
@@ -529,6 +534,10 @@ msgstr ""
 msgid "Approved — waiting for this device to finish"
 msgstr ""
 
+#: src/shared/chat-cta.tsx
+msgid "Ask Acorn anything"
+msgstr ""
+
 #: src/chat/components/body/empty.tsx
 msgid "Ask across all your meetings."
 msgstr ""
@@ -536,10 +545,6 @@ msgstr ""
 #: src/chat/components/content.tsx
 #: src/shared/chat-cta.tsx
 msgid "Ask across your meetings"
-msgstr ""
-
-#: src/shared/chat-cta.tsx
-msgid "Ask Anarlog anything"
 msgstr ""
 
 #: src/chat/components/input/index.tsx
@@ -556,7 +561,7 @@ msgid "Attach Markdown or text"
 msgstr ""
 
 #: src/templates/auto-format-examples-dialog.tsx
-msgid "Attach up to three past summaries you like. Anarlog will learn how you prefer meeting notes to be structured and written."
+msgid "Attach up to three past summaries you like. Acorn will learn how you prefer meeting notes to be structured and written."
 msgstr ""
 
 #: src/session-sharing/attachment-management.ts
@@ -589,7 +594,7 @@ msgid "Authenticating…"
 msgstr ""
 
 #: src/instruction/index.tsx
-msgid "Authorize access in your browser, then return to Anarlog."
+msgid "Authorize access in your browser, then return to Acorn."
 msgstr ""
 
 #: src/templates/auto-form.tsx
@@ -688,7 +693,7 @@ msgid "Browser handoff not working? Paste the callback link instead"
 msgstr ""
 
 #: src/settings/dictionary/index.tsx
-msgid "Build a custom dictionary with Anarlog Pro"
+msgid "Build a custom dictionary with Acorn Pro"
 msgstr ""
 
 #: src/settings/general/audio-settings.tsx
@@ -1009,7 +1014,7 @@ msgid "Cloud API enabled — 1 meeting uploaded"
 msgstr ""
 
 #: src/settings/developers/cloud-api.tsx
-msgid "Cloud API enabled, but existing meetings could not be uploaded. Anarlog will retry."
+msgid "Cloud API enabled, but existing meetings could not be uploaded. Acorn will retry."
 msgstr ""
 
 #: src/settings/developers/cloud-api.tsx
@@ -1029,7 +1034,7 @@ msgid "Cloud sync"
 msgstr ""
 
 #: src/settings/sync/index.tsx
-msgid "Cloud sync and {cloudStorageService} can both change the same files, which can create conflicted copies and incomplete recordings. Move your Anarlog storage location to a folder that {cloudStorageService} does not sync."
+msgid "Cloud sync and {cloudStorageService} can both change the same files, which can create conflicted copies and incomplete recordings. Move your Acorn storage location to a folder that {cloudStorageService} does not sync."
 msgstr ""
 
 #: src/main/sync-status.tsx
@@ -1046,7 +1051,7 @@ msgid "Cloud sync identity mismatch"
 msgstr ""
 
 #: src/settings/sync/index.tsx
-msgid "Cloud sync is available with Anarlog Pro"
+msgid "Cloud sync is available with Acorn Pro"
 msgstr ""
 
 #: src/auth/cloudsync.ts
@@ -1139,7 +1144,7 @@ msgid "Compare Free and Pro before you sign in."
 msgstr ""
 
 #: src/instruction/index.tsx
-msgid "Complete sign-in in your browser, then return to Anarlog."
+msgid "Complete sign-in in your browser, then return to Acorn."
 msgstr ""
 
 #: src/instruction/index.tsx
@@ -1240,7 +1245,7 @@ msgid "Connect your integration"
 msgstr ""
 
 #: src/imports/screen.tsx
-msgid "Connected · New meetings are imported automatically while Anarlog is running."
+msgid "Connected · New meetings are imported automatically while Acorn is running."
 msgstr ""
 
 #. placeholder {0}: subscriptionProvider.displayName
@@ -1279,7 +1284,7 @@ msgid "Continuing without trial"
 msgstr ""
 
 #: src/settings/general/meeting-settings.tsx
-msgid "Control listening without reopening Anarlog."
+msgid "Control listening without reopening Acorn."
 msgstr ""
 
 #: src/main/windows-title-bar.tsx
@@ -1322,6 +1327,10 @@ msgstr ""
 #. placeholder {0}: error.message
 #: src/settings/developers/cli.tsx
 msgid "Could not check the CLI: {0}"
+msgstr ""
+
+#: src/calendar/google-oauth/use-connect.ts
+msgid "Could not connect Google Calendar."
 msgstr ""
 
 #: src/settings/developers/cli.tsx
@@ -1995,11 +2004,11 @@ msgid "Find something someone said."
 msgstr ""
 
 #: src/instruction/index.tsx
-msgid "Finish checkout in your browser, then return to Anarlog."
+msgid "Finish checkout in your browser, then return to Acorn."
 msgstr ""
 
 #: src/settings/general/account.tsx
-msgid "Finish in your browser, then return to Anarlog."
+msgid "Finish in your browser, then return to Acorn."
 msgstr ""
 
 #: src/settings/general/account.tsx
@@ -2084,7 +2093,7 @@ msgid "Get started"
 msgstr ""
 
 #: src/settings/general/notification.tsx
-msgid "Get your attention when Anarlog finishes work in the background."
+msgid "Get your attention when Acorn finishes work in the background."
 msgstr ""
 
 #: src/sidebar/timeline/index.tsx
@@ -2133,7 +2142,7 @@ msgid "Help"
 msgstr ""
 
 #: src/settings/general/app-settings.tsx
-msgid "Help improve Anarlog with anonymous usage data."
+msgid "Help improve Acorn with anonymous usage data."
 msgstr ""
 
 #: src/chat/components/body/empty.tsx
@@ -2199,7 +2208,7 @@ msgid "Icons"
 msgstr ""
 
 #: src/settings/general/account.tsx
-msgid "If Anarlog stays closed, paste the link in the sign-in window."
+msgid "If Acorn stays closed, paste the link in the sign-in window."
 msgstr ""
 
 #: src/onboarding/index.tsx
@@ -2264,7 +2273,7 @@ msgid "Install"
 msgstr ""
 
 #: src/settings/sync/index.tsx
-msgid "Install Anarlog and sign in with this account on the new device. It will appear here automatically so you can approve it."
+msgid "Install Acorn and sign in with this account on the new device. It will appear here automatically so you can approve it."
 msgstr ""
 
 #: src/settings/developers/skills.tsx
@@ -2542,7 +2551,7 @@ msgid "Low-light canvas"
 msgstr ""
 
 #: src/settings/ai/shared/index.tsx
-msgid "macOS cannot access your login Keychain. Repairing briefly locks it and asks for your Mac password before Anarlog retries this API key."
+msgid "macOS cannot access your login Keychain. Repairing briefly locks it and asks for your Mac password before Acorn retries this API key."
 msgstr ""
 
 #: src/auth/cloudsync-keychain-repair.tsx
@@ -2904,7 +2913,7 @@ msgid "No page selected yet."
 msgstr ""
 
 #: src/settings/automations/starter-config.tsx
-msgid "No pages found. Share the page with the Anarlog integration in Notion first."
+msgid "No pages found. Share the page with the Acorn integration in Notion first."
 msgstr ""
 
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
@@ -3070,19 +3079,19 @@ msgstr ""
 msgid "Open {0} settings"
 msgstr ""
 
-#: src/chat/components/body/empty.tsx
-msgid "Open AI Settings"
-msgstr ""
-
 #: src/services/enhancer/summary-notification.ts
 #: src/services/event-notification/index.ts
 #: src/store/zustand/listener/general-batch.ts
-msgid "Open Anarlog"
+msgid "Open Acorn"
 msgstr ""
 
 #: src/main/sync-status.tsx
 #: src/settings/sync/index.tsx
-msgid "Open Anarlog on a device that already has access, then approve this device."
+msgid "Open Acorn on a device that already has access, then approve this device."
+msgstr ""
+
+#: src/chat/components/body/empty.tsx
+msgid "Open AI Settings"
 msgstr ""
 
 #: src/sidebar/timeline/index.tsx
@@ -3143,7 +3152,7 @@ msgstr ""
 
 #. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
 #: src/settings/general/permissions.tsx
-msgid "Opens System Settings and guides you to add Anarlog to the {0} list."
+msgid "Opens System Settings and guides you to add Acorn to the {0} list."
 msgstr ""
 
 #: src/calendar/components/apple/permission.tsx
@@ -3191,7 +3200,7 @@ msgid "Paste the authorization code"
 msgstr ""
 
 #: src/instruction/index.tsx
-msgid "Paste the browser URL here if the browser button did not reopen Anarlog."
+msgid "Paste the browser URL here if the browser button did not reopen Acorn."
 msgstr ""
 
 #: src/settings/ai/llm/subscriptions/connect.tsx
@@ -3584,11 +3593,11 @@ msgid "Require SSO"
 msgstr ""
 
 #: src/settings/privacy/index.tsx
-msgid "Require Touch ID or your password when opening Anarlog."
+msgid "Require Touch ID or your password when opening Acorn."
 msgstr ""
 
 #: src/settings/privacy/index.tsx
-msgid "Require Windows Hello face, PIN, or password when opening Anarlog."
+msgid "Require Windows Hello face, PIN, or password when opening Acorn."
 msgstr ""
 
 #: src/settings/team/index.tsx
@@ -3785,7 +3794,7 @@ msgid "Search or type owner/repo"
 msgstr ""
 
 #: src/settings/automations/starter-config.tsx
-msgid "Search pages shared with Anarlog…"
+msgid "Search pages shared with Acorn…"
 msgstr ""
 
 #: src/settings/ai/shared/provider-search.tsx
@@ -3894,7 +3903,7 @@ msgid "Send message"
 msgstr ""
 
 #: src/settings/privacy/index.tsx
-msgid "Send sanitized crash and error reports to help improve Anarlog."
+msgid "Send sanitized crash and error reports to help improve Acorn."
 msgstr ""
 
 #: src/automations/starters.tsx
@@ -4058,7 +4067,7 @@ msgid "Show app in Dock"
 msgstr ""
 
 #: src/settings/general/permissions.tsx
-msgid "Show Apple Calendar events in Anarlog."
+msgid "Show Apple Calendar events in Acorn."
 msgstr ""
 
 #: src/sidebar/timeline/index.tsx
@@ -4133,7 +4142,7 @@ msgid "Sign in for Pro"
 msgstr ""
 
 #: src/settings/general/account.tsx
-msgid "Sign in to Anarlog"
+msgid "Sign in to Acorn"
 msgstr ""
 
 #: src/imports/screen.tsx
@@ -4155,7 +4164,7 @@ msgid "Sign in to generate this summary"
 msgstr ""
 
 #: src/sidebar/toast/registry.tsx
-msgid "Sign in to get the most out of Anarlog"
+msgid "Sign in to get the most out of Acorn"
 msgstr ""
 
 #: src/onboarding/index.tsx
@@ -4179,7 +4188,7 @@ msgid "Sign in with ChatGPT Plus or Pro, then paste the redirect URL from your b
 msgstr ""
 
 #: src/settings/ai/llm/subscriptions/connect.tsx
-msgid "Sign in with ChatGPT Plus or Pro. We'll open Anarlog and finish connecting."
+msgid "Sign in with ChatGPT Plus or Pro. We'll open Acorn and finish connecting."
 msgstr ""
 
 #: src/settings/ai/llm/subscriptions/connect.tsx
@@ -4204,7 +4213,7 @@ msgid "Sign out and sign in again to resume cloud sync."
 msgstr ""
 
 #: src/settings/general/account.tsx
-msgid "Sign out of Anarlog?"
+msgid "Sign out of Acorn?"
 msgstr ""
 
 #: src/onboarding/account/after-login.tsx
@@ -4530,7 +4539,7 @@ msgid "Take the enhanced note with decisions and follow-ups."
 msgstr ""
 
 #: src/settings/developers/skills.tsx
-msgid "Teach coding agents when and how to use the Anarlog CLI and MCP"
+msgid "Teach coding agents when and how to use the Acorn CLI and MCP"
 msgstr ""
 
 #: src/settings/team/index.tsx
@@ -4547,7 +4556,7 @@ msgid "Teams you work with, products you own, or how you like notes written."
 msgstr ""
 
 #: src/settings/profile/index.tsx
-msgid "Tell Anarlog who you are so Ask, recaps, and drafts can match your role and the work you care about."
+msgid "Tell Acorn who you are so Ask, recaps, and drafts can match your role and the work you care about."
 msgstr ""
 
 #: src/settings/general/meeting-settings.tsx
@@ -4600,7 +4609,7 @@ msgid "The note may have been unshared or moved out of a workspace you can acces
 msgstr ""
 
 #: src/auth/context.tsx
-msgid "The notes on this device are linked to another Anarlog account. Sign in with the account previously used here."
+msgid "The notes on this device are linked to another Acorn account. Sign in with the account previously used here."
 msgstr ""
 
 #: src/shared/control.tsx
@@ -4646,7 +4655,7 @@ msgid "This device's sync identity does not match your account. Sign in again or
 msgstr ""
 
 #: src/session/components/outer-header/index.tsx
-msgid "This is a prerecorded demo, so your camera stays off. Click Join & record to see Anarlog in action."
+msgid "This is a prerecorded demo, so your camera stays off. Click Join & record to see Acorn in action."
 msgstr ""
 
 #: src/chat/components/session-provider.tsx
@@ -4672,7 +4681,7 @@ msgid "Tip: Add teammate names, acronyms, company jargon, and product terms."
 msgstr ""
 
 #: src/session/components/note-input/enhanced/streaming.tsx
-msgid "Tip: The Anarlog team loves our users!"
+msgid "Tip: The Acorn team loves our users!"
 msgstr ""
 
 #: src/sidebar/timeline/utils/index.ts
@@ -4767,7 +4776,7 @@ msgid "Turn assigned follow-ups into Linear issue drafts."
 msgstr ""
 
 #: src/calendar/components/apple/permission.tsx
-msgid "Turn on Anarlog in System Settings → Privacy & Security → Calendars, then return here."
+msgid "Turn on Acorn in System Settings → Privacy & Security → Calendars, then return here."
 msgstr ""
 
 #: src/settings/sync/index.tsx
@@ -4813,7 +4822,7 @@ msgid "Unlock sync"
 msgstr ""
 
 #: src/settings/ai/shared/index.tsx
-msgid "Unlock your login Keychain in the macOS prompt. Anarlog will retry saving this API key automatically."
+msgid "Unlock your login Keychain in the macOS prompt. Acorn will retry saving this API key automatically."
 msgstr ""
 
 #: src/contacts/details.tsx
@@ -4952,7 +4961,7 @@ msgid "Upload Transcript"
 msgstr ""
 
 #: src/settings/developers/cloud-api.tsx
-msgid "Uploads meeting content for remote access while Anarlog is closed."
+msgid "Uploads meeting content for remote access while Acorn is closed."
 msgstr ""
 
 #: src/settings/team/index.tsx
@@ -5020,7 +5029,7 @@ msgid "View"
 msgstr ""
 
 #: src/lock/gate.tsx
-msgid "View Anarlog"
+msgid "View Acorn"
 msgstr ""
 
 #: src/contacts/organization-details.tsx
@@ -5040,7 +5049,7 @@ msgid "View sync log"
 msgstr ""
 
 #: src/chat/components/input/use-dictation.ts
-msgid "Voice input is unavailable while Anarlog is recording a meeting."
+msgid "Voice input is unavailable while Acorn is recording a meeting."
 msgstr ""
 
 #: src/settings/general/notification.tsx
@@ -5081,7 +5090,7 @@ msgid "What are my action items from this meeting?"
 msgstr ""
 
 #: src/settings/profile/index.tsx
-msgid "What should Anarlog know?"
+msgid "What should Acorn know?"
 msgstr ""
 
 #: src/chat/components/body/empty.tsx
@@ -5227,7 +5236,7 @@ msgid "Your Pro trial just started"
 msgstr ""
 
 #: src/settings/general/e2ee-setup.tsx
-msgid "Your recovery key encrypts synced notes before they leave this device. Anarlog cannot read or recover it."
+msgid "Your recovery key encrypts synced notes before they leave this device. Acorn cannot read or recover it."
 msgstr ""
 
 #: src/settings/sync/index.tsx

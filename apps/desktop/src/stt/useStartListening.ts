@@ -15,6 +15,7 @@ import { trackAnalyticsEvent } from "~/analytics";
 import { useShell } from "~/contexts/shell";
 import { getSessionEvent } from "~/session/utils";
 import { useConfigValue } from "~/shared/config";
+import { LOCAL_ONLY } from "~/shared/product";
 import { useTabs } from "~/store/zustand/tabs";
 import {
   getLiveTranscriptionConfig,
@@ -96,7 +97,7 @@ export function useStartListening(sessionId: string) {
         );
       }
       sonnerToast.error(
-        "Anarlog could not safely start recording. Please try again.",
+        "Acorn could not safely start recording. Please try again.",
         { id: "capture-state-persist-failed" },
       );
       return;
@@ -129,7 +130,7 @@ export function useStartListening(sessionId: string) {
         );
       }
       sonnerToast.error(
-        "Anarlog could not safely start recording. Please try again.",
+        "Acorn could not safely start recording. Please try again.",
         { id: "capture-state-persist-failed" },
       );
       return;
@@ -172,7 +173,7 @@ export function useStartListening(sessionId: string) {
         await lifecycle.releaseCloudsyncLease();
       }
       sonnerToast.error(
-        "Anarlog could not safely start recording. Please try again.",
+        "Acorn could not safely start recording. Please try again.",
         { id: "capture-state-persist-failed" },
       );
       return;
@@ -188,7 +189,7 @@ export function useStartListening(sessionId: string) {
       } catch (error) {
         console.error("[listener] failed to clean up capture state", error);
         sonnerToast.error(
-          "Anarlog could not safely start recording. Please try again.",
+          "Acorn could not safely start recording. Please try again.",
           { id: "capture-state-persist-failed" },
         );
       } finally {
@@ -203,15 +204,17 @@ export function useStartListening(sessionId: string) {
         duration: Infinity,
         description:
           "Audio is being saved. Choose a transcription provider to ensure this recording can be transcribed.",
-        action: {
-          label: "Configure",
-          onClick: () => {
-            openNew({
-              type: "settings",
-              state: { tab: "transcription" },
-            });
-          },
-        },
+        action: LOCAL_ONLY
+          ? undefined
+          : {
+              label: "Configure",
+              onClick: () => {
+                openNew({
+                  type: "settings",
+                  state: { tab: "transcription" },
+                });
+              },
+            },
       });
     }
 
@@ -223,7 +226,7 @@ export function useStartListening(sessionId: string) {
         excludedTexts: [MEETING_DISCLOSURE_MESSAGE],
         onParticipantDeclined: () => {
           sonnerToast.warning(
-            "A participant declined recording. Anarlog stopped listening.",
+            "A participant declined recording. Acorn stopped listening.",
             { id: "meeting-consent-declined", duration: Infinity },
           );
           stop();

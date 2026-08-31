@@ -86,6 +86,27 @@ pub async fn list_events<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn list_google_calendars_direct(
+    access_token: String,
+) -> Result<Vec<CalendarListItem>, Error> {
+    anlg_calendar::list_google_calendars_direct(&access_token)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn list_google_events_direct(
+    access_token: String,
+    filter: EventFilter,
+) -> Result<Vec<CalendarEvent>, Error> {
+    anlg_calendar::list_google_events_direct(&access_token, filter)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn open_calendar<R: tauri::Runtime>(
     _app: tauri::AppHandle<R>,
     provider: CalendarProviderType,

@@ -21,6 +21,7 @@ struct CallbackTemplate {
     is_success: bool,
     title: String,
     description: String,
+    product_name: String,
 }
 
 struct ServerHandle {
@@ -48,14 +49,46 @@ impl CallbackServerState {
     }
 }
 
+pub fn display_product_name(product_name: &str) -> String {
+    product_name
+        .strip_suffix(" Dev")
+        .or_else(|| product_name.strip_suffix(" Staging"))
+        .unwrap_or(product_name)
+        .to_string()
+}
+
+fn product_name_from_app<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> String {
+    display_product_name(app.config().product_name.as_deref().unwrap_or("Acorn"))
+}
+
 pub fn render_html(deep_link: &DeepLink, scheme: &str) -> String {
-    let (is_success, title, description) = ui_content(deep_link);
-    render_template_html(scheme, is_success, title, description, Some(deep_link))
+    render_html_with_product(deep_link, scheme, "Acorn")
+}
+
+pub fn render_html_with_product(deep_link: &DeepLink, scheme: &str, product_name: &str) -> String {
+    let (is_success, title, description) = ui_content(deep_link, product_name);
+    render_template_html(
+        scheme,
+        is_success,
+        &title,
+        &description,
+        Some(deep_link),
+        product_name,
+    )
 }
 
 pub fn render_html_from_callback(path: &str, query: &str, scheme: &str) -> String {
+    render_html_from_callback_with_product(path, query, scheme, "Acorn")
+}
+
+pub fn render_html_from_callback_with_product(
+    path: &str,
+    query: &str,
+    scheme: &str,
+    product_name: &str,
+) -> String {
     let parse_result = parse_callback(path, query);
-    render_html_from_parse_result(parse_result.as_ref(), scheme)
+    render_html_from_parse_result(parse_result.as_ref(), scheme, product_name)
 }
 
 pub fn parse_callback(path: &str, query: &str) -> Result<DeepLink, crate::Error> {
@@ -69,11 +102,23 @@ pub fn parse_callback(path: &str, query: &str) -> Result<DeepLink, crate::Error>
     DeepLink::from_str(&pseudo_url)
 }
 
-fn render_html_from_parse_result<E>(parse_result: Result<&DeepLink, &E>, scheme: &str) -> String {
+fn render_html_from_parse_result<E>(
+    parse_result: Result<&DeepLink, &E>,
+    scheme: &str,
+    product_name: &str,
+) -> String {
     let deep_link = parse_result.ok();
-    let (is_success, title, description) =
-        deep_link.map(ui_content).unwrap_or_else(default_ui_content);
-    render_template_html(scheme, is_success, title, description, deep_link)
+    let (is_success, title, description) = deep_link
+        .map(|deep_link| ui_content(deep_link, product_name))
+        .unwrap_or_else(default_ui_content);
+    render_template_html(
+        scheme,
+        is_success,
+        &title,
+        &description,
+        deep_link,
+        product_name,
+    )
 }
 
 fn render_template_html(
@@ -82,12 +127,14 @@ fn render_template_html(
     title: &str,
     description: &str,
     deep_link: Option<&DeepLink>,
+    product_name: &str,
 ) -> String {
     CallbackTemplate {
         deeplink_url: return_to_app_url(scheme, deep_link),
         is_success,
         title: title.to_string(),
         description: description.to_string(),
+        product_name: product_name.to_string(),
     }
     .render()
     .unwrap_or_default()
@@ -128,15 +175,15 @@ pub(crate) fn subscription_auth_deeplink(
     Some(url.into())
 }
 
-fn default_ui_content() -> (bool, &'static str, &'static str) {
+fn default_ui_content() -> (bool, String, String) {
     (
         false,
-        "Something went wrong",
-        "Please close this window and try again.",
+        "Something went wrong".into(),
+        "Please close this window and try again.".into(),
     )
 }
 
-fn ui_content(deep_link: &DeepLink) -> (bool, &'static str, &'static str) {
+fn ui_content(deep_link: &DeepLink, product_name: &str) -> (bool, String, String) {
     match deep_link {
         DeepLink::AuthCallback(search)
             if search
@@ -148,39 +195,39 @@ fn ui_content(deep_link: &DeepLink) -> (bool, &'static str, &'static str) {
         {
             (
                 true,
-                "Connected successfully",
-                "Returning to Anarlog to finish connecting.",
+                "Connected successfully".into(),
+                format!("Returning to {product_name} to finish connecting."),
             )
         }
         DeepLink::AuthCallback(_) => (
             true,
-            "Signed in successfully",
-            "Click the button below to return to the app.",
+            "Signed in successfully".into(),
+            "Click the button below to return to the app.".into(),
         ),
         DeepLink::BillingRefresh(_) => (
             true,
-            "Subscription updated",
-            "Click the button below to return to the app.",
+            "Subscription updated".into(),
+            "Click the button below to return to the app.".into(),
         ),
         DeepLink::IntegrationCallback(s) if s.status == "success" => (
             true,
-            "Connected successfully",
-            "Click the button below to return to the app.",
+            "Connected successfully".into(),
+            "Click the button below to return to the app.".into(),
         ),
         DeepLink::IntegrationCallback(s) if s.status == "upgrade_required" => (
             false,
-            "Upgrade required",
-            "You can close this window and upgrade your plan to connect this integration.",
+            "Upgrade required".into(),
+            "You can close this window and upgrade your plan to connect this integration.".into(),
         ),
         DeepLink::IntegrationCallback(_) => (
             false,
-            "Connection failed",
-            "Something went wrong. Please close this window and try again.",
+            "Connection failed".into(),
+            "Something went wrong. Please close this window and try again.".into(),
         ),
         DeepLink::OnboardingDemoComplete(_) => (
             true,
-            "Demo complete",
-            "Anarlog is finishing your transcript and creating your summary.",
+            "Demo complete".into(),
+            format!("{product_name} is finishing your transcript and creating your summary."),
         ),
     }
 }
@@ -215,7 +262,8 @@ async fn handle_request<R: tauri::Runtime>(
     tracing::info!(path = %path, "callback_received");
 
     let parse_result = parse_callback(path, query);
-    let html = render_html_from_parse_result(parse_result.as_ref(), &scheme);
+    let html =
+        render_html_from_parse_result(parse_result.as_ref(), &scheme, &product_name_from_app(&app));
 
     emit_deeplink(&app, parse_result, path);
     shutdown.notify_one();
@@ -351,12 +399,19 @@ mod tests {
             subscription_auth_deeplink("anarlog", &subscription_search()).as_deref(),
             Some("anarlog://auth/callback?code=ac_nf5hq&state=state-1")
         );
-        let html = render_html(&DeepLink::AuthCallback(subscription_search()), "anarlog");
+        let html = render_html_with_product(
+            &DeepLink::AuthCallback(subscription_search()),
+            "anarlog",
+            "Acorn",
+        );
         assert!(html.contains("anarlog://auth/callback?code=ac_nf5hq"));
         assert!(html.contains("state=state-1"));
         assert!(html.contains(r#"id="open-app""#));
         assert!(html.contains(r#"document.getElementById("open-app")?.click()"#));
         assert!(html.contains("Connected successfully"));
+        assert!(html.contains("Returning to Acorn to finish connecting."));
+        assert!(html.contains("Open Acorn"));
+        assert!(!html.contains("Anarlog"));
         assert!(!html.contains("anarlog://focus"));
     }
 
@@ -374,6 +429,14 @@ mod tests {
         assert!(html.contains("anarlog-dev://focus"));
         assert!(!html.contains("code=should-ignore"));
         assert!(html.contains("Signed in successfully"));
+    }
+
+    #[test]
+    fn display_product_name_strips_channel_suffix() {
+        assert_eq!(display_product_name("Acorn Dev"), "Acorn");
+        assert_eq!(display_product_name("Acorn Staging"), "Acorn");
+        assert_eq!(display_product_name("Acorn"), "Acorn");
+        assert_eq!(display_product_name("Anarlog"), "Anarlog");
     }
 
     #[test]

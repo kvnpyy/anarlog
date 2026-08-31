@@ -27,6 +27,7 @@ import {
 
 import { env } from "~/env";
 import { openIntegrationUrl } from "~/shared/integration";
+import { hostedDesktopWebFlowsEnabled } from "~/shared/utils";
 
 const CONNECTED_IMPORT_SECRET_SCOPE = "meeting-imports";
 const CONNECTED_IMPORT_SYNC_INTERVAL_MS = 5 * 60 * 1_000;
@@ -73,6 +74,16 @@ export function isLocalConnectedImport(
   return (
     provider.directImport === "mcp-oauth" || provider.directImport === "cli"
   );
+}
+
+export function offersMeetingImportConnect(
+  provider: Pick<MeetingImportProvider, "directImport">,
+) {
+  if (isLocalConnectedImport(provider)) {
+    return true;
+  }
+
+  return isNangoMeetingImport(provider) && hostedDesktopWebFlowsEnabled();
 }
 
 export function nangoConnectionIsReady(connection: ConnectionItem | undefined) {

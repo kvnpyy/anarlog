@@ -20,6 +20,7 @@ export function LiveAskRail({
     content: string,
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
+    modelPrompt?: string,
   ) => void;
   showRecipes?: boolean;
 }) {
@@ -41,8 +42,13 @@ export function LiveAskRail({
     },
   ];
   const handleRecipeClick = useCallback(
-    (prompt: string) => {
-      onSendMessage?.(prompt, [{ type: "text", text: prompt }]);
+    (label: string, prompt: string) => {
+      onSendMessage?.(
+        label,
+        [{ type: "text", text: label }],
+        undefined,
+        prompt,
+      );
     },
     [onSendMessage],
   );
@@ -65,7 +71,7 @@ export function LiveAskRail({
               key={label}
               type="button"
               disabled={isBatchOnly}
-              onClick={() => handleRecipeClick(prompt)}
+              onClick={() => handleRecipeClick(label, prompt)}
               className={cn([
                 "border-border bg-card inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
                 isBatchOnly

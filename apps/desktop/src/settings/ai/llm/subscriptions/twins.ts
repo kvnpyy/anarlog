@@ -27,7 +27,7 @@ export function shouldShowInProviderList(
   providerId: string,
   search: string,
 ): boolean {
-  if (providerId === "anarlog") {
+  if (providerId === "anarlog" || providerId === "acorn") {
     return false;
   }
   if (isFoldedSubscriptionProvider(providerId) && !search.trim()) {

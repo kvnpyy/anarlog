@@ -144,7 +144,15 @@ export function SettingsNav() {
     {
       label: "AI",
       items: [
-        { id: "transcription", label: t`Transcription`, icon: Sparkle },
+        ...(LOCAL_ONLY
+          ? []
+          : [
+              {
+                id: "transcription" as const,
+                label: t`Transcription`,
+                icon: Sparkle,
+              },
+            ]),
         { id: "intelligence", label: t`Intelligence`, icon: Sparkle },
         {
           id: "dictionary",

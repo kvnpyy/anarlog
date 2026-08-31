@@ -12,7 +12,7 @@ import { useAuth } from "~/auth";
 import { env } from "~/env";
 import { captureOperationalError } from "~/error-reporting";
 import { addNangoSessionHandoff } from "~/shared/integration-handoff";
-import { HOSTED_CONNECT_UNAVAILABLE_MESSAGE } from "~/shared/product";
+import { hostedConnectUnavailableMessage } from "~/shared/product";
 import { buildWebAppUrl, hostedDesktopWebFlowsEnabled } from "~/shared/utils";
 
 export async function openIntegrationUrl(
@@ -26,7 +26,7 @@ export async function openIntegrationUrl(
   if (!nangoIntegrationId) return;
 
   if (!hostedDesktopWebFlowsEnabled()) {
-    sonnerToast.message(HOSTED_CONNECT_UNAVAILABLE_MESSAGE);
+    sonnerToast.message(hostedConnectUnavailableMessage(nangoIntegrationId));
     return;
   }
 

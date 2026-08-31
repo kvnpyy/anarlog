@@ -77,7 +77,7 @@ it("creates a prerecorded demo note with normal meeting metadata", async () => {
   expect(initial.raw_md).toContain(
     "If transcription and intelligence are configured",
   );
-  expect(initial.raw_md).not.toContain("Anarlog will listen, transcribe");
+  expect(initial.raw_md).not.toContain("Acorn will listen, transcribe");
 
   const note = JSON.parse(initial.raw_md);
   expect(note.content).toHaveLength(7);

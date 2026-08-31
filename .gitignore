@@ -30,6 +30,11 @@ internal
 
 # Agent scratch / reference material (not for commit)
 .tmp/
+.tauri-updater-key
+.tauri-updater-key.pub
+apps/desktop/.tauri-updater-key
+apps/desktop/.tauri-updater-key.pub
+
 .codex-security-artifacts-*/
 .codex-security-work-ledger-*.jsonl
 .claude/launch.json

@@ -615,18 +615,11 @@ describe("useStartListening", () => {
         id: "recording-without-transcription",
         description:
           "Audio is being saved. Choose a transcription provider to ensure this recording can be transcribed.",
-        action: expect.objectContaining({ label: "Configure" }),
+        action: undefined,
       }),
     );
 
-    const warningCalls = sonnerToastWarningMock.mock.calls;
-    const warningOptions = warningCalls[warningCalls.length - 1]?.[1];
-    warningOptions?.action.onClick();
-
-    expect(openNewMock).toHaveBeenCalledWith({
-      type: "settings",
-      state: { tab: "transcription" },
-    });
+    expect(openNewMock).not.toHaveBeenCalled();
   });
 
   test("does not advertise record-only capture when native recording fails", async () => {
@@ -743,7 +736,7 @@ describe("useStartListening", () => {
       "session-1:generated-id",
     );
     expect(sonnerToastErrorMock).toHaveBeenCalledWith(
-      "Anarlog could not safely start recording. Please try again.",
+      "Acorn could not safely start recording. Please try again.",
       { id: "capture-state-persist-failed" },
     );
     consoleError.mockRestore();
@@ -2602,7 +2595,7 @@ describe("useStartListening", () => {
     });
 
     expect(sonnerToastErrorMock).toHaveBeenCalledWith(
-      "Anarlog could not save part of the live transcript.",
+      "Acorn could not save part of the live transcript.",
       { id: "live-transcript-persist-failed" },
     );
     expect(queueAutoEnhanceIfSummaryEmptyMock).not.toHaveBeenCalled();
@@ -2652,7 +2645,7 @@ describe("useStartListening", () => {
     });
 
     expect(sonnerToastErrorMock).toHaveBeenCalledWith(
-      "Anarlog could not finish saving the transcript. The recording was kept so you can try again.",
+      "Acorn could not finish saving the transcript. The recording was kept so you can try again.",
       { id: "post-capture-transcript-incomplete" },
     );
     expect(markSessionAudioTranscriptionCompleteMock).not.toHaveBeenCalled();
@@ -2771,7 +2764,7 @@ describe("useStartListening", () => {
     });
 
     expect(sonnerToastErrorMock).toHaveBeenCalledWith(
-      "Anarlog could not finish saving the transcript. The recording was kept so you can try again.",
+      "Acorn could not finish saving the transcript. The recording was kept so you can try again.",
       { id: "post-capture-transcript-incomplete" },
     );
     expect(queueAutoEnhanceIfSummaryEmptyMock).not.toHaveBeenCalled();
@@ -3015,7 +3008,7 @@ describe("useStartListening", () => {
 
     expect(queueAutoEnhanceIfSummaryEmptyMock).toHaveBeenCalledOnce();
     expect(sonnerToastErrorMock).toHaveBeenCalledWith(
-      "The transcript was saved, but Anarlog could not start the summary. Try generating it again.",
+      "The transcript was saved, but Acorn could not start the summary. Try generating it again.",
       { id: "post-capture-summary-failed" },
     );
     expect(clearCaptureLifecycleMarkerMock).not.toHaveBeenCalled();
@@ -3302,7 +3295,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        "I'm using Anarlog to record and transcribe this meeting. https://anarlog.so",
+        "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
         ["com.tinyspeck.slackmacgap"],
       );
     });
@@ -3330,7 +3323,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        "I'm using Anarlog to record and transcribe this meeting. https://anarlog.so",
+        "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
         ["us.zoom.xos"],
       );
     });
@@ -3476,12 +3469,12 @@ describe("useStartListening", () => {
     expect(listMicUsingApplicationsMock).toHaveBeenCalledTimes(2);
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       1,
-      expect.stringContaining("https://anarlog.so"),
+      expect.stringContaining("https://acorn.so"),
       ["com.anarlog.dev"],
     );
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       2,
-      expect.stringContaining("https://anarlog.so"),
+      expect.stringContaining("https://acorn.so"),
       ["us.zoom.xos"],
     );
     expect(sonnerToastWarningMock).not.toHaveBeenCalled();
@@ -3512,7 +3505,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        expect.stringContaining("https://anarlog.so"),
+        expect.stringContaining("https://acorn.so"),
         ["com.anarlog.dev", "com.tinyspeck.slackmacgap"],
       );
     });
@@ -3541,7 +3534,7 @@ describe("useStartListening", () => {
     });
 
     expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-      expect.stringContaining("https://anarlog.so"),
+      expect.stringContaining("https://acorn.so"),
       ["us.zoom.xos", "com.tinyspeck.slackmacgap"],
     );
     expect(warn).toHaveBeenCalledWith(
@@ -3549,7 +3542,7 @@ describe("useStartListening", () => {
       "expected exactly one recognized meeting app bundle",
     );
     expect(sonnerToastWarningMock).toHaveBeenCalledWith(
-      "Recording started, but Anarlog could not post the meeting chat disclosure.",
+      "Recording started, but Acorn could not post the meeting chat disclosure.",
       { id: "meeting-disclosure-send-failed", duration: Infinity },
     );
     warn.mockRestore();
@@ -3699,7 +3692,7 @@ describe("useStartListening", () => {
       error,
     );
     expect(sonnerToastWarningMock).toHaveBeenCalledWith(
-      "Recording started, but Anarlog could not post the meeting chat disclosure.",
+      "Recording started, but Acorn could not post the meeting chat disclosure.",
       { id: "meeting-disclosure-send-failed", duration: Infinity },
     );
     warn.mockRestore();
@@ -3724,7 +3717,7 @@ describe("useStartListening", () => {
       expect(startMeetingChatCaptureMock).toHaveBeenCalledWith({
         sessionId: "session-1",
         excludedTexts: [
-          "I'm using Anarlog to record and transcribe this meeting. https://anarlog.so",
+          "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
         ],
         onParticipantDeclined: expect.any(Function),
       });
@@ -3763,7 +3756,7 @@ describe("useStartListening", () => {
       expect(startMeetingChatCaptureMock).toHaveBeenCalledWith({
         sessionId: "session-1",
         excludedTexts: [
-          "I'm using Anarlog to record and transcribe this meeting. https://anarlog.so",
+          "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
         ],
         onParticipantDeclined: expect.any(Function),
       });

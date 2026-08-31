@@ -28,6 +28,7 @@ export function ChatBodyEmpty({
     content: string,
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
+    modelPrompt?: string,
   ) => void;
   isRecording?: boolean;
 }) {
@@ -74,8 +75,13 @@ export function ChatBodyEmpty({
   }, [openNew]);
 
   const handleSuggestionClick = useCallback(
-    (prompt: string) => {
-      onSendMessage?.(prompt, [{ type: "text", text: prompt }]);
+    (label: string, prompt: string) => {
+      onSendMessage?.(
+        label,
+        [{ type: "text", text: label }],
+        undefined,
+        prompt,
+      );
     },
     [onSendMessage],
   );
@@ -142,7 +148,7 @@ export function ChatBodyEmpty({
             {suggestions.map(({ label, icon: Icon, prompt }) => (
               <button
                 key={label}
-                onClick={() => handleSuggestionClick(prompt)}
+                onClick={() => handleSuggestionClick(label, prompt)}
                 className={cn([
                   "group grid w-full grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-1.5 rounded-lg py-2 pr-3 pl-0 text-left text-sm",
                   isDarkAppearance

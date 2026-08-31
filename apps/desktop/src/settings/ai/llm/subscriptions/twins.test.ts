@@ -23,5 +23,6 @@ describe("subscription twins", () => {
     expect(shouldShowInProviderList("chatgpt", "chat")).toBe(true);
     expect(shouldShowInProviderList("github_copilot", "")).toBe(true);
     expect(shouldShowInProviderList("anarlog", "")).toBe(false);
+    expect(shouldShowInProviderList("acorn", "")).toBe(false);
   });
 });

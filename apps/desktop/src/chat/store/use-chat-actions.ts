@@ -96,6 +96,7 @@ export function useChatActions({
       parts: AnlgUIMessage["parts"],
       sendMessage: ChatMessageSender,
       contextRefs?: ContextRef[],
+      modelPrompt?: string,
     ) => {
       if (!ownerUserId) {
         console.error("Cannot persist chat message without an owner user id");
@@ -103,10 +104,14 @@ export function useChatActions({
       }
 
       const messageId = id();
+      const hiddenPrompt = modelPrompt?.trim();
       const metadata = {
         chatScope,
         createdAt: Date.now(),
         ...(contextRefs && contextRefs.length > 0 ? { contextRefs } : {}),
+        ...(hiddenPrompt && hiddenPrompt !== content.trim()
+          ? { modelPrompt: hiddenPrompt }
+          : {}),
       };
       const uiMessage: AnlgUIMessage = {
         id: messageId,

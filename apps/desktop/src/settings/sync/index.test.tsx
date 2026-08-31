@@ -469,7 +469,7 @@ describe("SettingsSync", () => {
     expect(screen.getByText("Background sync")).toBeTruthy();
     expect(
       screen.getByText(
-        "Anarlog couldn't complete this sync. Your notes are safe on this device.",
+        "Acorn couldn't complete this sync. Your notes are safe on this device.",
       ),
     ).toBeTruthy();
     expect(screen.queryByText(/sqlx error/)).toBeNull();

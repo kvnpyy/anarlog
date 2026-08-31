@@ -4,9 +4,16 @@ const calendarCommands = vi.hoisted(() => ({
   listEvents: vi.fn(),
 }));
 
+const googleStorage = vi.hoisted(() => ({
+  listGoogleCalendarConnectionIds: vi.fn(async () => [] as string[]),
+  getFreshGoogleCalendarAccessToken: vi.fn(),
+}));
+
 vi.mock("@anlg/plugin-calendar", () => ({
   commands: calendarCommands,
 }));
+
+vi.mock("~/calendar/google-oauth/storage", () => googleStorage);
 
 import type { Ctx } from "../ctx";
 import { fetchIncomingEvents } from "./incoming";
@@ -23,6 +30,7 @@ const ctx: Ctx = {
 describe("fetchIncomingEvents", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    googleStorage.listGoogleCalendarConnectionIds.mockResolvedValue([]);
   });
 
   test("records an empty participant list so stale auto mappings are removed", async () => {

@@ -2,7 +2,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://desktop2.hyprnote.com/update/{{target}}-{{arch}}/{{current_version}}?channel=stable"
+        "https://github.com/kvnpyy/anarlog/releases/latest/download/latest.json"
       ]
     }
   }

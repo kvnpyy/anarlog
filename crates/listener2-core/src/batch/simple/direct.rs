@@ -142,7 +142,7 @@ pub(super) async fn prepare_anarlog_batch_upload(
         tracing::error!(%error, "large_batch_audio_temp_dir_failed");
         crate::BatchFailure::DirectRequestFailed {
             provider: AdapterKind::Anarlog.to_string(),
-            message: "Anarlog couldn't prepare this large recording for transcription.".to_string(),
+            message: "Acorn couldn't prepare this large recording for transcription.".to_string(),
         }
     })?;
     let encoded_path = temp_dir.path().join("audio.mp3");
@@ -154,7 +154,7 @@ pub(super) async fn prepare_anarlog_batch_upload(
             tracing::error!(%error, "large_batch_audio_encode_task_failed");
             crate::BatchFailure::DirectRequestFailed {
                 provider: AdapterKind::Anarlog.to_string(),
-                message: "Anarlog couldn't prepare this large recording for transcription."
+                message: "Acorn couldn't prepare this large recording for transcription."
                     .to_string(),
             }
         })?
@@ -162,7 +162,7 @@ pub(super) async fn prepare_anarlog_batch_upload(
             tracing::error!(%error, "large_batch_audio_encode_failed");
             crate::BatchFailure::DirectRequestFailed {
                 provider: AdapterKind::Anarlog.to_string(),
-                message: "Anarlog couldn't prepare this large recording for transcription."
+                message: "Acorn couldn't prepare this large recording for transcription."
                     .to_string(),
             }
         })?;

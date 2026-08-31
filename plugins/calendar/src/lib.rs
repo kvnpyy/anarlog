@@ -22,6 +22,8 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::list_connection_ids::<tauri::Wry>,
             commands::list_calendars::<tauri::Wry>,
             commands::list_events::<tauri::Wry>,
+            commands::list_google_calendars_direct,
+            commands::list_google_events_direct,
             commands::open_calendar::<tauri::Wry>,
             commands::create_event::<tauri::Wry>,
         ])

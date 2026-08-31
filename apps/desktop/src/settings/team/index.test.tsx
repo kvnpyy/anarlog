@@ -159,7 +159,7 @@ describe("SettingsTeam", () => {
   it("offers an upgrade instead of Team controls on the free plan", () => {
     renderTeam();
 
-    expect(screen.getByText("Anarlog Pro required")).toBeTruthy();
+    expect(screen.getByText("Acorn Pro required")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
@@ -174,7 +174,7 @@ describe("SettingsTeam", () => {
 
     expect(screen.getByText("Create a shared workspace")).toBeTruthy();
     expect(screen.getByRole("textbox")).toBeTruthy();
-    expect(screen.queryByText("Anarlog Pro required")).toBeNull();
+    expect(screen.queryByText("Acorn Pro required")).toBeNull();
   });
 
   it("keeps existing workspaces accessible without Pro", () => {
@@ -194,7 +194,7 @@ describe("SettingsTeam", () => {
     expect(
       screen.getByRole("button", { name: "Delete workspace" }),
     ).toBeTruthy();
-    expect(screen.queryByText("Anarlog Pro required")).toBeNull();
+    expect(screen.queryByText("Acorn Pro required")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 

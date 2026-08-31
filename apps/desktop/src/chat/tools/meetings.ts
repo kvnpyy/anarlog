@@ -129,7 +129,7 @@ function allowCurrentMeeting(
 export const buildListMeetingsTool = (deps?: ToolDependencies) =>
   tool({
     description:
-      "List recent Anarlog meetings with pagination metadata. Use query to narrow by title or meeting id, then pass next_offset as offset to continue.",
+      "List recent Acorn meetings with pagination metadata. Use query to narrow by title or meeting id, then pass next_offset as offset to continue.",
     inputSchema: z.object({
       query: z
         .string()
@@ -146,9 +146,9 @@ export const buildListMeetingsTool = (deps?: ToolDependencies) =>
 export const buildGetMeetingTool = (deps?: ToolDependencies) =>
   tool({
     description:
-      "Get one Anarlog meeting with its canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for transcript words.",
+      "Get one Acorn meeting with its canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for transcript words.",
     inputSchema: z.object({
-      meeting_id: z.string().describe("Anarlog meeting id"),
+      meeting_id: z.string().describe("Acorn meeting id"),
     }),
     execute: async (input: { meeting_id: string }) => {
       const window = resolveWindow(deps);
@@ -169,9 +169,9 @@ export const buildGetMeetingTool = (deps?: ToolDependencies) =>
 export const buildGetMeetingTranscriptTool = (deps?: ToolDependencies) =>
   tool({
     description:
-      "Get a bounded page of transcript words and readable text for an Anarlog meeting. Pass pagination.next_offset as offset to continue.",
+      "Get a bounded page of transcript words and readable text for an Acorn meeting. Pass pagination.next_offset as offset to continue.",
     inputSchema: z.object({
-      meeting_id: z.string().describe("Anarlog meeting id"),
+      meeting_id: z.string().describe("Acorn meeting id"),
       offset: z
         .number()
         .int()

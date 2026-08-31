@@ -236,7 +236,7 @@ describe("SettingsDevelopers", () => {
         installPath: "/Users/test/.local/bin/anarlog",
         state: "installed",
         details:
-          "Installed at /Users/test/.local/bin/anarlog and managed by Anarlog.",
+          "Installed at /Users/test/.local/bin/anarlog and managed by Acorn.",
       },
     });
 
@@ -486,7 +486,7 @@ describe("SettingsDevelopers", () => {
     expect(mocks.installAgentSkill).not.toHaveBeenCalledWith("cursor");
     await waitFor(() =>
       expect(mocks.toastSuccess).toHaveBeenCalledWith(
-        "Anarlog skill added to 3 agents",
+        "Acorn skill added to 3 agents",
       ),
     );
   });
@@ -541,7 +541,7 @@ describe("SettingsDevelopers", () => {
     );
     await waitFor(() =>
       expect(mocks.toastSuccess).toHaveBeenCalledWith(
-        "Anarlog skill added to Codex",
+        "Acorn skill added to Codex",
       ),
     );
   });

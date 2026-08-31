@@ -134,11 +134,11 @@ export function createToastRegistry({
         icon: (
           <img
             src={ANARLOG_ICON_SRC}
-            alt={LOCAL_ONLY ? "Acorn" : "Anarlog"}
+            alt={LOCAL_ONLY ? "Acorn" : "Acorn"}
             className="size-5 object-contain object-center"
           />
         ),
-        description: t`Sign in to get the most out of Anarlog`,
+        description: t`Sign in to get the most out of Acorn`,
         primaryAction: {
           label: t`Sign in`,
           onClick: onSignIn,

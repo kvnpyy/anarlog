@@ -59,6 +59,10 @@ mod tests {
             TrayVersion::get_channel("com.hyprnote.dev", "Anarlog Dev"),
             "dev"
         );
+        assert_eq!(
+            TrayVersion::get_channel("com.hyprnote.dev", "Acorn Dev"),
+            "dev"
+        );
     }
 
     #[test]
@@ -74,5 +78,6 @@ mod tests {
             "staging"
         );
         assert_eq!(TrayVersion::get_channel("unknown", "Anarlog Dev"), "dev");
+        assert_eq!(TrayVersion::get_channel("unknown", "Acorn Dev"), "dev");
     }
 }
