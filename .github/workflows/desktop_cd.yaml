@@ -303,7 +303,8 @@ jobs:
           apple-team-id: ${{ secrets.APPLE_TEAM_ID }}
       - run: |
           mkdir -p target/release/
-          find target/${{ matrix.target }}/release -type f -not -path "*/\.*" -exec cp {} target/release/ \;
+          find target/${{ matrix.target }}/release/bundle/dmg \
+            -maxdepth 1 -type f -exec cp {} target/release/ \;
         shell: bash
         working-directory: ./apps/desktop/src-tauri
       - if: ${{ inputs.channel != 'staging' }}
