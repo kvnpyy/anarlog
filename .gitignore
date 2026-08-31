@@ -28,6 +28,10 @@ internal
 # TypeScript incremental build cache
 *.tsbuildinfo
 
+# Ad-hoc signed macOS preview builds (scripts/build-macos-preview.sh)
+dist-preview/
+apps/desktop/src-tauri/tauri.conf.preview-local.json
+
 # Agent scratch / reference material (not for commit)
 .tmp/
 .codex-security-artifacts-*/
