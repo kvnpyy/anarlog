@@ -22,6 +22,7 @@ import {
   getUnsupportedDesktopLocalSttRepair,
   isConfiguredSttModel,
   isDesktopLocalSttAvailable,
+  isLiveCapableSttModel,
   isOnDeviceSttModel,
   isSupportedLanguagesBatch,
   isSupportedLanguagesLive,
@@ -114,6 +115,25 @@ describe("getSttModelTranscriptionMode", () => {
       undefined,
     );
     expect(getSttModelTranscriptionMode("xai", "xai-stt")).toBeUndefined();
+  });
+});
+
+describe("isLiveCapableSttModel", () => {
+  test("treats Deepgram Nova as live", () => {
+    expect(isLiveCapableSttModel("deepgram", "nova-3-general")).toBe(true);
+  });
+
+  test("rejects batch-only STT models", () => {
+    expect(isLiveCapableSttModel("openai", "whisper-1")).toBe(false);
+    expect(isLiveCapableSttModel("soniqo", "soniqo-parakeet-batch")).toBe(
+      false,
+    );
+  });
+
+  test("accepts live on-device models", () => {
+    expect(isLiveCapableSttModel("soniqo", "soniqo-parakeet-streaming")).toBe(
+      true,
+    );
   });
 });
 

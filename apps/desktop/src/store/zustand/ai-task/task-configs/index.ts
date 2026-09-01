@@ -15,6 +15,7 @@ import { titleSuccess } from "./title-success";
 import { titleTransform } from "./title-transform";
 import { titleWorkflow } from "./title-workflow";
 
+import type { UserProfile } from "~/chat/context/user-profile";
 import { trackMeetingNoteCompletion } from "~/onboarding/meeting-note-analytics";
 import type { SummaryLengthMode } from "~/services/enhancer/summary-length";
 import type { SettingValues } from "~/settings/schema";
@@ -47,6 +48,7 @@ export interface TaskArgsMapTransformed {
       imageContext: EnhanceImageContext[];
       summaryLength: SummaryLengthMode;
       dictionaryTerms: string[];
+      userProfile?: UserProfile;
     };
   title: TitleSystem & TitleUser & { dictionaryTerms: string[] };
 }

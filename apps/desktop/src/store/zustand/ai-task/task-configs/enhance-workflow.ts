@@ -13,6 +13,7 @@ import type { EnhanceImageContext } from "./enhance-images";
 import { createEnhanceValidator } from "./enhance-validator";
 import { appendPreferredNamesGuidance } from "./preferred-names";
 
+import { appendNoteAudienceGuidance } from "~/chat/context/user-profile";
 import {
   formatSummaryLengthModeGuidance,
   formatSummaryLengthGuidance,
@@ -82,11 +83,14 @@ async function getSystemPrompt(args: TaskArgsMapTransformed["enhance"]) {
   );
 
   return appendPreferredNamesGuidance(
-    `${result.data}
+    appendNoteAudienceGuidance(
+      `${result.data}
 
 # Summary Mode
 
 ${modeGuidance}`,
+      args.userProfile,
+    ),
     args.dictionaryTerms,
   );
 }

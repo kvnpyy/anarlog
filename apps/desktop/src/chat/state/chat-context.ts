@@ -11,9 +11,11 @@ type ChatSelection = {
 interface ChatContextState {
   chatByScope: Record<ChatScope, ChatSelection>;
   chatByMeetingId: Record<string, ChatSelection>;
+  workspaceAsk: boolean;
 }
 
 interface ChatContextActions {
+  setWorkspaceAsk: (workspaceAsk: boolean) => void;
   setGroupId: (scope: ChatScope, groupId: string | undefined) => void;
   rollbackFailedGroup: (scope: ChatScope, failedGroupId: string) => void;
   startNewChat: (scope: ChatScope) => void;
@@ -35,6 +37,8 @@ export const useChatContext = create<ChatContextState & ChatContextActions>(
       automations: createChatSelection(),
     },
     chatByMeetingId: {},
+    workspaceAsk: false,
+    setWorkspaceAsk: (workspaceAsk) => set({ workspaceAsk }),
     setGroupId: (scope, groupId) =>
       set((state) => ({
         chatByScope: {
@@ -132,11 +136,13 @@ export function getMeetingChatId({
   isRecording,
   liveSessionId,
   currentSessionId,
+  workspaceAsk = false,
 }: {
   scope: ChatScope;
   isRecording: boolean;
   liveSessionId: string | null | undefined;
   currentSessionId: string | undefined;
+  workspaceAsk?: boolean;
 }): string | undefined {
   if (scope !== "general") {
     return undefined;
@@ -144,6 +150,10 @@ export function getMeetingChatId({
 
   if (isRecording) {
     return liveSessionId ?? currentSessionId ?? undefined;
+  }
+
+  if (workspaceAsk) {
+    return undefined;
   }
 
   return currentSessionId;

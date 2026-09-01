@@ -46,6 +46,20 @@ describe("ChatBodyEmpty", () => {
     expect(followUp.className).toContain("w-full");
     expect(decisions.className).toContain("w-full");
 
+    fireEvent.click(followUp);
+
+    expect(onSendMessage).toHaveBeenCalledWith(
+      "Draft follow-up email.",
+      [
+        {
+          type: "text",
+          text: "Draft follow-up email.",
+        },
+      ],
+      undefined,
+      expect.stringContaining("in my voice"),
+    );
+
     fireEvent.click(decisions);
 
     expect(onSendMessage).toHaveBeenCalledWith(

@@ -232,6 +232,21 @@ export function getSttModelTranscriptionMode(
   return undefined;
 }
 
+export function isLiveCapableSttModel(
+  provider?: string | null,
+  model?: string | null,
+): boolean {
+  if (!provider || !model) {
+    return false;
+  }
+
+  if (isOnDeviceSttModel(provider, model)) {
+    return isRealtimeLocalModel(model);
+  }
+
+  return getSttModelTranscriptionMode(provider, model) !== "batch";
+}
+
 function baseLanguageCode(language: string) {
   return language.split(/[-_]/)[0]?.toLowerCase() ?? "";
 }

@@ -1,4 +1,5 @@
 mod acorn_hosted;
+mod acorn_pro_invite;
 mod agent_skills;
 mod agents;
 mod appearance;
@@ -741,6 +742,7 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::set_dismissed_toasts::<tauri::Wry>,
             commands::get_env::<tauri::Wry>,
             commands::acorn_hosted_ai_status,
+            acorn_pro_invite::acorn_consume_pro_invite,
             acorn_hosted::acorn_hosted_fetch,
             google_calendar::google_calendar_token,
             commands::show_devtool::<tauri::Wry>,

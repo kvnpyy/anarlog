@@ -127,6 +127,7 @@ async function transformArgs(
     dictionaryTerms: parseDictionaryTermsJson(
       settingsValues.personalization_dictionary_terms,
     ),
+    userProfile: profile,
   };
 }
 

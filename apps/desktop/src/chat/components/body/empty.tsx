@@ -44,7 +44,7 @@ export function ChatBodyEmpty({
         {
           label: t`Draft follow-up email.`,
           icon: Envelope,
-          prompt: t`Draft a follow-up email to the participants. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
+          prompt: t`Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
         },
         {
           label: t`Find key decisions.`,

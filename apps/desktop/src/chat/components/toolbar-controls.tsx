@@ -3,9 +3,11 @@ import {
   CaretDown,
   ChatCircle,
   ClockCounterClockwise,
+  Note,
   PictureInPicture,
   Plus,
   SidebarSimple,
+  Sparkle,
   X,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -33,9 +35,13 @@ export function ChatToolbarControls({
   onClose,
   onNewChat,
   onOpenFloating,
+  onOpenMeetingAsk,
   onOpenRightPanel,
+  onOpenWorkspaceAsk,
   onSelectChat,
   pinned = false,
+  showMeetingAskSwitch = false,
+  showWorkspaceAskSwitch = false,
   surface = "light",
 }: {
   chatScope: ChatScope;
@@ -45,9 +51,13 @@ export function ChatToolbarControls({
   onClose?: () => void;
   onNewChat: () => void;
   onOpenFloating?: () => void;
+  onOpenMeetingAsk?: () => void;
   onOpenRightPanel?: () => void;
+  onOpenWorkspaceAsk?: () => void;
   onSelectChat: (chatGroupId: string) => void;
   pinned?: boolean;
+  showMeetingAskSwitch?: boolean;
+  showWorkspaceAskSwitch?: boolean;
   surface?: "light" | "dark";
 }) {
   const { t } = useLingui();
@@ -70,14 +80,35 @@ export function ChatToolbarControls({
         data-tauri-drag-region={isRightPanel || undefined}
         className="flex min-w-0 flex-1 items-center gap-1"
       >
-        {isolateConversation ? null : (
-          <ChatGroups
-            chatScope={chatScope}
-            currentChatGroupId={currentChatGroupId}
-            layout={layout}
-            onSelectChat={onSelectChat}
-            surface={surface}
-          />
+        {isolateConversation ? (
+          showWorkspaceAskSwitch ? (
+            <ChatScopeSwitch
+              icon={<Sparkle size={14} />}
+              label={t`Ask across meetings`}
+              layout={layout}
+              onClick={onOpenWorkspaceAsk ?? (() => {})}
+              surface={surface}
+            />
+          ) : null
+        ) : (
+          <>
+            <ChatGroups
+              chatScope={chatScope}
+              currentChatGroupId={currentChatGroupId}
+              layout={layout}
+              onSelectChat={onSelectChat}
+              surface={surface}
+            />
+            {showMeetingAskSwitch ? (
+              <ChatScopeSwitch
+                icon={<Note size={14} />}
+                label={t`Ask this meeting`}
+                layout={layout}
+                onClick={onOpenMeetingAsk ?? (() => {})}
+                surface={surface}
+              />
+            ) : null}
+          </>
         )}
       </div>
       <div
@@ -150,6 +181,50 @@ function ChatActionButton({
       className={cn(["text-muted-foreground rounded-full", className])}
     >
       {icon}
+    </Button>
+  );
+}
+
+function ChatScopeSwitch({
+  icon,
+  label,
+  layout,
+  onClick,
+  surface = "light",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  layout: "floating" | "right-panel" | "inline";
+  onClick: () => void;
+  surface?: "light" | "dark";
+}) {
+  const isDark = surface === "dark";
+
+  return (
+    <Button
+      aria-label={label}
+      data-tauri-drag-region="false"
+      data-chat-scope-switch
+      onClick={onClick}
+      size="sm"
+      variant="ghost"
+      className={cn([
+        "h-8 w-auto min-w-0 shrink gap-1.5 rounded-full px-2.5 py-0 transition-colors",
+        layout === "right-panel" && "h-7",
+        isDark
+          ? "text-primary-foreground/70 hover:bg-primary-foreground/14 hover:text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+      ])}
+    >
+      <span
+        className={cn([
+          "shrink-0",
+          isDark ? "text-primary-foreground/70" : "text-muted-foreground",
+        ])}
+      >
+        {icon}
+      </span>
+      <span className="truncate text-xs font-medium">{label}</span>
     </Button>
   );
 }

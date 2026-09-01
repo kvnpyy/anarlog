@@ -12,10 +12,17 @@ const mocks = vi.hoisted(() => ({
   )),
   chat: {
     groupId: "group-1",
+    isolateConversation: false,
     scope: "general" as "general" | "automations",
     sessionId: "session-1",
+    workspaceAsk: false,
+    isRecording: false,
+    isBatchOnly: false,
     startNewChat: vi.fn(),
     selectChat: vi.fn(),
+    openWorkspaceAsk: vi.fn(),
+    openMeetingAsk: vi.fn(),
+    sendEvent: vi.fn(),
   },
 }));
 

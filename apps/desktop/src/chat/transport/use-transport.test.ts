@@ -39,6 +39,8 @@ describe("chat transport prompt guidance", () => {
     );
     expect(prompt).toContain("write plain text only");
     expect(prompt).toContain("copy-paste into Gmail");
+    expect(prompt).toContain("Write in the user's voice");
+    expect(prompt).toContain("Avoid obvious AI writing");
     expect(prompt).not.toContain("grep_notes");
     expect(prompt).not.toContain("search_sessions");
     expect(prompt).not.toContain("read_note");
@@ -69,13 +71,13 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Keep answers short");
   });
 
-  it("tells the model about the Free 14-day AI window", () => {
+  it("tells the model about the Free 30-day AI window", () => {
     const prompt = appendAiKnowledgeWindowGuidance("Base prompt", {
-      days: 14,
+      days: 30,
       isPro: false,
     });
 
-    expect(prompt).toContain("last 14 days");
+    expect(prompt).toContain("last 30 days");
     expect(prompt).toContain("Acorn Pro remembers 365 days");
   });
 

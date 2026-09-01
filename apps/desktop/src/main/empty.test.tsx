@@ -35,6 +35,8 @@ vi.mock("~/contexts/shell", () => ({
     chat: {
       mode: "FloatingClosed",
       sendEvent: vi.fn(),
+      openWorkspaceAsk: vi.fn(),
+      openMeetingAsk: vi.fn(),
     },
   }),
 }));

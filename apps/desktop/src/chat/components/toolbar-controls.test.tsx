@@ -337,4 +337,47 @@ describe("ChatToolbarControls", () => {
     expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
     expect(mocks.useRecentChatGroups).not.toHaveBeenCalled();
   });
+
+  it("lets a meeting conversation switch back to Ask across meetings", () => {
+    const onOpenWorkspaceAsk = vi.fn();
+
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        isolateConversation
+        showWorkspaceAskSwitch
+        onNewChat={vi.fn()}
+        onOpenWorkspaceAsk={onOpenWorkspaceAsk}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ask across meetings" }),
+    );
+
+    expect(onOpenWorkspaceAsk).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Chat history" })).toBeNull();
+  });
+
+  it("lets workspace Ask switch back to this meeting", () => {
+    const onOpenMeetingAsk = vi.fn();
+
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        showMeetingAskSwitch
+        onNewChat={vi.fn()}
+        onOpenMeetingAsk={onOpenMeetingAsk}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask this meeting" }));
+
+    expect(onOpenMeetingAsk).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Chat history" })).toBeTruthy();
+  });
 });

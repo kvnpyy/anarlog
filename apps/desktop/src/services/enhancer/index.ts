@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 
 import { type EnhanceEligibilitySkipCode, getEligibility } from "./eligibility";
+import { clearAutoEnhancePending, setAutoEnhancePending } from "./pending-ui";
 import {
   discardPendingAutoEnhanceJob,
   type EnhancerNote,
@@ -267,6 +268,7 @@ export class EnhancerService {
   ) {
     if (this.activeAutoEnhance.has(sessionId)) return;
     this.activeAutoEnhance.set(sessionId, pendingAutoEnhance);
+    setAutoEnhancePending(sessionId, pendingAutoEnhance?.noteId ?? true);
     this.runAutoEnhance(sessionId, 0);
   }
 
@@ -402,6 +404,7 @@ export class EnhancerService {
 
       const pendingJob = this.activeAutoEnhance.get(sessionId);
       this.activeAutoEnhance.delete(sessionId);
+      clearAutoEnhancePending(sessionId);
       if (pendingJob) {
         await discardPendingAutoEnhanceJob(pendingJob);
       }
@@ -423,6 +426,7 @@ export class EnhancerService {
 
     if (result.type === "too_short") {
       this.activeAutoEnhance.delete(sessionId);
+      clearAutoEnhancePending(sessionId);
       if (pendingAutoEnhance) {
         await discardPendingAutoEnhanceJob(pendingAutoEnhance);
       }
@@ -431,6 +435,7 @@ export class EnhancerService {
 
     if (result.type === "no_model") {
       this.activeAutoEnhance.delete(sessionId);
+      clearAutoEnhancePending(sessionId);
       if (pendingAutoEnhance) {
         this.schedulePendingAutoEnhanceResume();
       }
@@ -439,6 +444,9 @@ export class EnhancerService {
     }
 
     this.activeAutoEnhance.delete(sessionId);
+    if (result.type === "already_active") {
+      clearAutoEnhancePending(sessionId);
+    }
     this.emit({
       type: "auto-enhance-started",
       sessionId,
@@ -493,6 +501,7 @@ export class EnhancerService {
 
   private handleAutoEnhanceError(sessionId: string, error: unknown) {
     this.activeAutoEnhance.delete(sessionId);
+    clearAutoEnhancePending(sessionId);
     this.clearRetry(sessionId);
     const reason = error instanceof Error ? error.message : String(error);
     console.error("[enhancer] auto-enhance failed", error);
@@ -633,6 +642,7 @@ export class EnhancerService {
         },
       })
       .then(async () => {
+        clearAutoEnhancePending(sessionId);
         const taskState = aiTaskStore.getState().getState(enhanceTaskId);
         if (taskState?.status === "error") {
           trackAnalyticsEvent("enhancement_failed", {
@@ -658,6 +668,7 @@ export class EnhancerService {
         }
       })
       .catch((error) => {
+        clearAutoEnhancePending(sessionId);
         console.error(
           "[enhancer] failed to finalize auto-enhance task state",
           error,

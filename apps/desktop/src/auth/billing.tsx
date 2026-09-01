@@ -30,6 +30,7 @@ import { configurePaidSettings } from "../shared/config/configure-paid-settings"
 import { LOCAL_ONLY } from "../shared/product";
 import { startTrialOnce } from "../shared/trial-start";
 import { buildWebAppUrl } from "../shared/utils";
+import { deriveLocalAcornBilling } from "./acorn-billing";
 import { useAuth } from "./auth-context";
 import { type BillingAccess, BillingContext } from "./billing-context";
 
@@ -81,10 +82,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     current_llm_provider: currentLlmProvider,
     current_stt_provider: currentSttProvider,
     current_stt_model: currentSttModel,
+    acorn_pro: acornPro,
   } = useConfigValues([
     "current_llm_provider",
     "current_stt_provider",
     "current_stt_model",
+    "acorn_pro",
   ] as const);
 
   const claimsQuery = useQuery({
@@ -95,7 +98,9 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       previous?.sub === auth?.session?.user.id ? previous : undefined,
   });
 
-  const billing = deriveBillingInfo(claimsQuery.data ?? null);
+  const billing = LOCAL_ONLY
+    ? deriveLocalAcornBilling(acornPro === true)
+    : deriveBillingInfo(claimsQuery.data ?? null);
   const isReady =
     LOCAL_ONLY || (!claimsQuery.isPending && !claimsQuery.isError);
   const claimsAreCurrent =
@@ -239,6 +244,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (
+      LOCAL_ONLY ||
       !auth?.session?.user.id ||
       !isReady ||
       !claimsAreCurrent ||
@@ -265,6 +271,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (
+      LOCAL_ONLY ||
       auth.session === undefined ||
       (auth.session !== null && (!isReady || !claimsAreCurrent))
     ) {
@@ -300,7 +307,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const wasPaid = prevIsPaidRef.current;
     prevIsPaidRef.current = billing.isPaid;
 
-    if (!wasPaid && billing.isPaid && isReady) {
+    if (!LOCAL_ONLY && !wasPaid && billing.isPaid && isReady) {
       void configurePaidSettings();
     }
   }, [billing.isPaid, isReady]);

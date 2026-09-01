@@ -52,11 +52,14 @@ export function useChatMode() {
       )
     );
   });
+  const workspaceAsk = useChatContext((state) => state.workspaceAsk);
+  const setWorkspaceAsk = useChatContext((state) => state.setWorkspaceAsk);
   const meetingChatId = getMeetingChatId({
     scope,
     isRecording,
     liveSessionId,
     currentSessionId,
+    workspaceAsk,
   });
 
   const selection = useChatContext((state) => {
@@ -156,10 +159,48 @@ export function useChatMode() {
         return;
       }
 
+      if (
+        scope === "general" &&
+        !currentSessionId &&
+        (event.type === "OPEN" ||
+          event.type === "TOGGLE" ||
+          event.type === "OPEN_RIGHT_PANEL")
+      ) {
+        setWorkspaceAsk(true);
+      }
+
       transitionChatMode(event);
     },
-    [inlineAsk, transitionChatMode],
+    [currentSessionId, inlineAsk, scope, setWorkspaceAsk, transitionChatMode],
   );
+
+  const openWorkspaceAsk = useCallback(() => {
+    if (inlineAsk) {
+      return;
+    }
+
+    setWorkspaceAsk(true);
+    if (mode === "FloatingClosed") {
+      transitionChatMode({ type: "OPEN" });
+    }
+  }, [inlineAsk, mode, setWorkspaceAsk, transitionChatMode]);
+
+  const openMeetingAsk = useCallback(() => {
+    setWorkspaceAsk(false);
+    if (inlineAsk) {
+      return;
+    }
+
+    if (mode === "FloatingClosed") {
+      transitionChatMode({ type: "OPEN" });
+    }
+  }, [inlineAsk, mode, setWorkspaceAsk, transitionChatMode]);
+
+  useEffect(() => {
+    if (isRecording) {
+      setWorkspaceAsk(false);
+    }
+  }, [isRecording, setWorkspaceAsk]);
 
   useEffect(() => {
     if (!inlineAsk) {
@@ -188,6 +229,9 @@ export function useChatMode() {
     mode,
     scope,
     sendEvent,
+    openWorkspaceAsk,
+    openMeetingAsk,
+    workspaceAsk,
     isRecording,
     isBatchOnly,
     inlineAsk,

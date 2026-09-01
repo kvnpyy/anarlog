@@ -167,6 +167,11 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "acorn_pro"],
     default: false as boolean,
   },
+  acorn_pro_source: {
+    type: "string",
+    path: ["general", "acorn_pro_source"],
+    default: "" as string,
+  },
   ai_language: {
     type: "string",
     path: ["language", "ai_language"],

@@ -33,6 +33,7 @@ const settingsState = vi.hoisted(() => ({
     current_llm_provider: undefined as string | undefined,
     current_stt_provider: undefined as string | undefined,
     current_stt_model: undefined as string | undefined,
+    acorn_pro: undefined as boolean | undefined,
   },
   setSettingValues: vi.fn(),
 }));
@@ -237,6 +238,7 @@ describe("BillingProvider", () => {
     settingsState.values.current_llm_provider = undefined;
     settingsState.values.current_stt_provider = undefined;
     settingsState.values.current_stt_model = undefined;
+    settingsState.values.acorn_pro = undefined;
     settingsState.setSettingValues.mockReset().mockResolvedValue(undefined);
 
     vi.mocked(authCommands.decodeClaims)

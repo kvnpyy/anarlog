@@ -35,6 +35,9 @@ internal
 .tauri-updater-key.password
 apps/desktop/.tauri-updater-key
 apps/desktop/.tauri-updater-key.pub
+apps/desktop/.acorn-pro-invites
+apps/desktop/.acorn-pro-invite-deploy-key
+apps/desktop/.acorn-pro-invite-deploy-key.pub
 
 .codex-security-artifacts-*/
 .codex-security-work-ledger-*.jsonl

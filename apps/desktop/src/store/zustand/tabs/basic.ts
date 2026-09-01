@@ -18,6 +18,7 @@ import {
   uniqueIdfromTab,
 } from "./schema";
 
+import { useChatContext } from "~/chat/state/chat-context";
 import { id } from "~/shared/utils";
 import { listenerStore } from "~/store/zustand/listener/instance";
 
@@ -561,6 +562,10 @@ const getChatModeForNavigation = (
   }
 
   if (targetTab.type !== "sessions") {
+    return null;
+  }
+
+  if (useChatContext.getState().workspaceAsk) {
     return null;
   }
 

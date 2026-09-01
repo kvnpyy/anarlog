@@ -78,7 +78,7 @@ describe("canonical meeting chat tools", () => {
     });
   });
 
-  it("omits meetings older than the Free 14-day window", async () => {
+  it("omits meetings older than the Free 30-day window", async () => {
     mocks.listMeetings.mockResolvedValue({
       meetings: [
         {
@@ -107,7 +107,7 @@ describe("canonical meeting chat tools", () => {
     expect(
       result.meetings.map((meeting: { id: string }) => meeting.id),
     ).toEqual(["recent"]);
-    expect(result.notice).toContain("last 14 days");
+    expect(result.notice).toContain("last 30 days");
   });
 
   it("matches the canonical MCP tool names, descriptions, and input schemas", async () => {

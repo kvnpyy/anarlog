@@ -22,7 +22,12 @@ export function ChatCTA({
     label ?? (isComposer ? t`Ask across your meetings` : t`Ask anything`);
 
   const handleClick = () => {
-    chat.sendEvent({ type: "OPEN" });
+    if (isComposer) {
+      chat.openWorkspaceAsk();
+      return;
+    }
+
+    chat.openMeetingAsk();
   };
 
   if (chat.inlineAsk || isChatOpen) {

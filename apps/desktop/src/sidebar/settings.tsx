@@ -266,9 +266,7 @@ export function SettingsNav() {
                 {group.label}
               </span>
               {group.items.map((item) => {
-                const requiresPro = Boolean(
-                  item.requiresPro && (LOCAL_ONLY ? true : !isPro),
-                );
+                const requiresPro = Boolean(item.requiresPro && !isPro);
 
                 return (
                   <div key={item.id} className="group/row relative">

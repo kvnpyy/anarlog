@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
 
+import { useBillingAccess } from "~/auth/billing-context";
+import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
 import {
   ACORN_PLANS,
   ACORN_PRO_CHECKOUT_HREF,
@@ -31,61 +33,76 @@ export function AcornPlansDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { isPro } = useBillingAccess();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <GlassDialogContent className="max-w-[640px] overflow-y-auto">
         <DialogHeader className="text-left sm:text-left">
           <DialogTitle>Plans</DialogTitle>
           <DialogDescription>
-            Compare {PRODUCT_NAME} Free and Pro. Checkout will open when{" "}
+            Free runs Haiku. Pro is smarter AI. Checkout opens when{" "}
             {PRODUCT_NAME} is public.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {ACORN_PLANS.map((tier) => (
-            <div key={tier.id} className="flex flex-col p-2">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-foreground font-sans text-base font-medium">
-                  {tier.name}
-                </span>
-              </div>
-              <div className="mb-2">
-                <span className="text-muted-foreground font-sans text-xl">
-                  {tier.price}
-                </span>
-                {tier.period ? (
-                  <span className="text-muted-foreground ml-1 text-sm">
-                    {tier.period}
+          {ACORN_PLANS.map((tier) => {
+            const isCurrent =
+              (tier.id === "pro" && isPro) || (tier.id === "free" && !isPro);
+
+            return (
+              <div key={tier.id} className="flex flex-col p-2">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-foreground font-sans text-base font-medium">
+                    {tier.name}
                   </span>
-                ) : null}
-                {tier.subtitle ? (
-                  <div className="text-muted-foreground mt-0.5 text-xs">
-                    {tier.subtitle}
-                  </div>
-                ) : null}
+                </div>
+                <div className="mb-2">
+                  <span className="text-muted-foreground font-sans text-xl">
+                    {tier.price}
+                  </span>
+                  {tier.period ? (
+                    <span className="text-muted-foreground ml-1 text-sm">
+                      {tier.period}
+                    </span>
+                  ) : null}
+                  {tier.subtitle ? (
+                    <div className="text-muted-foreground mt-0.5 text-xs">
+                      {tier.subtitle}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="mb-3">
+                  <PlanFeatureList features={tier.features} dense />
+                </div>
+                <div className="mt-auto">
+                  {isCurrent ? (
+                    <div className="border-border bg-muted text-muted-foreground flex h-8 w-full items-center justify-center rounded-full border text-xs">
+                      Current plan
+                    </div>
+                  ) : tier.id === "pro" ? (
+                    <a
+                      href={ACORN_PRO_CHECKOUT_HREF}
+                      aria-disabled="true"
+                      onClick={handleInertCheckout}
+                      className="bg-primary text-primary-foreground flex h-8 w-full cursor-not-allowed items-center justify-center rounded-full text-xs font-medium no-underline opacity-80"
+                    >
+                      Get Pro
+                    </a>
+                  ) : (
+                    <div className="border-border bg-muted text-muted-foreground flex h-8 w-full items-center justify-center rounded-full border text-xs">
+                      Included on Free
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="mb-3">
-                <PlanFeatureList features={tier.features} dense />
-              </div>
-              <div className="mt-auto">
-                {tier.id === "free" ? (
-                  <div className="border-border bg-muted text-muted-foreground flex h-8 w-full items-center justify-center rounded-full border text-xs">
-                    Current plan
-                  </div>
-                ) : (
-                  <a
-                    href={ACORN_PRO_CHECKOUT_HREF}
-                    aria-disabled="true"
-                    onClick={handleInertCheckout}
-                    className="bg-primary text-primary-foreground flex h-8 w-full cursor-not-allowed items-center justify-center rounded-full text-xs font-medium no-underline opacity-80"
-                  >
-                    Get Pro
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+        <AcornProInviteForm
+          alreadyPro={isPro}
+          onRedeemed={() => onOpenChange(false)}
+        />
         <DialogFooter className="sm:justify-end">
           <GlassDialogCancelButton
             type="button"

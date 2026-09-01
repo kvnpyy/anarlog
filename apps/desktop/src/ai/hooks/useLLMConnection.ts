@@ -29,9 +29,14 @@ import {
   type ProviderEligibilityContext,
 } from "~/settings/ai/shared/eligibility";
 import { useAiProvider } from "~/settings/providers";
-import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
+import {
+  getAcornDefaultLlm,
+  isAcornHostedApiKey,
+  resolveAcornHostedLlmModel,
+} from "~/shared/acorn-defaults";
 import { useConfigValues } from "~/shared/config";
 import { hostedFetch as tauriFetch } from "~/shared/hosted-fetch";
+import { LOCAL_ONLY } from "~/shared/product";
 
 type LanguageModelV3 = Parameters<typeof wrapLanguageModel>[0]["model"];
 
@@ -92,10 +97,12 @@ export const useLLMConnection = (): LLMConnectionResult => {
   const auth = useAuth();
   const billing = useBillingAccess();
 
-  const { current_llm_provider, current_llm_model } = useConfigValues([
-    "current_llm_provider",
-    "current_llm_model",
-  ] as const);
+  const { current_llm_provider, current_llm_model, acorn_pro } =
+    useConfigValues([
+      "current_llm_provider",
+      "current_llm_model",
+      "acorn_pro",
+    ] as const);
   const providerConfig = useAiProvider("llm", current_llm_provider) as
     | AIProviderStorage
     | undefined;
@@ -108,10 +115,13 @@ export const useLLMConnection = (): LLMConnectionResult => {
         providerConfig,
         session: auth?.session,
         isPaid: billing.isPaid,
+        isPro: LOCAL_ONLY ? acorn_pro === true : billing.isPro,
       }),
     [
       auth,
       billing.isPaid,
+      billing.isPro,
+      acorn_pro,
       current_llm_model,
       current_llm_provider,
       providerConfig,
@@ -130,6 +140,7 @@ const resolveLLMConnection = (params: {
   providerConfig: AIProviderStorage | undefined;
   session: { access_token: string } | null | undefined;
   isPaid: boolean;
+  isPro?: boolean;
 }): LLMConnectionResult => {
   const {
     providerId: rawProviderId,
@@ -137,6 +148,7 @@ const resolveLLMConnection = (params: {
     providerConfig,
     session,
     isPaid,
+    isPro = false,
   } = params;
 
   if (!rawProviderId) {
@@ -173,6 +185,10 @@ const resolveLLMConnection = (params: {
     providerDefinition.baseUrl?.trim() ||
     "";
   const apiKey = providerConfig?.api_key?.trim() || "";
+  const hostedModelId =
+    providerId === "acorn" && isAcornHostedApiKey(apiKey)
+      ? resolveAcornHostedLlmModel(modelId, isPro)
+      : modelId;
 
   const context: ProviderEligibilityContext = {
     isAuthenticated: !!session,
@@ -225,7 +241,7 @@ const resolveLLMConnection = (params: {
   }
 
   return {
-    conn: { providerId, modelId, baseUrl, apiKey },
+    conn: { providerId, modelId: hostedModelId ?? modelId, baseUrl, apiKey },
     status: { status: "success", providerId, isHosted: false },
   };
 };

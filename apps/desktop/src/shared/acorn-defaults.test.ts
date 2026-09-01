@@ -16,11 +16,15 @@ vi.mock("~/env", () => ({
 
 import {
   ACORN_HOSTED_API_KEY,
+  ACORN_HOSTED_HAIKU_MODEL,
+  ACORN_HOSTED_SONNET_MODEL,
   withAcornBundledProviders,
   getAcornDefaultLlm,
   getAcornDefaultStt,
   hydrateAcornHostedAi,
   isAcornHostedApiKey,
+  resolveAcornHostedLlmModel,
+  restrictAcornHostedLlmModels,
 } from "./acorn-defaults";
 
 describe("Acorn bundled AI defaults", () => {
@@ -80,6 +84,32 @@ describe("Acorn bundled AI defaults", () => {
 
     expect(withAcornBundledProviders("llm", {})["llm:acorn"]?.api_key).toBe(
       ACORN_HOSTED_API_KEY,
+    );
+  });
+
+  it("restricts the hosted key to Haiku on Free and Sonnet or Haiku on Pro", () => {
+    expect(
+      restrictAcornHostedLlmModels(
+        ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5", "gpt-4o"],
+        ACORN_HOSTED_SONNET_MODEL,
+        false,
+      ),
+    ).toEqual(["claude-haiku-4-5"]);
+    expect(
+      restrictAcornHostedLlmModels(
+        ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5", "gpt-4o"],
+        ACORN_HOSTED_SONNET_MODEL,
+        true,
+      ),
+    ).toEqual(["claude-sonnet-4-5", "claude-sonnet-4-6", "claude-haiku-4-5"]);
+    expect(resolveAcornHostedLlmModel("claude-opus-4-6", false)).toBe(
+      ACORN_HOSTED_HAIKU_MODEL,
+    );
+    expect(resolveAcornHostedLlmModel("claude-sonnet-4-5", false)).toBe(
+      ACORN_HOSTED_HAIKU_MODEL,
+    );
+    expect(resolveAcornHostedLlmModel("claude-sonnet-4-5", true)).toBe(
+      "claude-sonnet-4-5",
     );
   });
 

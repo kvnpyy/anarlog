@@ -17,11 +17,12 @@ import { loadHuman, loadOrganization } from "~/contacts/queries";
 import { useToolRegistry } from "~/contexts/tool";
 import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue, useConfigValues } from "~/shared/config";
+import { FREE_AI_WINDOW_DAYS, PRO_AI_WINDOW_DAYS } from "~/shared/product";
 
 export const MEETING_CONTEXT_TOOL_GUIDANCE = `
 Context and local meeting tool guidance:
 - Use list_meetings for recent meetings, title or ID lookup, pagination, and exact recurring-series filtering. Never guess a meeting ID.
-- Meeting search tools only include meetings inside the current AI knowledge window. If a tool result includes notice or error "outside_ai_window", tell the user that Free only searches the last 14 days and that Acorn Pro remembers 365 days. Do not claim you searched older meetings.
+- Meeting search tools only include meetings inside the current AI knowledge window. If a tool result includes notice or error "outside_ai_window", tell the user that Free only searches the last ${FREE_AI_WINDOW_DAYS} days and that Acorn Pro remembers ${PRO_AI_WINDOW_DAYS} days. Do not claim you searched older meetings.
 - Use search_meetings for open-ended questions about topics, people, decisions, or date ranges across meeting content. Use search_meeting_content when the user needs exact wording from notes or transcripts.
 - After resolving an ID, use get_meeting for the canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for bounded transcript pages, following pagination.next_offset only when more context is needed.
 - Use get_recurring_meeting_history for meetings in the same recurring series. Use find_related_meetings only for broader relationships such as shared participants or nearby dates.
@@ -40,6 +41,8 @@ Copy-ready draft guidance:
 - Do not use markdown: no asterisks, underscores, headings, backticks, or fenced code blocks.
 - For emails, start with "Subject:" on its own line, then a blank line, then the body.
 - The whole draft should copy-paste into Gmail or Slack without cleanup.
+- Write in the user's voice: match how they talk in the transcript and what their profile says about them.
+- Avoid obvious AI writing: no "I hope this finds you well", "delve", "furthermore", "leverage", "I'd be happy to", or stiff corporate filler.
 
 Web search guidance:
 - Use web_search for public websites, URLs, companies, products, people, news, or current facts that may be outside local notes.
@@ -161,7 +164,7 @@ export function appendAiKnowledgeWindowGuidance(
 ): string | undefined {
   const guidance = window.isPro
     ? `AI knowledge window:\n- Meeting search tools include meetings from the last ${window.days} days.`
-    : `AI knowledge window:\n- Meeting search tools only include meetings from the last ${window.days} days.\n- If the user asks about something older than that, tell them Free only searches the last 14 days and that Acorn Pro remembers 365 days. Do not invent older meeting content.`;
+    : `AI knowledge window:\n- Meeting search tools only include meetings from the last ${window.days} days.\n- If the user asks about something older than that, tell them Free only searches the last ${window.days} days and that Acorn Pro remembers ${PRO_AI_WINDOW_DAYS} days. Do not invent older meeting content.`;
 
   if (prompt === undefined) {
     return undefined;

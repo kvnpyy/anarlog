@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
     | "FloatingOpen"
     | "RightPanelOpen",
   sendEvent: vi.fn(),
+  openWorkspaceAsk: vi.fn(),
+  openMeetingAsk: vi.fn(),
   inlineAsk: false,
 }));
 
@@ -16,6 +18,8 @@ vi.mock("~/contexts/shell", () => ({
       mode: mocks.chatMode,
       inlineAsk: mocks.inlineAsk,
       sendEvent: mocks.sendEvent,
+      openWorkspaceAsk: mocks.openWorkspaceAsk,
+      openMeetingAsk: mocks.openMeetingAsk,
     },
   }),
 }));
@@ -28,6 +32,8 @@ describe("ChatCTA", () => {
     mocks.chatMode = "FloatingClosed";
     mocks.inlineAsk = false;
     mocks.sendEvent.mockClear();
+    mocks.openWorkspaceAsk.mockClear();
+    mocks.openMeetingAsk.mockClear();
   });
 
   it("opens the floating chat", () => {
@@ -39,7 +45,8 @@ describe("ChatCTA", () => {
 
     fireEvent.click(button);
 
-    expect(mocks.sendEvent).toHaveBeenCalledWith({ type: "OPEN" });
+    expect(mocks.openMeetingAsk).toHaveBeenCalled();
+    expect(mocks.sendEvent).not.toHaveBeenCalled();
   });
 
   it("rests as a handle and expands into an input-like field on hover", () => {
@@ -131,6 +138,10 @@ describe("ChatCTA", () => {
     expect(surface?.className).toContain("h-10");
     expect(surface?.className).toContain("w-full");
     expect(label.className).toContain("opacity-100");
+
+    fireEvent.click(button);
+    expect(mocks.openWorkspaceAsk).toHaveBeenCalled();
+    expect(mocks.openMeetingAsk).not.toHaveBeenCalled();
   });
 
   it("uses a compact hover rectangle for the floating trigger", () => {

@@ -13,6 +13,7 @@ describe("chat context", () => {
         },
       },
       chatByMeetingId: {},
+      workspaceAsk: false,
     });
   });
 
@@ -122,5 +123,29 @@ describe("getMeetingChatId", () => {
         currentSessionId: undefined,
       }),
     ).toBeUndefined();
+  });
+
+  test("keeps general chat while asking across meetings from a note", () => {
+    expect(
+      getMeetingChatId({
+        scope: "general",
+        isRecording: false,
+        liveSessionId: null,
+        currentSessionId: "tab-1",
+        workspaceAsk: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  test("still isolates the live meeting while recording", () => {
+    expect(
+      getMeetingChatId({
+        scope: "general",
+        isRecording: true,
+        liveSessionId: "live-1",
+        currentSessionId: "tab-1",
+        workspaceAsk: true,
+      }),
+    ).toBe("live-1");
   });
 });

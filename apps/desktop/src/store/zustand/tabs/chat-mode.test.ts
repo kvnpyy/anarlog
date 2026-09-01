@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { useTabs } from ".";
 import { createSessionTab, resetTabsStore } from "./test-utils";
 
+import { useChatContext } from "~/chat/state/chat-context";
+
 describe("Chat Mode", () => {
   beforeEach(() => {
     resetTabsStore();
+    useChatContext.setState({ workspaceAsk: false });
   });
 
   test("initial mode is FloatingClosed", () => {
@@ -78,6 +81,16 @@ describe("Chat Mode", () => {
     useTabs.getState().openNew(second);
 
     expect(useTabs.getState().chatMode).toBe("FloatingClosed");
+  });
+
+  test("opening a note keeps workspace Ask open", () => {
+    useChatContext.setState({ workspaceAsk: true });
+    const session = createSessionTab({ id: "from-ask" });
+
+    useTabs.getState().transitionChatMode({ type: "OPEN" });
+    useTabs.getState().openNew(session);
+
+    expect(useTabs.getState().chatMode).toBe("FloatingOpen");
   });
 
   test("opening the current session keeps the floating chat open", () => {

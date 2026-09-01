@@ -87,6 +87,6 @@ describe("search meetings chat tool", () => {
 
     expect(search).not.toHaveBeenCalled();
     expect(result.results).toEqual([]);
-    expect(result.notice).toContain("last 14 days");
+    expect(result.notice).toContain("last 30 days");
   });
 });

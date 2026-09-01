@@ -61,6 +61,9 @@ import {
   updateSettingValue,
 } from "./queries";
 
+import { hydrateAcornHostedAi } from "~/shared/acorn-defaults";
+import { commands as desktopCommands } from "~/types/tauri.gen";
+
 describe("SQLite settings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,6 +76,11 @@ describe("SQLite settings", () => {
     mocks.getTemplateSource.mockResolvedValue({
       status: "ok",
       data: "- Use Markdown.",
+    });
+    hydrateAcornHostedAi({});
+    vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
+      stt: false,
+      llm: false,
     });
   });
 
@@ -494,6 +502,53 @@ Start with decisions.`);
     await expect(initializeApplicationSettings()).resolves.toBeUndefined();
 
     expect(mocks.executeTransaction).not.toHaveBeenCalled();
+  });
+
+  it("seeds hosted Deepgram and Haiku when bundled keys exist", async () => {
+    vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
+      stt: true,
+      llm: true,
+    });
+    mocks.execute.mockResolvedValue([]);
+
+    await initializeApplicationSettings();
+
+    const statements = mocks.executeTransaction.mock.calls[0][0];
+    expect(statements.map((statement) => statement.params.slice(0, 2))).toEqual(
+      expect.arrayContaining([
+        ["current_stt_provider", JSON.stringify("deepgram")],
+        ["current_stt_model", JSON.stringify("nova-3-general")],
+        ["current_llm_provider", JSON.stringify("acorn")],
+        ["current_llm_model", JSON.stringify("claude-haiku-4-5")],
+      ]),
+    );
+  });
+
+  it("moves a batch on-device STT selection onto hosted live Deepgram", async () => {
+    vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
+      stt: true,
+      llm: true,
+    });
+    mocks.execute.mockResolvedValue([
+      {
+        id: "current_stt_provider",
+        value_json: JSON.stringify("soniqo"),
+      },
+      {
+        id: "current_stt_model",
+        value_json: JSON.stringify("soniqo-parakeet-batch"),
+      },
+    ]);
+
+    await initializeApplicationSettings();
+
+    const statements = mocks.executeTransaction.mock.calls[0][0];
+    expect(statements.map((statement) => statement.params.slice(0, 2))).toEqual(
+      expect.arrayContaining([
+        ["current_stt_provider", JSON.stringify("deepgram")],
+        ["current_stt_model", JSON.stringify("nova-3-general")],
+      ]),
+    );
   });
 
   it("updates against the latest SQLite value inside the write queue", async () => {

@@ -28,7 +28,7 @@ export function LiveAskRail({
     {
       label: t`Catch me up`,
       icon: ClockCounterClockwise,
-      prompt: t`Catch me up on this meeting. Using only the in-progress transcript from the last 10 minutes, give short bullets of what was said, then 1-2 sentences on what I should say next.`,
+      prompt: t`Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, give 3-5 short bullets of what just happened, then one sentence on what I should say next.`,
     },
     {
       label: t`Sound smart`,
@@ -38,7 +38,7 @@ export function LiveAskRail({
     {
       label: t`Draft email`,
       icon: Envelope,
-      prompt: t`Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
+      prompt: t`Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
     },
   ];
   const handleRecipeClick = useCallback(
@@ -61,7 +61,7 @@ export function LiveAskRail({
           data-live-ask-batch-warning
           className="text-muted-foreground mb-1.5 text-xs leading-relaxed"
         >
-          {t`Live Ask needs a live transcription model. The current STT model only transcribes after you stop recording.`}
+          {t`Live Ask needs a live transcription model. Choose Deepgram Nova 3 (Acorn’s default) in Settings → Intelligence.`}
         </p>
       ) : null}
       {showRecipes ? (

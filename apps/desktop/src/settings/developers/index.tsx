@@ -10,9 +10,9 @@ import { CloudApiSection } from "./cloud-api";
 import { DevtoolsSection } from "./devtools";
 import { WebhooksSection } from "./webhooks";
 
+import { setAcornProEntitlement } from "~/auth/acorn-pro";
 import { useBillingAccess } from "~/auth/billing-context";
 import { SettingsPageTitle } from "~/settings/page-title";
-import { useSetSettingValue } from "~/settings/queries";
 import { SettingSwitchRow } from "~/settings/setting-row";
 import { AcornProLockOverlay } from "~/shared/acorn-pro-dialog";
 import { useConfigValue } from "~/shared/config";
@@ -22,7 +22,6 @@ export { buildMcpConfiguration, getCliInstallNotification } from "./cli";
 
 function AcornProFlagSection() {
   const acornPro = useConfigValue("acorn_pro") === true;
-  const setAcornPro = useSetSettingValue("acorn_pro");
 
   return (
     <section className="flex flex-col gap-4">
@@ -31,7 +30,9 @@ function AcornProFlagSection() {
         title="acorn_pro"
         description="Local flag for the 365-day AI window. Off for everyone on the private beta unless you enable it."
         checked={acornPro}
-        onChange={setAcornPro}
+        onChange={(enabled) => {
+          void setAcornProEntitlement(enabled, enabled ? "dev" : null);
+        }}
       />
     </section>
   );

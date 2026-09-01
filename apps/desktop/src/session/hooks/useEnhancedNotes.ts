@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 
 import { useAITask } from "~/ai/contexts";
 import { getEnhancerService } from "~/services/enhancer";
+import { useAutoEnhancePending } from "~/services/enhancer/pending-ui";
 import { useHasTranscript } from "~/session/components/shared";
 import {
   useEnhancedNote as useSqliteEnhancedNote,
@@ -102,17 +103,18 @@ export function useEnsureDefaultSummaryFromState({
 
 export function useIsSessionEnhancing(sessionId: string): boolean {
   const enhancedNoteIds = useEnhancedNotes(sessionId);
+  const isPending = useAutoEnhancePending(sessionId);
 
   const taskIds = useMemo(
     () => enhancedNoteIds.map((id) => createTaskId(id, "enhance")),
     [enhancedNoteIds],
   );
 
-  const isEnhancing = useAITask((state) => {
+  const isGenerating = useAITask((state) => {
     return taskIds.some(
       (taskId) => state.tasks[taskId]?.status === "generating",
     );
   });
 
-  return isEnhancing;
+  return isPending || isGenerating;
 }

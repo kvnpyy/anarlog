@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { sonnerToast } from "@anlg/ui/components/ui/toast";
 
 import { getEnhancerService } from "~/services/enhancer";
+import {
+  getAutoEnhancePendingNoteId,
+  isAutoEnhancePending,
+  subscribeAutoEnhancePending,
+} from "~/services/enhancer/pending-ui";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
 export function useAutoEnhance(tab: Extract<Tab, { type: "sessions" }>) {
@@ -10,9 +15,40 @@ export function useAutoEnhance(tab: Extract<Tab, { type: "sessions" }>) {
   const [skipReason, setSkipReason] = useState<string | null>(null);
 
   useEffect(() => {
+    const switchToEnhanced = (noteId: string) => {
+      const tabsState = useTabs.getState();
+      const sessionTab = tabsState.tabs.find(
+        (t): t is Extract<Tab, { type: "sessions" }> =>
+          t.type === "sessions" && t.id === sessionId,
+      );
+      if (sessionTab) {
+        tabsState.updateSessionTabState(sessionTab, {
+          ...sessionTab.state,
+          view: { type: "enhanced", id: noteId },
+        });
+      }
+    };
+
+    const pendingNoteId = getAutoEnhancePendingNoteId(sessionId);
+    if (pendingNoteId) {
+      switchToEnhanced(pendingNoteId);
+    }
+
+    const unsubPending = subscribeAutoEnhancePending(() => {
+      if (!isAutoEnhancePending(sessionId)) {
+        return;
+      }
+      const noteId = getAutoEnhancePendingNoteId(sessionId);
+      if (noteId) {
+        switchToEnhanced(noteId);
+      }
+    });
+
     const service = getEnhancerService();
-    if (!service) return;
-    return service.on((event) => {
+    if (!service) {
+      return unsubPending;
+    }
+    const unsubService = service.on((event) => {
       if (event.sessionId !== sessionId) return;
       if (event.type === "auto-enhance-skipped") {
         setSkipReason(event.reason);
@@ -24,22 +60,16 @@ export function useAutoEnhance(tab: Extract<Tab, { type: "sessions" }>) {
         }
       }
       if (event.type === "auto-enhance-started") {
-        const tabsState = useTabs.getState();
-        const sessionTab = tabsState.tabs.find(
-          (t): t is Extract<Tab, { type: "sessions" }> =>
-            t.type === "sessions" && t.id === sessionId,
-        );
-        if (sessionTab) {
-          tabsState.updateSessionTabState(sessionTab, {
-            ...sessionTab.state,
-            view: { type: "enhanced", id: event.noteId },
-          });
-        }
+        switchToEnhanced(event.noteId);
       }
       if (event.type === "auto-enhance-no-model") {
         setSkipReason("No AI model configured");
       }
     });
+    return () => {
+      unsubPending();
+      unsubService();
+    };
   }, [sessionId]);
 
   useEffect(() => {

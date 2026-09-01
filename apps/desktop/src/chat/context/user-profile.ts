@@ -102,6 +102,34 @@ export function renderUserProfileGuidance(profile: UserProfile): string | null {
     "User profile:",
     "- This is the person using the app, not necessarily a meeting participant.",
     ...details.map((detail) => `- ${detail}`),
-    "- Tailor answers, recaps, and drafts to their role and context.",
+    "- Tailor answers, recaps, drafts, and summaries to their role. Sales cares about pipeline, objections, and next steps; execs about decisions, risks, and owners; HR about people, process, and follow-ups.",
+    "- Match how they speak and write. Avoid generic AI phrasing, filler, and corporate jargon.",
   ].join("\n");
+}
+
+export function formatNoteAudienceGuidance(profile: UserProfile): string {
+  if (!hasUserProfile(profile)) {
+    return "";
+  }
+
+  const details = [
+    profile.name ? `- Name: ${profile.name}` : null,
+    profile.role ? `- Role: ${profile.role}` : null,
+    profile.department ? `- Department: ${profile.department}` : null,
+    profile.context ? `- Context: ${profile.context}` : null,
+  ].filter(Boolean);
+
+  return `# Note audience
+
+Write this note for the person using the app, not a generic reader.
+${details.join("\n")}
+Emphasize what their job needs: pipeline, objections, and next steps for sales; decisions, risks, and owners for execs; people, process, and follow-ups for HR. Keep their vocabulary. Do not write a generic recap that ignores their role.`;
+}
+
+export function appendNoteAudienceGuidance(
+  prompt: string,
+  profile: UserProfile | undefined,
+): string {
+  const guidance = profile ? formatNoteAudienceGuidance(profile) : "";
+  return guidance ? `${prompt}\n\n${guidance}` : prompt;
 }

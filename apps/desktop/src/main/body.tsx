@@ -61,7 +61,7 @@ export function ClassicMainBody({
 }: {
   showSyncStatus?: boolean;
 }) {
-  const { leftsidebar } = useShell();
+  const { chat, leftsidebar } = useShell();
   const currentTab = useTabs((state) => state.currentTab);
   useClassicMainShortcuts();
   const [leftSidebarPanelConstraints, setLeftSidebarPanelConstraints] =
@@ -412,6 +412,7 @@ export function ClassicMainBody({
           sidebarExpanded
           showSidebarToggle={showSidebarToggleInBody}
           showIgnoredTimelineEvents={showIgnoredTimelineEvents}
+          onAsk={chat.openWorkspaceAsk}
           onNewNote={createNewNote}
           onNoteFilterChange={setNoteFilter}
           onSearch={handleOpenNoteDialog}
@@ -451,6 +452,7 @@ export function ClassicMainBody({
               sidebarExpanded={false}
               showSidebarToggle={showSidebarToggleInBody}
               showIgnoredTimelineEvents={showIgnoredTimelineEvents}
+              onAsk={chat.openWorkspaceAsk}
               onNewNote={createNewNote}
               onNoteFilterChange={setNoteFilter}
               onSearch={handleOpenNoteDialog}

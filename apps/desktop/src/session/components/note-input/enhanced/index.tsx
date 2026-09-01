@@ -12,6 +12,7 @@ import { StreamingView } from "./streaming";
 
 import { useAITaskTask } from "~/ai/hooks";
 import { useLLMConnectionStatus } from "~/ai/hooks";
+import { useAutoEnhancePending } from "~/services/enhancer/pending-ui";
 import { hasStoredNoteContent } from "~/session/components/shared";
 import { shouldShowEmptySummaryConfigError } from "~/session/enhance-config";
 import { useEnhancedNote } from "~/session/queries";
@@ -47,11 +48,15 @@ export const Enhanced = forwardRef<
     const enhancedNote = useEnhancedNote(enhancedNoteId ?? "");
     const content = enhancedNote?.content;
     const isConfigError = shouldShowEmptySummaryConfigError(llmStatus);
+    const isPending = useAutoEnhancePending(sessionId);
 
     const hasContent = hasStoredNoteContent(content);
     const isAwaitingPersistedContent =
       status === "success" && streamedText.trim().length > 0 && !hasContent;
-    const showStreaming = status === "generating" || isAwaitingPersistedContent;
+    const showStreaming =
+      status === "generating" ||
+      isAwaitingPersistedContent ||
+      (isPending && !hasContent && status !== "error");
     const streamPreview = useMemo(
       () =>
         showStreaming ? getStreamedEnhancePreview(streamedText) : undefined,
@@ -90,6 +95,7 @@ export const Enhanced = forwardRef<
           sessionId={sessionId}
           sessionTitle={sessionTitle}
           enhancedNoteId={enhancedNoteId}
+          preparing={status !== "generating"}
         />
       );
     }

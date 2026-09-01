@@ -542,6 +542,10 @@ msgstr ""
 msgid "Ask across all your meetings."
 msgstr ""
 
+#: src/chat/components/toolbar-controls.tsx
+msgid "Ask across meetings"
+msgstr ""
+
 #: src/chat/components/content.tsx
 #: src/shared/chat-cta.tsx
 msgid "Ask across your meetings"
@@ -550,6 +554,10 @@ msgstr ""
 #: src/chat/components/input/index.tsx
 #: src/shared/chat-cta.tsx
 msgid "Ask anything"
+msgstr ""
+
+#: src/chat/components/toolbar-controls.tsx
+msgid "Ask this meeting"
 msgstr ""
 
 #: src/task/resource-view.tsx
@@ -773,7 +781,7 @@ msgid "Catch me up on recent meetings."
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Catch me up on this meeting. Using only the in-progress transcript from the last 10 minutes, give short bullets of what was said, then 1-2 sentences on what I should say next."
+msgid "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, give 3-5 short bullets of what just happened, then one sentence on what I should say next."
 msgstr ""
 
 #: src/onboarding/folder-location.tsx
@@ -1761,11 +1769,11 @@ msgid "Draft"
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
+msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
 msgstr ""
 
 #: src/chat/components/body/empty.tsx
-msgid "Draft a follow-up email to the participants. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
+msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
@@ -2086,6 +2094,10 @@ msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Generating transcript..."
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Generating your notes from the transcript. This usually takes a few seconds."
 msgstr ""
 
 #: src/session/components/note-input/enhanced/config-error.tsx
@@ -2487,7 +2499,7 @@ msgid "Live"
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Live Ask needs a live transcription model. The current STT model only transcribes after you stop recording."
+msgid "Live Ask needs a live transcription model. Choose Deepgram Nova 3 (Acorn’s default) in Settings → Intelligence."
 msgstr ""
 
 #: src/templates/auto-form.tsx
@@ -3309,6 +3321,10 @@ msgstr ""
 
 #: src/settings/general/notification.tsx
 msgid "Prepare for events with a 5-minute reminder."
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Preparing summary..."
 msgstr ""
 
 #: src/session/components/outer-header/overflow/export-modal.tsx

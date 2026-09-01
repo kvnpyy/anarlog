@@ -34,6 +34,7 @@ const hoisted = vi.hoisted(() => ({
   noteExists: true,
   sessionTitle: "",
   enhancedEditorMountCount: 0,
+  isPending: false,
 }));
 
 vi.mock("@anlg/ui/components/ui/spinner", () => ({
@@ -73,6 +74,10 @@ vi.mock("~/ai/hooks", () => ({
 vi.mock("~/session/queries", () => ({
   useEnhancedNote: () =>
     hoisted.noteExists ? { content: hoisted.content } : null,
+}));
+
+vi.mock("~/services/enhancer/pending-ui", () => ({
+  useAutoEnhancePending: () => hoisted.isPending,
 }));
 
 vi.mock("./config-error", () => ({
@@ -154,15 +159,27 @@ describe("Enhanced", () => {
     hoisted.noteExists = true;
     hoisted.sessionTitle = "";
     hoisted.enhancedEditorMountCount = 0;
+    hoisted.isPending = false;
   });
 
-  it("renders an empty editor before the auto-enhance task is visible", () => {
+  it("renders an empty editor when no auto-enhance is pending", () => {
     render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
 
     expect(screen.getByText("Enhanced editor")).not.toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByText("Preparing summary...")).toBeNull();
     expect(screen.queryByTestId("spinner")).toBeNull();
+  });
+
+  it("shows a preparing status while auto-enhance is queued", () => {
+    hoisted.isPending = true;
+
+    render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
+
+    expect(screen.queryByTestId("enhanced-editor")).toBeNull();
+    expect(screen.getByRole("status")).not.toBeNull();
+    expect(screen.getByText("Preparing summary...")).not.toBeNull();
+    expect(screen.getByTestId("spinner")).not.toBeNull();
   });
 
   it("shows a generating status before streamed text arrives", () => {
@@ -182,6 +199,7 @@ describe("Enhanced", () => {
     expect(
       screen.getByText("Tip: The Acorn team loves our users!"),
     ).not.toBeNull();
+    expect(screen.getByTestId("spinner")).not.toBeNull();
   });
 
   it("renders streamed summary in the enhanced editor", () => {

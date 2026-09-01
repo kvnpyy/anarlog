@@ -44,6 +44,14 @@ async getEnv(key: string) : Promise<string> {
 async acornHostedAiStatus() : Promise<AcornHostedAiStatus> {
     return await TAURI_INVOKE("acorn_hosted_ai_status");
 },
+async acornConsumeProInvite(hash: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_consume_pro_invite", { hash }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async acornHostedFetch(url: string, method: string, headers: ([string, string])[], body: number[] | null, onEvent: TAURI_CHANNEL<HostedFetchEvent>) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("acorn_hosted_fetch", { url, method, headers, body, onEvent }) };

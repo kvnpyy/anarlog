@@ -114,6 +114,7 @@ export function ChatPanelFrame({
 }) {
   const { chat } = useShell();
   const { groupId, setGroupId, rollbackFailedGroup } = chat;
+  const { currentSessionId } = useSessionTab();
   const { panelClassName, toolbarSurface } = useChatAppearance();
   const isFloating = layout === "floating";
   const isInline = layout === "inline";
@@ -170,10 +171,20 @@ export function ChatPanelFrame({
             isolateConversation={chat.isolateConversation}
             layout={layout}
             pinned={chat.isRecording}
+            showMeetingAskSwitch={
+              chat.workspaceAsk &&
+              Boolean(currentSessionId) &&
+              !chat.isRecording
+            }
+            showWorkspaceAskSwitch={
+              chat.isolateConversation && !chat.isRecording
+            }
             onClose={() => chat.sendEvent({ type: "CLOSE" })}
             onNewChat={chat.startNewChat}
             onOpenFloating={onOpenFloating}
+            onOpenMeetingAsk={chat.openMeetingAsk}
             onOpenRightPanel={onOpenRightPanel}
+            onOpenWorkspaceAsk={chat.openWorkspaceAsk}
             onSelectChat={chat.selectChat}
             surface={toolbarSurface}
           />

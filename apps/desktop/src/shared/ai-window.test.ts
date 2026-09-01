@@ -9,14 +9,14 @@ import {
 } from "./ai-window";
 
 describe("AI knowledge window", () => {
-  it("uses 14 days on Free and 365 days on Pro", () => {
+  it("uses 30 days on Free and 365 days on Pro", () => {
     const now = new Date("2026-08-28T12:00:00");
     const free = getAiKnowledgeWindow(false, now);
     const pro = getAiKnowledgeWindow(true, now);
 
-    expect(free).toMatchObject({ days: 14, isPro: false });
+    expect(free).toMatchObject({ days: 30, isPro: false });
     expect(pro).toMatchObject({ days: 365, isPro: true });
-    expect(free.cutoffMs).toBe(relativeDaysStartMs(14, now));
+    expect(free.cutoffMs).toBe(relativeDaysStartMs(30, now));
     expect(pro.cutoffMs).toBe(relativeDaysStartMs(365, now));
   });
 

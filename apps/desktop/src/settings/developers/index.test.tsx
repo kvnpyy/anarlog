@@ -94,6 +94,10 @@ vi.mock("~/settings/queries", () => ({
   useSetSettingValue: () => vi.fn(),
 }));
 
+vi.mock("~/auth/acorn-pro", () => ({
+  setAcornProEntitlement: vi.fn(),
+}));
+
 vi.mock("~/cloud-api/client", () => ({
   getCloudApiSettings: mocks.getCloudApiSettings,
   setCloudApiEnabled: mocks.setCloudApiEnabled,

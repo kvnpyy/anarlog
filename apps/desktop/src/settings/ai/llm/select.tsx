@@ -65,8 +65,11 @@ import {
 } from "~/settings/ai/shared/selection";
 import { useAiProvidersState } from "~/settings/providers";
 import { setSettingValues, useSettingsReady } from "~/settings/queries";
-import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
-import { useConfigValues } from "~/shared/config";
+import {
+  getAcornDefaultLlm,
+  restrictAcornHostedLlmModels,
+} from "~/shared/acorn-defaults";
+import { useConfigValue, useConfigValues } from "~/shared/config";
 import { LOCAL_ONLY, visibleLlmProviders } from "~/shared/product";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
 
@@ -461,12 +464,14 @@ export function getLlmProviderStatus({
   isAuthenticated,
   isPaid,
   isAvailable,
+  isPro = false,
 }: {
   provider: Provider;
   config?: ProviderConfig;
   isAuthenticated: boolean;
   isPaid: boolean;
   isAvailable?: boolean;
+  isPro?: boolean;
 }): ProviderStatus {
   const baseUrl = String(config?.base_url || provider.baseUrl || "").trim();
   const apiKey = String(config?.api_key || "").trim();
@@ -523,17 +528,30 @@ export function getLlmProviderStatus({
                 ? await listGoogleModels(baseUrl, apiKey)
                 : await listOpenAIModels(baseUrl, apiKey);
           if (result.models.length > 0) {
-            return {
-              ...result,
-              models: result.models.includes(fallbackModel)
+            const models = restrictAcornHostedLlmModels(
+              result.models.includes(fallbackModel)
                 ? result.models
                 : [fallbackModel, ...result.models],
+              fallbackModel,
+              isPro,
+            );
+            return {
+              ...result,
+              models,
             };
           }
         } catch {
           // Bundled model still lets first-run selection succeed.
         }
-        return { models: [fallbackModel], ignored: [], metadata: {} };
+        return {
+          models: restrictAcornHostedLlmModels(
+            [fallbackModel],
+            fallbackModel,
+            isPro,
+          ),
+          ignored: [],
+          metadata: {},
+        };
       };
       break;
     }
@@ -615,6 +633,7 @@ function useConfiguredMapping(): {
   const { current_llm_provider } = useConfigValues([
     "current_llm_provider",
   ] as const);
+  const acornPro = useConfigValue("acorn_pro") === true;
   const { providers: configuredProviders, isReady } =
     useAiProvidersState("llm");
 
@@ -636,11 +655,19 @@ function useConfiguredMapping(): {
             isAuthenticated: !!auth?.session,
             isPaid: billing.isPaid,
             isAvailable,
+            isPro: LOCAL_ONLY ? acornPro : billing.isPro,
           }),
         ];
       }),
     ) as Record<string, ProviderStatus>;
-  }, [configuredProviders, auth, billing, availability, current_llm_provider]);
+  }, [
+    configuredProviders,
+    auth,
+    billing,
+    availability,
+    current_llm_provider,
+    acornPro,
+  ]);
 
   return {
     providers: mapping,

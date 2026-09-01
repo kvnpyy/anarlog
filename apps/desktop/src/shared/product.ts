@@ -5,10 +5,10 @@ export const PRODUCT_COPYRIGHT = "Copyright (c) 2023-present Fastrepl, Inc.";
 export const PRODUCT_SITE_URL = "https://acorn.so";
 export const LOCAL_ONLY: boolean = true;
 
-export const FREE_AI_WINDOW_DAYS = 14;
+export const FREE_AI_WINDOW_DAYS = 30;
 export const PRO_AI_WINDOW_DAYS = 365;
 export const FREE_AI_WINDOW_NOTICE =
-  "Free only searches the last 14 days. Acorn Pro remembers 365 days.";
+  "Free only searches the last 30 days. Acorn Pro remembers 365 days.";
 
 export const ACORN_PLANS = [
   {
@@ -18,14 +18,15 @@ export const ACORN_PLANS = [
     period: "",
     subtitle: null,
     features: [
-      { label: "Local notes and Live Ask", included: true },
-      { label: "Default transcription and intelligence", included: true },
+      { label: "Unlimited local notes — never locked", included: true },
+      { label: "Live transcription and Live Ask", included: true },
+      { label: "Default AI (Haiku)", included: true },
       {
         label: "Optional Anthropic, OpenAI, Grok, Gemini, or custom keys",
         included: true,
       },
-      { label: "14-day AI memory", included: true },
-      { label: "Open any note in the editor", included: true },
+      { label: "30-day AI memory", included: true },
+      { label: "Smarter AI", included: false },
       { label: "365-day AI memory", included: false },
       { label: "Teams & shared notes", included: false },
       { label: "CLI, MCP & webhooks", included: false },
@@ -39,6 +40,7 @@ export const ACORN_PLANS = [
     subtitle: "Checkout isn’t open yet",
     features: [
       { label: "Everything in Free", included: true },
+      { label: "Smarter AI", included: true },
       { label: "365-day AI memory", included: true },
       { label: "Teams & shared notes", included: true },
       { label: "CLI, MCP & webhooks", included: true },

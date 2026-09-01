@@ -11,6 +11,7 @@ import {
   requestMainEnhance,
 } from "~/ai/task-window-sync";
 import { getEligibility } from "~/services/enhancer/eligibility";
+import { useAutoEnhancePending } from "~/services/enhancer/pending-ui";
 import { loadSessionContentSnapshot } from "~/session/content-queries";
 import { useEnhancedNote } from "~/session/queries";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
@@ -31,6 +32,7 @@ export function useEnhancedNoteActions({
     useEnhancedNote(enhancedNoteId ?? "")?.templateId || undefined;
 
   const enhanceTask = useAITaskTask(taskId, "enhance");
+  const isPending = useAutoEnhancePending(sessionId);
 
   const onRegenerate = useCallback(
     async (templateId: string | null) => {
@@ -99,7 +101,7 @@ export function useEnhancedNoteActions({
   }, [enhanceTask.cancel, taskId]);
 
   return {
-    isGenerating: enhanceTask.isGenerating,
+    isGenerating: enhanceTask.isGenerating || isPending,
     isError: enhanceTask.isError,
     error: enhanceTask.error,
     onRegenerate,

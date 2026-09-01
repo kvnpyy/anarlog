@@ -238,6 +238,12 @@ describe("enhanceTransform.transformArgs", () => {
     });
     expect(result.preMeetingMemo).toContain("Note author: Kevin Payoyo");
     expect(result.preMeetingMemo).toContain("Agenda: launch");
+    expect(result.userProfile).toEqual({
+      name: "Kevin Payoyo",
+      role: "Product",
+      department: "Engineering",
+      context: "",
+    });
   });
 
   it("uses the saved format override for Auto summaries", async () => {

@@ -159,6 +159,9 @@ vi.mock("@anlg/ui/components/ui/resizable", () => ({
 
 vi.mock("~/contexts/shell", () => ({
   useShell: () => ({
+    chat: {
+      openWorkspaceAsk: vi.fn(),
+    },
     leftsidebar: mocks.leftsidebar,
   }),
 }));

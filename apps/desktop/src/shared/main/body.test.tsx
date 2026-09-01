@@ -143,6 +143,9 @@ vi.mock("~/main/shell-sidebar", () => ({
 
 vi.mock("~/contexts/shell", () => ({
   useShell: () => ({
+    chat: {
+      openWorkspaceAsk: vi.fn(),
+    },
     leftsidebar: {
       expanded: mocks.leftSidebarExpanded,
       toggleExpanded: mocks.toggleLeftSidebar,
@@ -423,6 +426,9 @@ describe("ClassicMainBody", () => {
     expect(searchButton.compareDocumentPosition(newNoteButton)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+    expect(
+      screen.getByRole("button", { name: "Ask across meetings" }),
+    ).toBeTruthy();
     expect(newNoteButton.compareDocumentPosition(filterButton)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );

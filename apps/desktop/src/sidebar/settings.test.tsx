@@ -318,6 +318,20 @@ describe("SettingsNav", () => {
     expect(mocks.upgradeToPro).toHaveBeenCalledOnce();
   });
 
+  it("opens Teams when Pro in local-only mode", () => {
+    mocks.isPro = true;
+
+    render(<SettingsNav />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+
+    expect(mocks.upgradeToPro).not.toHaveBeenCalled();
+    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
+      mocks.currentTab,
+      { tab: "team" },
+    );
+  });
+
   it("opens Imports inside settings", () => {
     render(<SettingsNav />);
 

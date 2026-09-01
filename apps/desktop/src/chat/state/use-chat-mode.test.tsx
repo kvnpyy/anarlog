@@ -10,8 +10,10 @@ const mocks = vi.hoisted(() => ({
   currentTabType: "sessions" as string,
   isBatchOnly: false,
   isRecording: false,
+  setWorkspaceAsk: vi.fn(),
   transitionChatMode: vi.fn(),
   useHotkeys: vi.fn(),
+  workspaceAsk: false,
 }));
 
 vi.mock("react-hotkeys-hook", () => ({
@@ -28,17 +30,22 @@ vi.mock("./chat-context", () => ({
     isRecording,
     liveSessionId,
     currentSessionId,
+    workspaceAsk,
   }: {
     scope: ChatScope;
     isRecording: boolean;
     liveSessionId: string | null;
     currentSessionId: string | undefined;
+    workspaceAsk?: boolean;
   }) => {
     if (scope !== "general") {
       return undefined;
     }
     if (isRecording) {
       return liveSessionId ?? currentSessionId ?? undefined;
+    }
+    if (workspaceAsk) {
+      return undefined;
     }
     return currentSessionId;
   },
@@ -52,6 +59,8 @@ vi.mock("./chat-context", () => ({
         string,
         { groupId: string | undefined; sessionId: string }
       >;
+      workspaceAsk: boolean;
+      setWorkspaceAsk: (workspaceAsk: boolean) => void;
       ensureMeetingChat: (meetingId: string) => void;
       setGroupId: () => void;
       rollbackFailedGroup: () => void;
@@ -69,6 +78,8 @@ vi.mock("./chat-context", () => ({
         automations: { groupId: undefined, sessionId: "automation-session" },
       },
       chatByMeetingId: {},
+      workspaceAsk: mocks.workspaceAsk,
+      setWorkspaceAsk: mocks.setWorkspaceAsk,
       ensureMeetingChat: vi.fn(),
       setGroupId: vi.fn(),
       rollbackFailedGroup: vi.fn(),
@@ -132,6 +143,8 @@ describe("useChatMode", () => {
     mocks.currentTabType = "sessions";
     mocks.isBatchOnly = false;
     mocks.isRecording = false;
+    mocks.workspaceAsk = false;
+    mocks.setWorkspaceAsk.mockClear();
     mocks.transitionChatMode.mockClear();
     mocks.useHotkeys.mockClear();
   });
@@ -208,5 +221,33 @@ describe("useChatMode", () => {
 
     expect(result.current.isolateConversation).toBe(false);
     expect(result.current.sessionId).toBe("chat-session");
+  });
+
+  it("keeps the across-meetings conversation when a note is open", () => {
+    mocks.workspaceAsk = true;
+
+    const { result } = renderHook(() => useChatMode());
+
+    expect(result.current.isolateConversation).toBe(false);
+    expect(result.current.workspaceAsk).toBe(true);
+    expect(result.current.sessionId).toBe("chat-session");
+  });
+
+  it("opens workspace Ask without isolating the current note", () => {
+    const { result } = renderHook(() => useChatMode());
+
+    result.current.openWorkspaceAsk();
+
+    expect(mocks.setWorkspaceAsk).toHaveBeenCalledWith(true);
+    expect(mocks.transitionChatMode).toHaveBeenCalledWith({ type: "OPEN" });
+  });
+
+  it("opens this-meeting Ask from a note", () => {
+    const { result } = renderHook(() => useChatMode());
+
+    result.current.openMeetingAsk();
+
+    expect(mocks.setWorkspaceAsk).toHaveBeenCalledWith(false);
+    expect(mocks.transitionChatMode).toHaveBeenCalledWith({ type: "OPEN" });
   });
 });

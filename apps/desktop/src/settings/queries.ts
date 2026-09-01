@@ -28,10 +28,15 @@ import {
   getAcornDefaultLlm,
   getAcornDefaultStt,
   hydrateAcornHostedFromNative,
+  resolveAcornHostedLlmModel,
 } from "~/shared/acorn-defaults";
 import { isAppStoreBuild } from "~/shared/app-store";
 import { LOCAL_ONLY } from "~/shared/product";
-import { isConfiguredSttModel, isOnDeviceSttModel } from "~/stt/capabilities";
+import {
+  isConfiguredSttModel,
+  isLiveCapableSttModel,
+  isOnDeviceSttModel,
+} from "~/stt/capabilities";
 import {
   getDefaultSttModel,
   normalizeStoredSttModel,
@@ -157,15 +162,43 @@ export async function initializeApplicationSettings(): Promise<void> {
 
   if (LOCAL_ONLY) {
     const defaultStt = getAcornDefaultStt();
-    if (defaultStt && !stored.values.current_stt_provider) {
-      updates.current_stt_provider = defaultStt.providerId;
-      updates.current_stt_model = defaultStt.model;
+    if (defaultStt) {
+      const provider =
+        updates.current_stt_provider ?? stored.values.current_stt_provider;
+      const model =
+        updates.current_stt_model ?? stored.values.current_stt_model;
+      const shouldUseHostedLive =
+        !isLiveCapableSttModel(provider, model) &&
+        (!provider ||
+          provider === defaultStt.providerId ||
+          isOnDeviceSttModel(provider, model));
+      if (shouldUseHostedLive) {
+        updates.current_stt_provider = defaultStt.providerId;
+        updates.current_stt_model = defaultStt.model;
+      }
     }
 
     const defaultLlm = getAcornDefaultLlm();
-    if (defaultLlm && !stored.values.current_llm_provider) {
-      updates.current_llm_provider = defaultLlm.providerId;
-      updates.current_llm_model = defaultLlm.model;
+    if (defaultLlm) {
+      const provider =
+        updates.current_llm_provider ?? stored.values.current_llm_provider;
+      if (!provider) {
+        updates.current_llm_provider = defaultLlm.providerId;
+      }
+      if (!provider || provider === defaultLlm.providerId) {
+        const allowedModel = resolveAcornHostedLlmModel(
+          updates.current_llm_model ??
+            stored.values.current_llm_model ??
+            defaultLlm.model,
+          stored.values.acorn_pro === true,
+        );
+        if (
+          (updates.current_llm_model ?? stored.values.current_llm_model) !==
+          allowedModel
+        ) {
+          updates.current_llm_model = allowedModel;
+        }
+      }
     }
   }
 

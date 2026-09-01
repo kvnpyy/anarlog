@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appendNoteAudienceGuidance,
+  formatNoteAudienceGuidance,
   formatNoteAuthorLine,
   formatUserProfileGuidance,
   hasUserProfile,
@@ -38,7 +40,18 @@ describe("user profile", () => {
       "Base prompt",
     );
     expect(formatUserProfileGuidance("Base prompt", profile)).toContain(
-      "Tailor answers, recaps, and drafts",
+      "Tailor answers, recaps, drafts, and summaries",
+    );
+    expect(formatUserProfileGuidance("Base prompt", profile)).toContain(
+      "Match how they speak and write",
+    );
+    expect(formatNoteAudienceGuidance(profile)).toContain("# Note audience");
+    expect(formatNoteAudienceGuidance(profile)).toContain("Role: Product");
+    expect(appendNoteAudienceGuidance("Base prompt", profile)).toContain(
+      "Base prompt",
+    );
+    expect(appendNoteAudienceGuidance("Base prompt", undefined)).toBe(
+      "Base prompt",
     );
     expect(formatNoteAuthorLine(profile)).toBe(
       "Note author: Kevin Payoyo, Product · Engineering. I work on the meeting notepad.",
