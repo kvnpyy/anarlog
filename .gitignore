@@ -32,6 +32,7 @@ internal
 .tmp/
 .tauri-updater-key
 .tauri-updater-key.pub
+.tauri-updater-key.password
 apps/desktop/.tauri-updater-key
 apps/desktop/.tauri-updater-key.pub
 

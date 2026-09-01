@@ -155,7 +155,15 @@ pub(crate) fn subscription_auth_deeplink(
     search: &AuthCallbackSearch,
 ) -> Option<String> {
     let code = search.code.as_deref()?.trim();
-    if code.is_empty() || !search.access_token.is_empty() || !search.refresh_token.is_empty() {
+    if code.is_empty()
+        || code.contains('/')
+        || search
+            .error
+            .as_deref()
+            .is_some_and(|value| !value.trim().is_empty())
+        || !search.access_token.is_empty()
+        || !search.refresh_token.is_empty()
+    {
         return None;
     }
 
@@ -185,6 +193,18 @@ fn default_ui_content() -> (bool, String, String) {
 
 fn ui_content(deep_link: &DeepLink, product_name: &str) -> (bool, String, String) {
     match deep_link {
+        DeepLink::AuthCallback(search)
+            if search
+                .error
+                .as_deref()
+                .is_some_and(|value| !value.trim().is_empty()) =>
+        {
+            (
+                false,
+                "Connection failed".into(),
+                "Something went wrong. Please close this window and try again.".into(),
+            )
+        }
         DeepLink::AuthCallback(search)
             if search
                 .code
@@ -448,5 +468,36 @@ mod tests {
         );
         assert!(html.contains("anarlog://auth/callback?code=codex-code"));
         assert!(html.contains("state=s1"));
+    }
+
+    #[test]
+    fn google_authorization_code_stays_focus_only() {
+        let html = render_html(
+            &DeepLink::AuthCallback(AuthCallbackSearch {
+                code: Some("4/0Aean-google-code".to_string()),
+                state: Some("s1".to_string()),
+                ..AuthCallbackSearch::default()
+            }),
+            "anarlog-dev",
+        );
+        assert!(html.contains("anarlog-dev://focus"));
+        assert!(!html.contains("code=4"));
+        assert!(html.contains("Connected successfully"));
+    }
+
+    #[test]
+    fn authorization_error_does_not_claim_success() {
+        let html = render_html(
+            &DeepLink::AuthCallback(AuthCallbackSearch {
+                error: Some("access_denied".to_string()),
+                error_description: Some("The user did not grant access".to_string()),
+                state: Some("s1".to_string()),
+                ..AuthCallbackSearch::default()
+            }),
+            "anarlog-dev",
+        );
+        assert!(html.contains("Connection failed"));
+        assert!(!html.contains("Connected successfully"));
+        assert!(!html.contains("id=\"open-app\""));
     }
 }

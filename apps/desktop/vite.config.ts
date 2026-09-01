@@ -9,6 +9,9 @@ import { defineConfig, type UserConfig } from "vite";
 import { relayShim } from "@anlg/plugin-relay/vite";
 
 import { changelog } from "./plugins/changelog";
+import { ACORN_SENTRY_DSN } from "./src/sentry-dsn";
+
+process.env.VITE_SENTRY_DSN ??= ACORN_SENTRY_DSN;
 
 const host = process.env.TAURI_DEV_HOST;
 

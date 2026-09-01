@@ -9,6 +9,7 @@ import {
   assertGoogleAuthorizationState,
   exchangeGoogleCalendarCode,
   googleAuthFromCallback,
+  GoogleOAuthError,
   startGoogleCalendarConnect,
 } from "./oauth";
 import {
@@ -59,14 +60,28 @@ async function listenForGoogleAuthorizationCode(expectedState: string) {
     if (payload.to !== "/auth/callback") {
       return;
     }
-    const parsed = googleAuthFromCallback(payload.search);
-    if (!parsed) {
-      return;
+    try {
+      const parsed = googleAuthFromCallback(payload.search);
+      if (!parsed) {
+        return;
+      }
+      if (parsed.state && parsed.state !== expectedState) {
+        return;
+      }
+      finish(() => resolveCode(parsed));
+    } catch (error) {
+      const callbackState = payload.search.state?.trim();
+      if (callbackState && callbackState !== expectedState) {
+        return;
+      }
+      finish(() =>
+        rejectCode(
+          error instanceof Error
+            ? error
+            : new GoogleOAuthError("Could not connect Google Calendar."),
+        ),
+      );
     }
-    if (parsed.state && parsed.state !== expectedState) {
-      return;
-    }
-    finish(() => resolveCode(parsed));
   });
 
   return {

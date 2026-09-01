@@ -6,6 +6,10 @@ use crate::{
 
 const STAGING_BUNDLE_ID: &str = "com.hyprnote.staging";
 
+fn renderer_env_value(_key: &str) -> String {
+    String::new()
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn get_onboarding_needed<R: tauri::Runtime>(
@@ -43,7 +47,22 @@ pub async fn set_dismissed_toasts<R: tauri::Runtime>(
 #[tauri::command]
 #[specta::specta]
 pub async fn get_env<R: tauri::Runtime>(_app: tauri::AppHandle<R>, key: String) -> String {
-    std::env::var(&key).unwrap_or_default()
+    renderer_env_value(&key)
+}
+
+#[derive(serde::Serialize, specta::Type)]
+pub struct AcornHostedAiStatus {
+    pub stt: bool,
+    pub llm: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn acorn_hosted_ai_status() -> AcornHostedAiStatus {
+    AcornHostedAiStatus {
+        stt: crate::acorn_hosted::stt_api_key().is_some(),
+        llm: crate::acorn_hosted::llm_api_key().is_some(),
+    }
 }
 
 fn should_show_devtool(identifier: &str) -> bool {
@@ -171,5 +190,14 @@ mod tests {
     #[test]
     fn shows_devtools_for_staging_bundle() {
         assert!(should_show_devtool(STAGING_BUNDLE_ID));
+    }
+
+    #[test]
+    fn get_env_never_returns_process_secrets() {
+        assert_eq!(renderer_env_value("PATH"), "");
+        assert_eq!(renderer_env_value("HOME"), "");
+        assert_eq!(renderer_env_value("ACORN_DEFAULT_STT_API_KEY"), "");
+        assert_eq!(renderer_env_value("ACORN_DEFAULT_LLM_API_KEY"), "");
+        assert_eq!(renderer_env_value("GOOGLE_CALENDAR_CLIENT_SECRET"), "");
     }
 }

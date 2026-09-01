@@ -38,7 +38,6 @@ import {
   checkUnslothAvailability,
 } from "~/settings/ai/shared/local-provider-availability";
 import { sortProviders } from "~/settings/ai/shared/sort-providers";
-import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
 
 export type Provider = {
   id: string;
@@ -74,7 +73,9 @@ const _PROVIDERS = [
     displayName: "Default",
     badge: null,
     icon: <Sparkle weight="fill" className="size-full" />,
-    baseUrl: getAcornDefaultLlm()?.baseUrl ?? "https://api.openai.com/v1",
+    baseUrl:
+      env.VITE_ACORN_DEFAULT_LLM_BASE_URL?.trim() ||
+      "https://api.openai.com/v1",
     hideAdvanced: true,
     requirements: [{ kind: "requires_config", fields: ["api_key"] }],
   },

@@ -2,10 +2,7 @@ import { md2json } from "@anlg/editor/markdown";
 import type { SessionEvent } from "@anlg/store";
 
 import { liveQueryClient } from "~/db";
-import {
-  WELCOME_NOTE_DEMO_URL,
-  WELCOME_NOTE_TRACKING_ID,
-} from "~/onboarding/welcome-note.constants";
+import { WELCOME_NOTE_TRACKING_ID } from "~/onboarding/welcome-note.constants";
 import { createSession } from "~/session/queries";
 import { PRODUCT_NAME } from "~/shared/product";
 import { DEFAULT_USER_ID } from "~/shared/utils";
@@ -16,13 +13,10 @@ const PENDING_WELCOME_SESSION_KEY = "anarlog.pending-welcome-session";
 const WELCOME_NOTE = `Welcome to ${PRODUCT_NAME} 👋
 
 
-This note is a quick way to see how ${PRODUCT_NAME} works.
+${PRODUCT_NAME} records meetings on this computer and keeps your notes locally.
 
 
-Click **Join & record** in the top-right corner. It will open a private, prerecorded demo meeting, so you don't have to worry about your camera or microphone. ${PRODUCT_NAME} will save the audio. To create a transcript and notes, choose a provider in **Settings → Transcription**; if one is not ready, ${PRODUCT_NAME} will show you a setup shortcut.
-
-
-When the video ends, ${PRODUCT_NAME} will stop listening. If transcription and intelligence are configured, it will start creating your summary automatically.`;
+Click **Record** in the top-right to start listening. To bring in past transcripts from Zoom, Meet, or another app, import a VTT, SRT, Markdown, or text file.`;
 
 let pendingWelcomeSession: Promise<string> | null = null;
 
@@ -111,8 +105,8 @@ async function findOrCreateWelcomeSession(): Promise<string> {
     ended_at: "",
     is_all_day: false,
     has_recurrence_rules: false,
-    meeting_link: WELCOME_NOTE_DEMO_URL,
-    description: `A private, prerecorded introduction to ${PRODUCT_NAME}.`,
+    meeting_link: "",
+    description: `A first note in ${PRODUCT_NAME}.`,
   };
 
   return createSession(`Welcome to ${PRODUCT_NAME}`, DEFAULT_USER_ID, {

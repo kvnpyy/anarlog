@@ -29,6 +29,7 @@ import { useEnabledCalendars } from "~/calendar/hooks";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
 import { usePermission } from "~/shared/hooks/usePermissions";
 import { openIntegrationUrl } from "~/shared/integration";
+import { LOCAL_ONLY } from "~/shared/product";
 
 const GOOGLE_PROVIDER = PROVIDERS.find((provider) => provider.id === "google");
 const OUTLOOK_PROVIDER = PROVIDERS.find(
@@ -622,7 +623,7 @@ function CalendarSectionContent({
         )}
 
         <GoogleCalendarProvider onSignIn={onSignIn} />
-        <OutlookCalendarProvider onSignIn={onSignIn} />
+        {LOCAL_ONLY ? null : <OutlookCalendarProvider onSignIn={onSignIn} />}
       </div>
 
       {hasConnectedCalendar && (

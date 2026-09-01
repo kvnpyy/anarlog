@@ -52,8 +52,6 @@ on:
         required: false
       SELLER_ID:
         required: false
-      SENTRY_DSN_HYPRNOTE_2:
-        required: false
       VITE_PRO_PRODUCT_ID:
         required: false
       VITE_SUPABASE_ANON_KEY:
@@ -365,7 +363,6 @@ jobs:
           APP_VERSION: ${{ needs.validate.outputs.version }}
           CI: false
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_HYPRNOTE_2 }}
           VITE_API_URL: https://api.anarlog.so
           VITE_APP_URL: https://anarlog.so
           VITE_APP_VERSION: ${{ needs.validate.outputs.version }}
@@ -373,6 +370,9 @@ jobs:
           VITE_PRO_PRODUCT_ID: ${{ secrets.VITE_PRO_PRODUCT_ID }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          ACORN_DEFAULT_STT_API_KEY: ${{ secrets.ACORN_DEFAULT_STT_API_KEY }}
+          ACORN_DEFAULT_LLM_API_KEY: ${{ secrets.ACORN_DEFAULT_LLM_API_KEY }}
+          GOOGLE_CALENDAR_CLIENT_SECRET: ${{ secrets.GOOGLE_CALENDAR_CLIENT_SECRET }}
         run: |
           pnpm -F desktop tauri build \
             --ci \

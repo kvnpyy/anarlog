@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   GOOGLE_CALENDAR_CLIENT_ID,
   GOOGLE_CALENDAR_SCOPES,
+  GoogleOAuthError,
   googleAuthFromCallback,
   googleCalendarAuthorizeUrl,
   googleLoopbackRedirectUri,
@@ -69,5 +70,24 @@ describe("Google Calendar desktop OAuth", () => {
         refresh_token: "refresh",
       }),
     ).toBeNull();
+  });
+
+  test("surfaces Google callback errors instead of hanging", () => {
+    expect(() =>
+      googleAuthFromCallback({
+        error: "access_denied",
+        error_description: "The user did not grant access",
+        access_token: "",
+        refresh_token: "",
+      }),
+    ).toThrow(GoogleOAuthError);
+    expect(() =>
+      googleAuthFromCallback({
+        error: "access_denied",
+        error_description: "The user did not grant access",
+        access_token: "",
+        refresh_token: "",
+      }),
+    ).toThrow("Google Calendar permission was declined.");
   });
 });

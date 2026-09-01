@@ -210,7 +210,6 @@ export const MEETING_IMPORT_PROVIDERS: MeetingImportProvider[] = [
     directImport: "nango-oauth",
     nangoIntegrationId: "google-meet",
     nativeNames: ["Google Meet"],
-    alwaysAvailable: true,
   },
   {
     id: "webex",

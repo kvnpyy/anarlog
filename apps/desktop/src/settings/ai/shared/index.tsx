@@ -47,6 +47,7 @@ import {
   useSetAiProvider,
 } from "~/settings/providers";
 import { setSettingValues } from "~/settings/queries";
+import { isAcornHostedApiKey } from "~/shared/acorn-defaults";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
 
 export * from "./anarlog-cloud-button";
@@ -330,7 +331,9 @@ export function NonAnarlogProviderCard({
 
   const requiredFields = getRequiredConfigFields(config.requirements);
   const isSubscription = config.authKind === "subscription";
-  const showApiKey = requiredFields.includes("api_key") && !isSubscription;
+  const hostedApiKey = isAcornHostedApiKey(provider?.api_key);
+  const showApiKey =
+    requiredFields.includes("api_key") && !isSubscription && !hostedApiKey;
   const showBaseUrl = requiredFields.includes("base_url") && !isSubscription;
   const notifyProviderSelection = useProviderSelectionPrompt({
     providerType,
@@ -399,11 +402,12 @@ export function NonAnarlogProviderCard({
     : (repairMutation.error?.message ??
       t`macOS cannot access your login Keychain. Repairing briefly locks it and asks for your Mac password before Acorn retries this API key.`);
   const hasStoredConfig =
-    Boolean(provider?.api_key?.trim()) ||
-    Boolean(
-      provider?.base_url?.trim() &&
-      provider.base_url.trim() !== (config.baseUrl ?? "").trim(),
-    );
+    !hostedApiKey &&
+    (Boolean(provider?.api_key?.trim()) ||
+      Boolean(
+        provider?.base_url?.trim() &&
+        provider.base_url.trim() !== (config.baseUrl ?? "").trim(),
+      ));
 
   const handleResetSubscription = async () => {
     if (!subscriptionProviderId || clearSubscription.isPending) {
@@ -656,7 +660,7 @@ export function NonAnarlogProviderCard({
                     {(field) => <FormField field={field} label={t`Base URL`} />}
                   </form.Field>
                 )}
-                {!showApiKey && (
+                {!showApiKey && !hostedApiKey && (
                   <form.Field name="api_key">
                     {(field) => (
                       <FormField

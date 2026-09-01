@@ -679,12 +679,15 @@ msgid "Bright canvas"
 msgstr ""
 
 #: src/onboarding/index.tsx
-msgid "Bring your meeting history"
+msgid "Bring in transcripts or exports from Zoom, Meet, or another app. Acorn records new meetings locally — cloud connect isn’t available yet."
 msgstr ""
 
 #. placeholder {0}: latestResult.imported
+#. placeholder {0}: result.imported
 #. placeholder {1}: latestResult.matched
+#. placeholder {1}: result.matched
 #: src/imports/screen.tsx
+#: src/onboarding/imports.tsx
 msgid "Brought in {0} new meetings. {1} were already here."
 msgstr ""
 
@@ -893,6 +896,7 @@ msgid "Choose export folder"
 msgstr ""
 
 #: src/imports/screen.tsx
+#: src/onboarding/imports.tsx
 msgid "Choose files"
 msgstr ""
 
@@ -934,6 +938,10 @@ msgstr ""
 
 #: src/settings/general/audio-settings.tsx
 msgid "Choose the microphone that captures your voice."
+msgstr ""
+
+#: src/onboarding/imports.tsx
+msgid "Choose transcript or export files"
 msgstr ""
 
 #: src/settings/general/week-start.tsx
@@ -1276,6 +1284,7 @@ msgstr ""
 
 #: src/imports/screen.tsx
 #: src/onboarding/calendar.tsx
+#: src/onboarding/imports.tsx
 msgid "Continue"
 msgstr ""
 
@@ -1902,6 +1911,7 @@ msgid "Everyone in {0}"
 msgstr ""
 
 #: src/imports/screen.tsx
+#: src/onboarding/imports.tsx
 msgid "Everything is already here."
 msgstr ""
 
@@ -2212,7 +2222,7 @@ msgid "If Acorn stays closed, paste the link in the sign-in window."
 msgstr ""
 
 #: src/onboarding/index.tsx
-msgid "Import notes and transcripts from the meeting apps you already use."
+msgid "Import past notes"
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
@@ -2628,10 +2638,6 @@ msgstr ""
 msgid "Meeting exports"
 msgstr ""
 
-#: src/onboarding/index.tsx
-msgid "Meeting history imported"
-msgstr ""
-
 #: src/session-sharing/delivery-management.ts
 #: src/session-sharing/index.tsx
 msgid "Meeting note sent."
@@ -3008,9 +3014,16 @@ msgstr ""
 msgid "Notes"
 msgstr ""
 
+#: src/onboarding/index.tsx
+msgid "Notes imported"
+msgstr ""
+
 #. placeholder {0}: latestResult.conflicts
+#. placeholder {0}: result.conflicts
 #. placeholder {1}: latestResult.errors
+#. placeholder {1}: result.errors
 #: src/imports/screen.tsx
+#: src/onboarding/imports.tsx
 msgid "Nothing new was imported. {0} meetings need review and {1} could not be imported."
 msgstr ""
 
@@ -4291,6 +4304,10 @@ msgstr ""
 msgid "SQLite migration verification is incomplete"
 msgstr ""
 
+#: src/settings/appearance/app-icon.tsx
+msgid "Squirrel"
+msgstr ""
+
 #: src/settings/automations/workflow-builder.tsx
 msgid "Stack another destination. Steps run top to bottom."
 msgstr ""
@@ -4733,6 +4750,10 @@ msgstr ""
 
 #: src/sidebar/toast/registry.tsx
 msgid "Transcription unavailable"
+msgstr ""
+
+#: src/onboarding/imports.tsx
+msgid "Transcripts and exports"
 msgstr ""
 
 #: src/templates/template-icon-picker.tsx

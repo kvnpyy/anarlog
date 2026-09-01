@@ -13,11 +13,11 @@ export type OnboardingStep =
   | "final";
 
 const STEPS_MACOS: OnboardingStep[] = LOCAL_ONLY
-  ? ["permissions", "calendar", "imports", "final"]
-  : ["permissions", "login", "calendar", "imports", "final"];
+  ? ["permissions", "calendar", "imports", "folder-location", "final"]
+  : ["permissions", "login", "calendar", "imports", "folder-location", "final"];
 const STEPS_OTHER: OnboardingStep[] = LOCAL_ONLY
-  ? ["calendar", "imports", "final"]
-  : ["login", "calendar", "imports", "final"];
+  ? ["calendar", "imports", "folder-location", "final"]
+  : ["login", "calendar", "imports", "folder-location", "final"];
 
 function getOnboardingSteps(): OnboardingStep[] {
   return platform() === "macos" ? STEPS_MACOS : STEPS_OTHER;

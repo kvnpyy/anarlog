@@ -1,3 +1,4 @@
+mod acorn_hosted;
 mod agent_skills;
 mod agents;
 mod appearance;
@@ -5,6 +6,7 @@ mod commands;
 mod db;
 mod embedded_cli;
 mod ext;
+mod google_calendar;
 mod search_index;
 mod startup;
 mod store;
@@ -25,6 +27,16 @@ use tauri_plugin_windows::AppWindow;
 
 #[cfg(any(feature = "dev", feature = "devtools"))]
 const STAGING_BUNDLE_ID: &str = "com.hyprnote.staging";
+
+const ACORN_SENTRY_DSN: &str = "https://4fa2d6504fd0d5fba6ef28610349a6df@o4511374447083520.ingest.de.sentry.io/4512011896881232";
+
+fn sentry_dsn() -> Option<&'static str> {
+    if std::env::var_os("ANARLOG_DISABLE_SENTRY").is_some() {
+        None
+    } else {
+        Some(ACORN_SENTRY_DSN)
+    }
+}
 
 const APP_EXIT_REQUESTED_EVENT: &str = "app-exit-requested";
 static EXIT_FLUSH_COMPLETE: AtomicBool = AtomicBool::new(false);
@@ -77,10 +89,8 @@ fn start_minidump_reporting(
 
 fn run_crash_reporter_process() -> ! {
     let client = sentry::init(sentry::ClientOptions {
-        dsn: option_env!("SENTRY_DSN")
-            .filter(|_| std::env::var_os("ANARLOG_DISABLE_SENTRY").is_none())
-            .and_then(|dsn| dsn.parse().ok()),
-        release: option_env!("APP_VERSION").map(|v| format!("anarlog-desktop@{}", v).into()),
+        dsn: sentry_dsn().and_then(|dsn| dsn.parse().ok()),
+        release: option_env!("APP_VERSION").map(|v| format!("acorn-desktop@{}", v).into()),
         auto_session_tracking: false,
         before_send: Some(Arc::new(|event| {
             tauri_plugin_tracing::redaction::sanitize_sentry_event(event)
@@ -156,6 +166,7 @@ fn create_audio_provider(_bundle_id: &str) -> std::sync::Arc<dyn anlg_audio_actu
 
 pub fn main() {
     startup::apply_linux_webkit_workarounds();
+    acorn_hosted::install_stt_key_into_process_env();
     // Sentry minidump reporting re-execs this binary with --crash-reporter-server.
     // That helper must reach minidump::init instead of the launch lock, or it
     // shows "Acorn is already starting" on every launch and never serves dumps.
@@ -217,15 +228,8 @@ pub fn main() {
         });
 
     let sentry_client = {
-        let dsn = if std::env::var_os("ANARLOG_DISABLE_SENTRY").is_some() {
-            None
-        } else {
-            option_env!("SENTRY_DSN")
-        };
-
-        if let Some(dsn) = dsn {
-            let release =
-                option_env!("APP_VERSION").map(|v| format!("anarlog-desktop@{}", v).into());
+        if let Some(dsn) = sentry_dsn() {
+            let release = option_env!("APP_VERSION").map(|v| format!("acorn-desktop@{}", v).into());
 
             let client = sentry::init((
                 dsn,
@@ -249,7 +253,7 @@ pub fn main() {
             ));
 
             sentry::configure_scope(|scope| {
-                scope.set_tag("service.namespace", "anarlog");
+                scope.set_tag("service.namespace", "acorn");
                 scope.set_tag("service.name", "desktop");
                 scope.set_tag("enduser.pseudo.id", anlg_host::fingerprint());
                 scope.set_user(Some(sentry::User {
@@ -678,13 +682,13 @@ fn report_startup_failure_to_sentry(message: &str) {
     if std::env::var_os("ANARLOG_DISABLE_SENTRY").is_some() {
         return;
     }
-    let Some(dsn) = option_env!("SENTRY_DSN") else {
+    let Some(dsn) = sentry_dsn() else {
         return;
     };
     let guard = sentry::init((
         dsn,
         sentry::ClientOptions {
-            release: option_env!("APP_VERSION").map(|v| format!("anarlog-desktop@{}", v).into()),
+            release: option_env!("APP_VERSION").map(|v| format!("acorn-desktop@{}", v).into()),
             auto_session_tracking: false,
             before_send: Some(Arc::new(|event| {
                 tauri_plugin_tracing::redaction::sanitize_sentry_event(event)
@@ -736,6 +740,9 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::get_dismissed_toasts::<tauri::Wry>,
             commands::set_dismissed_toasts::<tauri::Wry>,
             commands::get_env::<tauri::Wry>,
+            commands::acorn_hosted_ai_status,
+            acorn_hosted::acorn_hosted_fetch,
+            google_calendar::google_calendar_token,
             commands::show_devtool::<tauri::Wry>,
             commands::is_app_store_build,
             commands::complete_app_exit::<tauri::Wry>,

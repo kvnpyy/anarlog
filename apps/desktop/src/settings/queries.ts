@@ -27,6 +27,7 @@ import {
 import {
   getAcornDefaultLlm,
   getAcornDefaultStt,
+  hydrateAcornHostedFromNative,
 } from "~/shared/acorn-defaults";
 import { isAppStoreBuild } from "~/shared/app-store";
 import { LOCAL_ONLY } from "~/shared/product";
@@ -103,6 +104,7 @@ export async function getStoredSettingValues(): Promise<StoredSettingValues> {
 }
 
 export async function initializeApplicationSettings(): Promise<void> {
+  await hydrateAcornHostedFromNative();
   const stored = await getStoredSettingValues();
   const languageResult = await detectCommands
     .getPreferredLanguages()

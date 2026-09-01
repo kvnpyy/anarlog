@@ -178,4 +178,35 @@ mod tests {
         assert_eq!(search.code.as_deref(), Some("ac_nf5hq"));
         assert_eq!(search.state.as_deref(), Some("xYc5ZmNlqtWTu3BIbfbVQg"));
     }
+
+    #[test]
+    fn parses_google_loopback_authorization_code_with_extra_params() {
+        let DeepLink::AuthCallback(search) = DeepLink::from_str(
+            "local://auth/callback?state=s1&code=4/0Aean-code&scope=https://www.googleapis.com/auth/calendar.readonly%20https://www.googleapis.com/auth/calendar.events.readonly&iss=https://accounts.google.com&authuser=0&prompt=consent",
+        )
+        .unwrap() else {
+            panic!("expected auth callback");
+        };
+
+        assert_eq!(search.code.as_deref(), Some("4/0Aean-code"));
+        assert_eq!(search.state.as_deref(), Some("s1"));
+        assert!(search.error.is_none());
+    }
+
+    #[test]
+    fn parses_google_loopback_authorization_error() {
+        let DeepLink::AuthCallback(search) = DeepLink::from_str(
+            "local://auth/callback?error=access_denied&error_description=The+user+did+not+grant+access&state=s1",
+        )
+        .unwrap() else {
+            panic!("expected auth callback");
+        };
+
+        assert_eq!(search.error.as_deref(), Some("access_denied"));
+        assert_eq!(
+            search.error_description.as_deref(),
+            Some("The user did not grant access")
+        );
+        assert!(search.code.is_none());
+    }
 }

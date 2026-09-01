@@ -59,6 +59,8 @@
       "../../../plugins/windows/swift-lib/src/Resources/OFL.txt": "CabinSketch-OFL.txt",
       "resources/anagram/AppIcon.icns": "icons/anagram.icns",
       "resources/anagram-dark/AppIcon.icns": "icons/anagram-dark.icns",
+      "resources/squirrel/AppIcon.icns": "icons/squirrel.icns",
+      "resources/squirrel-dark/AppIcon.icns": "icons/squirrel-dark.icns",
       "resources/dev/AppIcon.icns": "icons/dev.icns",
       "resources/dev-dark/AppIcon.icns": "icons/dev-dark.icns",
       "resources/journal/AppIcon.icns": "icons/journal.icns",
@@ -112,7 +114,7 @@
     "updater": {
       "active": false,
       "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzNzBENzhDMjE3RkUwRTEKUldUaDRIOGhqTmR3VTFlaUpMUFpML1V6ak5iM3VHbUZBNWQ5U3QwZXcyc28xRUsyVVFDY1M0RVQK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ1REY5MURGN0JGMjgxQ0MKUldUTWdmSjczNUhmUmRxS1V4YUc2dFNNa0J1N1hBa3BWeWVpVUlvZS9XTW95UE9zUVRQdzA4Yk8K"
     }
   }
 }

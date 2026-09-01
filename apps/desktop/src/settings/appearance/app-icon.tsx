@@ -21,6 +21,7 @@ import type { ThemePreference } from "~/shared/theme/resolve";
 const APP_ICON_OPTIONS = [
   "default",
   "stable",
+  "squirrel",
   "anagram",
   "dev",
   "staging",
@@ -50,6 +51,7 @@ export function AppIconSelector() {
   const labels = {
     default: t`Default`,
     stable: t`Production`,
+    squirrel: t`Squirrel`,
     anagram: t`Anagram`,
     dev: t`Blueprint`,
     staging: t`Sketch`,

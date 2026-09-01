@@ -13,6 +13,10 @@ pub struct AuthCallbackSearch {
     pub code: Option<String>,
     #[serde(default)]
     pub state: Option<String>,
+    #[serde(default)]
+    pub error: Option<String>,
+    #[serde(default)]
+    pub error_description: Option<String>,
 }
 
 impl fmt::Debug for AuthCallbackSearch {
@@ -22,6 +26,8 @@ impl fmt::Debug for AuthCallbackSearch {
             .field("refresh_token", &"[REDACTED]")
             .field("code", &self.code.as_ref().map(|_| "[REDACTED]"))
             .field("state", &self.state)
+            .field("error", &self.error)
+            .field("error_description", &self.error_description)
             .finish()
     }
 }

@@ -39,6 +39,7 @@ import { useRemoteSessionDeletionUndoListener } from "./session/hooks/useDeleteS
 import { refreshLegacySettingsSnapshots } from "./settings/legacy-snapshots";
 import { migratePlaintextAiProviderApiKeys } from "./settings/providers";
 import { initializeApplicationSettings } from "./settings/queries";
+import { hydrateAcornHostedFromNative } from "./shared/acorn-defaults";
 import { initializeAppExitFlush } from "./shared/app-exit";
 import { initializeAppStoreBuild, isAppStoreBuild } from "./shared/app-store";
 import { useConfigValue } from "./shared/config";
@@ -171,7 +172,11 @@ async function enableReactScanInDev() {
 }
 
 async function renderApp() {
-  await Promise.all([bootstrapThemeFromSettings(), initializeAppStoreBuild()]);
+  await Promise.all([
+    bootstrapThemeFromSettings(),
+    initializeAppStoreBuild(),
+    hydrateAcornHostedFromNative(),
+  ]);
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>

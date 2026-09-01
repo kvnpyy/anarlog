@@ -1,7 +1,7 @@
-import { numberField, oauthErrorMessage, postForm, stringField } from "./http";
+import { numberField, oauthErrorMessage, stringField } from "./http";
 import { createPkce, randomUrlToken } from "./pkce";
 
-import { env } from "~/env";
+import { commands as desktopCommands } from "~/types/tauri.gen";
 
 export const GOOGLE_CALENDAR_CLIENT_ID =
   "675191343557-ii0ia4pdgv64jrm1vav9nrgf417kpgva.apps.googleusercontent.com";
@@ -12,7 +12,6 @@ export const GOOGLE_CALENDAR_SCOPES = [
 ].join(" ");
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 export type GoogleCalendarCredential = {
   type: "oauth";
@@ -80,12 +79,29 @@ export async function startGoogleCalendarConnect(
   };
 }
 
+export class GoogleOAuthError extends Error {
+  readonly code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "GoogleOAuthError";
+    this.code = code;
+  }
+}
+
 export function googleAuthFromCallback(search: {
   access_token?: string | null;
   refresh_token?: string | null;
   code?: string | null;
   state?: string | null;
+  error?: string | null;
+  error_description?: string | null;
 }): { code: string; state?: string } | null {
+  const oauthError = search.error?.trim();
+  if (oauthError) {
+    throw googleOAuthError(oauthError, search.error_description?.trim());
+  }
+
   const code = search.code?.trim();
   if (!code || search.access_token?.trim() || search.refresh_token?.trim()) {
     return null;
@@ -97,6 +113,47 @@ export function googleAuthFromCallback(search: {
   };
 }
 
+function googleOAuthError(
+  code: string,
+  description?: string,
+): GoogleOAuthError {
+  const combined = `${code} ${description ?? ""}`.toLowerCase();
+  if (code === "access_denied") {
+    return new GoogleOAuthError(
+      "Google Calendar permission was declined.",
+      code,
+    );
+  }
+  if (combined.includes("client_secret")) {
+    return new GoogleOAuthError(
+      "Google Calendar is missing its Desktop OAuth client. Rebuild Acorn after the client secret is set.",
+      code,
+    );
+  }
+  if (code === "invalid_client" || combined.includes("unauthorized")) {
+    return new GoogleOAuthError(
+      "Google rejected this Calendar app. Check the OAuth client and try again.",
+      code,
+    );
+  }
+  if (combined.includes("redirect_uri")) {
+    return new GoogleOAuthError(
+      "Google rejected the sign-in redirect. Try connecting again.",
+      code,
+    );
+  }
+  if (code === "invalid_grant") {
+    return new GoogleOAuthError(
+      "This Google sign-in expired. Try connecting again.",
+      code,
+    );
+  }
+  return new GoogleOAuthError(
+    description || code || "Could not connect Google Calendar.",
+    code,
+  );
+}
+
 export function assertGoogleAuthorizationState(
   session: GoogleCalendarConnectSession,
   parsed: { state?: string },
@@ -106,12 +163,28 @@ export function assertGoogleAuthorizationState(
   }
 }
 
-function googleCalendarTokenBody(body: Record<string, string>) {
-  const clientSecret = env.VITE_GOOGLE_CALENDAR_CLIENT_SECRET;
-  if (!clientSecret) {
-    return body;
+async function postGoogleCalendarToken(body: Record<string, string>): Promise<{
+  status: number;
+  json: Record<string, unknown>;
+}> {
+  const result = await desktopCommands.googleCalendarToken(body);
+  if (result.status === "error") {
+    throw new Error(result.error);
   }
-  return { ...body, client_secret: clientSecret };
+
+  const text = result.data.body.trim();
+  if (!text) {
+    return { status: result.data.status, json: {} };
+  }
+
+  try {
+    return {
+      status: result.data.status,
+      json: JSON.parse(text) as Record<string, unknown>,
+    };
+  } catch {
+    throw new Error(text || `HTTP ${result.data.status}`);
+  }
 }
 
 export async function exchangeGoogleCalendarCode(input: {
@@ -119,16 +192,13 @@ export async function exchangeGoogleCalendarCode(input: {
   verifier: string;
   redirectUri: string;
 }): Promise<GoogleCalendarCredential> {
-  const { status, json } = await postForm(
-    TOKEN_URL,
-    googleCalendarTokenBody({
-      grant_type: "authorization_code",
-      client_id: GOOGLE_CALENDAR_CLIENT_ID,
-      code: input.code,
-      redirect_uri: input.redirectUri,
-      code_verifier: input.verifier,
-    }),
-  );
+  const { status, json } = await postGoogleCalendarToken({
+    grant_type: "authorization_code",
+    client_id: GOOGLE_CALENDAR_CLIENT_ID,
+    code: input.code,
+    redirect_uri: input.redirectUri,
+    code_verifier: input.verifier,
+  });
   return credentialFromTokenResponse(
     json,
     status,
@@ -139,14 +209,11 @@ export async function exchangeGoogleCalendarCode(input: {
 export async function refreshGoogleCalendarCredential(
   credential: GoogleCalendarCredential,
 ): Promise<GoogleCalendarCredential> {
-  const { status, json } = await postForm(
-    TOKEN_URL,
-    googleCalendarTokenBody({
-      grant_type: "refresh_token",
-      client_id: GOOGLE_CALENDAR_CLIENT_ID,
-      refresh_token: credential.refresh,
-    }),
-  );
+  const { status, json } = await postGoogleCalendarToken({
+    grant_type: "refresh_token",
+    client_id: GOOGLE_CALENDAR_CLIENT_ID,
+    refresh_token: credential.refresh,
+  });
   return credentialFromTokenResponse(
     json,
     status,
@@ -172,13 +239,17 @@ function credentialFromTokenResponse(
 ): GoogleCalendarCredential {
   const access = stringField(json, "access_token");
   if (status >= 400 || !access) {
-    throw new Error(oauthErrorMessage(json, fallback));
+    throw googleOAuthError(
+      stringField(json, "error") ?? fallback,
+      oauthErrorMessage(json, fallback),
+    );
   }
 
   const refresh = stringField(json, "refresh_token") ?? previous?.refresh ?? "";
   if (!refresh) {
-    throw new Error(
+    throw new GoogleOAuthError(
       "Google did not return a refresh token. Try connecting again.",
+      "missing_refresh_token",
     );
   }
 

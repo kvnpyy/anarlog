@@ -331,7 +331,7 @@ function HeaderMeetingActionPill({
         title: t`Join meeting and record`,
         icon: isWelcomeDemo ? (
           <img
-            src="/assets/anarlog-icon.png"
+            src="/assets/app-icons/stable-light.png"
             alt=""
             className="size-3.5 shrink-0"
           />
@@ -360,6 +360,7 @@ function HeaderMeetingActionPill({
     sessionMode !== "finalizing";
   const showWelcomeDemoPrompt =
     isWelcomeDemo &&
+    Boolean(meetingLink) &&
     sessionMode === "inactive" &&
     !hasTranscript &&
     !audioExists;

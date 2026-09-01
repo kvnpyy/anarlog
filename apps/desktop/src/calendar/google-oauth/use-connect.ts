@@ -7,6 +7,7 @@ import { sonnerToast } from "@anlg/ui/components/ui/toast";
 import { connectGoogleCalendar, disconnectGoogleCalendar } from "./connect";
 import { GOOGLE_CALENDAR_CONNECTIONS_QUERY_KEY } from "./storage";
 
+import { captureOperationalError } from "~/error-reporting";
 import {
   allowReconnectedCalendarConnections,
   removeDisconnectedCalendarConnection,
@@ -41,9 +42,23 @@ export function useGoogleCalendarConnect() {
         queryKey: GOOGLE_CALENDAR_CONNECTIONS_QUERY_KEY,
       });
       await queryClient.invalidateQueries({ queryKey: ["integration-status"] });
-      await syncCalendarEvents();
+      try {
+        await syncCalendarEvents();
+      } catch (error) {
+        captureOperationalError(error, {
+          operation: "google_calendar_sync",
+          tags: { integration: "google-calendar" },
+        });
+        sonnerToast.error(
+          "Google Calendar connected, but events could not be synced yet.",
+        );
+      }
     },
     onError: (caught) => {
+      captureOperationalError(caught, {
+        operation: "google_calendar_connect",
+        tags: { integration: "google-calendar" },
+      });
       sonnerToast.error(
         caught instanceof Error
           ? caught.message

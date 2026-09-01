@@ -3,7 +3,7 @@ import { SpeakerHigh, SpeakerX } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { platform } from "@tauri-apps/plugin-os";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { commands as sfxCommands } from "@anlg/plugin-sfx";
 import { cn } from "@anlg/utils";
@@ -89,7 +89,6 @@ function OnboardingScreenContent({
   const [isMuted, setIsMuted] = useState(false);
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const [didSkipLogin, setDidSkipLogin] = useState(false);
-  const onboardingVideoRef = useRef<HTMLVideoElement>(null);
   const currentPlatform = platform();
 
   const goNext = useCallback(() => {
@@ -140,12 +139,6 @@ function OnboardingScreenContent({
     sfxCommands.setVolume("BGM", isMuted ? 0 : 0.2).catch(console.error);
   }, [isMuted]);
 
-  useEffect(() => {
-    if (onboardingVideoRef.current) {
-      onboardingVideoRef.current.playbackRate = 0.65;
-    }
-  }, []);
-
   const handleFinish = useCallback(
     (sessionId: string) => {
       trackAnalyticsEvent("onboarding_step_completed", {
@@ -161,29 +154,7 @@ function OnboardingScreenContent({
   return (
     <div className="bg-card relative flex h-full min-h-0 flex-col overflow-hidden">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-        >
-          <video
-            ref={onboardingVideoRef}
-            className="absolute inset-0 h-full w-full object-cover object-bottom opacity-28"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-          >
-            <source src="/assets/onboarding-video.mp4" type="video/mp4" />
-          </video>
-          <div className="from-background/8 via-background/18 absolute inset-0 bg-linear-to-t to-transparent" />
-        </motion.div>
-        <div className="absolute inset-x-0 top-0 h-[80%] [mask-image:linear-gradient(to_bottom,black,black_18%,rgba(0,0,0,0.9)_36%,rgba(0,0,0,0.6)_58%,transparent)] backdrop-blur-[32px]" />
-        <div className="absolute inset-x-0 top-0 h-[92%] [mask-image:linear-gradient(to_bottom,black,rgba(0,0,0,0.8)_34%,rgba(0,0,0,0.35)_62%,transparent)] backdrop-blur-[12px]" />
-        <div className="from-background via-background/82 via-background/97 to-background/0 absolute inset-x-0 top-0 h-[84%] bg-linear-to-b via-18% via-42%" />
+        <div className="from-background via-background/90 to-background/40 absolute inset-0 bg-linear-to-b" />
         <motion.div
           className="bg-background absolute inset-0"
           initial={{ opacity: 1 }}
@@ -219,7 +190,7 @@ function OnboardingScreenContent({
       >
         <div className="flex items-center gap-4">
           <img
-            src="/assets/anarlog-icon.png"
+            src="/assets/app-icons/stable-light.png"
             alt=""
             className="size-16 shrink-0 rounded-[14px] object-cover object-center"
           />
@@ -307,14 +278,15 @@ function OnboardingScreenContent({
           </OnboardingSection>
 
           <OnboardingSection
-            title={<Trans>Bring your meeting history</Trans>}
+            title={<Trans>Import past notes</Trans>}
             description={
               <Trans>
-                Import notes and transcripts from the meeting apps you already
-                use.
+                Bring in transcripts or exports from Zoom, Meet, or another app.
+                Acorn records new meetings locally — cloud connect isn’t
+                available yet.
               </Trans>
             }
-            completedTitle={<Trans>Meeting history imported</Trans>}
+            completedTitle={<Trans>Notes imported</Trans>}
             status={getStepStatus("imports", currentStep)}
             onBack={goBack}
             onNext={goNext}

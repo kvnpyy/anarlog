@@ -1,10 +1,12 @@
 import { env } from "~/env";
 import { LOCAL_ONLY } from "~/shared/product";
+import { commands as desktopCommands } from "~/types/tauri.gen";
 
 export const ACORN_DEFAULT_STT_PROVIDER_ID = "deepgram";
 export const ACORN_DEFAULT_LLM_PROVIDER_ID = "acorn";
 export const ACORN_DEFAULT_STT_BASE_URL = "https://api.deepgram.com/v1";
 export const ACORN_DEFAULT_STT_MODEL = "nova-3-general";
+export const ACORN_HOSTED_API_KEY = "acorn-hosted";
 
 export type AcornDefaultLlmKind = "openai" | "anthropic" | "google";
 
@@ -32,6 +34,35 @@ const LLM_DEFAULTS: Record<
   },
 };
 
+let hostedStt = false;
+let hostedLlm = false;
+
+export function isAcornHostedApiKey(apiKey: string | undefined): boolean {
+  return apiKey?.trim() === ACORN_HOSTED_API_KEY;
+}
+
+export function hydrateAcornHostedAi(state: { stt?: boolean; llm?: boolean }) {
+  hostedStt = Boolean(state.stt);
+  hostedLlm = Boolean(state.llm);
+}
+
+export async function hydrateAcornHostedFromNative(): Promise<void> {
+  if (!LOCAL_ONLY) {
+    hydrateAcornHostedAi({});
+    return;
+  }
+
+  try {
+    const status = await desktopCommands.acornHostedAiStatus();
+    hydrateAcornHostedAi({
+      stt: status.stt,
+      llm: status.llm,
+    });
+  } catch {
+    hydrateAcornHostedAi({});
+  }
+}
+
 export function getAcornDefaultLlmKind(): AcornDefaultLlmKind {
   return env.VITE_ACORN_DEFAULT_LLM_KIND ?? "openai";
 }
@@ -42,15 +73,14 @@ export function getAcornDefaultStt(): {
   apiKey: string;
   model: string;
 } | null {
-  const apiKey = env.VITE_ACORN_DEFAULT_STT_API_KEY?.trim();
-  if (!LOCAL_ONLY || !apiKey) {
+  if (!LOCAL_ONLY || !hostedStt) {
     return null;
   }
 
   return {
     providerId: ACORN_DEFAULT_STT_PROVIDER_ID,
     baseUrl: ACORN_DEFAULT_STT_BASE_URL,
-    apiKey,
+    apiKey: ACORN_HOSTED_API_KEY,
     model: ACORN_DEFAULT_STT_MODEL,
   };
 }
@@ -62,8 +92,7 @@ export function getAcornDefaultLlm(): {
   apiKey: string;
   model: string;
 } | null {
-  const apiKey = env.VITE_ACORN_DEFAULT_LLM_API_KEY?.trim();
-  if (!LOCAL_ONLY || !apiKey) {
+  if (!LOCAL_ONLY || !hostedLlm) {
     return null;
   }
 
@@ -74,7 +103,7 @@ export function getAcornDefaultLlm(): {
     providerId: ACORN_DEFAULT_LLM_PROVIDER_ID,
     kind,
     baseUrl: env.VITE_ACORN_DEFAULT_LLM_BASE_URL?.trim() || defaults.baseUrl,
-    apiKey,
+    apiKey: ACORN_HOSTED_API_KEY,
     model: env.VITE_ACORN_DEFAULT_LLM_MODEL?.trim() || defaults.model,
   };
 }

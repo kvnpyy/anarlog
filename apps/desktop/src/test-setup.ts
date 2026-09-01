@@ -202,6 +202,13 @@ vi.mock("@anlg/plugin-analytics", () => ({
 
 vi.mock("./types/tauri.gen", () => ({
   commands: {
+    getEnv: vi.fn().mockResolvedValue(""),
+    acornHostedAiStatus: vi.fn().mockResolvedValue({ stt: false, llm: false }),
+    acornHostedFetch: vi.fn().mockResolvedValue({ status: "ok", data: null }),
+    googleCalendarToken: vi.fn().mockResolvedValue({
+      status: "ok",
+      data: { status: 200, body: "{}" },
+    }),
     getOnboardingNeeded: vi
       .fn()
       .mockResolvedValue({ status: "ok", data: false }),

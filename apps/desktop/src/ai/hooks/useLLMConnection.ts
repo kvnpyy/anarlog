@@ -4,7 +4,6 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { useMemo, useRef } from "react";
 
@@ -32,6 +31,7 @@ import {
 import { useAiProvider } from "~/settings/providers";
 import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
 import { useConfigValues } from "~/shared/config";
+import { hostedFetch as tauriFetch } from "~/shared/hosted-fetch";
 
 type LanguageModelV3 = Parameters<typeof wrapLanguageModel>[0]["model"];
 
