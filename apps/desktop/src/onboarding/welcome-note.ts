@@ -2,26 +2,21 @@ import { md2json } from "@anlg/editor/markdown";
 import type { SessionEvent } from "@anlg/store";
 
 import { liveQueryClient } from "~/db";
-import {
-  WELCOME_NOTE_DEMO_URL,
-  WELCOME_NOTE_TRACKING_ID,
-} from "~/onboarding/welcome-note.constants";
+import { WELCOME_NOTE_TRACKING_ID } from "~/onboarding/welcome-note.constants";
 import { createSession } from "~/session/queries";
+import { PRODUCT_NAME } from "~/shared/product";
 import { DEFAULT_USER_ID } from "~/shared/utils";
 import { listenerStore } from "~/store/zustand/listener/instance";
 
 const PENDING_WELCOME_SESSION_KEY = "anarlog.pending-welcome-session";
 
-const WELCOME_NOTE = `Welcome to Anarlog 👋
+const WELCOME_NOTE = `Welcome to ${PRODUCT_NAME} 👋
 
 
-This note is a quick way to see how Anarlog works.
+${PRODUCT_NAME} records meetings on this computer and keeps your notes locally.
 
 
-Click **Join & record** in the top-right corner. It will open a private, prerecorded demo meeting, so you don't have to worry about your camera or microphone. Anarlog will save the audio. To create a transcript and notes, choose a provider in **Settings → Transcription**; if one is not ready, Anarlog will show you a setup shortcut.
-
-
-When the video ends, Anarlog will stop listening. If transcription and intelligence are configured, it will start creating your summary automatically.`;
+Click **Record** in the top-right to start listening. To bring in past transcripts from Zoom, Meet, or another app, import a VTT, SRT, Markdown, or text file.`;
 
 let pendingWelcomeSession: Promise<string> | null = null;
 
@@ -105,16 +100,16 @@ async function findOrCreateWelcomeSession(): Promise<string> {
   const event: SessionEvent = {
     tracking_id: WELCOME_NOTE_TRACKING_ID,
     calendar_id: "",
-    title: "Welcome to Anarlog",
+    title: `Welcome to ${PRODUCT_NAME}`,
     started_at: now,
     ended_at: "",
     is_all_day: false,
     has_recurrence_rules: false,
-    meeting_link: WELCOME_NOTE_DEMO_URL,
-    description: "A private, prerecorded introduction to Anarlog.",
+    meeting_link: "",
+    description: `A first note in ${PRODUCT_NAME}.`,
   };
 
-  return createSession("Welcome to Anarlog", DEFAULT_USER_ID, {
+  return createSession(`Welcome to ${PRODUCT_NAME}`, DEFAULT_USER_ID, {
     event_json: JSON.stringify(event),
     raw_md: JSON.stringify(md2json(WELCOME_NOTE)),
   });

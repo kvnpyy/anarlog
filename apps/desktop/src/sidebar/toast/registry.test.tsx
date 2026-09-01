@@ -80,7 +80,7 @@ describe("sidebar toast registry", () => {
     expect(toast?.lifecycle).toEqual({ type: "condition-bound" });
   });
 
-  it("suggests signing in before provider setup", () => {
+  it("suggests a transcription provider instead of signing in", () => {
     const toast = getToastToShow(
       createToastRegistry({
         ...baseParams,
@@ -91,9 +91,9 @@ describe("sidebar toast registry", () => {
       () => false,
     );
 
-    expect(toast?.id).toBe("sign-in-benefits");
-    expect(toast?.description).toBe("Sign in to get the most out of Anarlog");
-    expect(toast?.primaryAction?.label).toBe("Sign in");
+    expect(toast?.id).toBe("missing-stt");
+    expect(toast?.description).toBe("Transcription provider needed");
+    expect(toast?.primaryAction?.label).toBe("Add");
   });
 
   it("asks for a usable transcription provider after sign-in is dismissed", () => {
@@ -162,7 +162,7 @@ describe("sidebar toast registry", () => {
     expect(toast?.description).toBe("Starting transcription...");
   });
 
-  it("renders the pro upgrade toast without an icon", () => {
+  it("hides the pro upgrade toast in local-only mode", () => {
     const toast = getToastToShow(
       createToastRegistry({
         ...baseParams,
@@ -177,9 +177,8 @@ describe("sidebar toast registry", () => {
       onOpenSTTSettings: vi.fn(),
     });
 
-    expect(toast?.id).toBe("upgrade-to-pro");
-    expect(toast?.description).toBe("Pro features available");
-    expect(toast?.icon).toBeUndefined();
+    expect(toast).toBeNull();
+    expect(previewToast.id).toBe("devtools-upgrade-to-pro");
     expect(previewToast.icon).toBeUndefined();
   });
 
@@ -214,7 +213,7 @@ describe("sidebar toast registry", () => {
 
     expect(toast).toMatchObject({
       id: "desktop-update:1.0.34:available",
-      description: "Anarlog 1.0.34 is available",
+      description: "Acorn 1.0.34 is available",
       lifecycle: { type: "persistent", dismissal: "day" },
       primaryAction: { label: "Download" },
     });
@@ -277,7 +276,7 @@ describe("sidebar toast registry", () => {
 
     expect(toast).toMatchObject({
       id: "desktop-update:1.0.34:downloading",
-      description: "Downloading Anarlog 1.0.34 (58%)",
+      description: "Downloading Acorn 1.0.34 (58%)",
       lifecycle: { type: "persistent", dismissal: "session" },
       loading: true,
     });
@@ -299,7 +298,7 @@ describe("sidebar toast registry", () => {
 
     expect(toast).toMatchObject({
       id: "desktop-update:1.0.34:ready",
-      description: "Anarlog 1.0.34 is ready to install",
+      description: "Acorn 1.0.34 is ready to install",
       lifecycle: { type: "persistent", dismissal: "session" },
       primaryAction: { label: "Restart" },
     });

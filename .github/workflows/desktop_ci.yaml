@@ -310,7 +310,6 @@ jobs:
         env:
           POSTHOG_API_KEY: phc_windows_ci
           VITE_POSTHOG_API_KEY: phc_windows_ci
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_HYPRNOTE_2 }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_APP_URL: https://anarlog.so
@@ -521,7 +520,6 @@ jobs:
         env:
           POSTHOG_API_KEY: phc_linux_ci
           VITE_POSTHOG_API_KEY: phc_linux_ci
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN_HYPRNOTE_2 }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_APP_URL: https://anarlog.so

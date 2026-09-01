@@ -1,8 +1,7 @@
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
-
 import type { CharTask } from "@anlg/api-client";
 import { commands as miscCommands } from "@anlg/plugin-misc";
 
+import { hostedFetch } from "~/shared/hosted-fetch";
 import {
   CHAR_TASK_HEADER,
   DEVICE_FINGERPRINT_HEADER,
@@ -34,7 +33,7 @@ export const tracedFetch: typeof fetch = async (input, init) => {
     headers.set(DEVICE_FINGERPRINT_HEADER, fingerprint);
   }
 
-  return tauriFetch(input, { ...init, headers });
+  return hostedFetch(input, { ...init, headers });
 };
 
 export function createTracedFetch(task: CharTask): typeof fetch {

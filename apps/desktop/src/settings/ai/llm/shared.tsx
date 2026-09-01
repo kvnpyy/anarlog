@@ -25,7 +25,7 @@ import {
   XAI,
   ZAI,
 } from "@lobehub/icons";
-import { Shuffle } from "@phosphor-icons/react";
+import { Shuffle, Sparkle } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { env } from "~/env";
@@ -67,6 +67,17 @@ const _PROVIDERS = [
       { kind: "requires_auth" },
       { kind: "requires_entitlement", entitlement: "pro" },
     ],
+  },
+  {
+    id: "acorn",
+    displayName: "Default",
+    badge: null,
+    icon: <Sparkle weight="fill" className="size-full" />,
+    baseUrl:
+      env.VITE_ACORN_DEFAULT_LLM_BASE_URL?.trim() ||
+      "https://api.openai.com/v1",
+    hideAdvanced: true,
+    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
   },
   {
     id: "claude",
@@ -630,6 +641,7 @@ const _PROVIDERS = [
 ] as const satisfies readonly Provider[];
 
 const PROVIDER_ORDER = [
+  "acorn",
   "claude",
   "chatgpt",
   "grok",

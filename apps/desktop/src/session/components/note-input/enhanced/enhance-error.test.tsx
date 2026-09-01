@@ -69,7 +69,7 @@ describe("EnhanceError", () => {
     expect(screen.getByText("Sign in to generate this summary")).toBeTruthy();
     expect(
       screen.getByText(
-        "Anarlog could not generate this summary because you were not signed in. Sign in, then try again.",
+        "Acorn could not generate this summary because you were not signed in. Sign in, then try again.",
       ),
     ).toBeTruthy();
     expect(
@@ -82,25 +82,15 @@ describe("EnhanceError", () => {
     expect(mocks.generate).not.toHaveBeenCalled();
   });
 
-  it("keeps the retry action for other generation failures", () => {
+  it("does not offer a retry action for other generation failures", () => {
     renderError(false);
 
     expect(screen.getByText("Summary generation failed")).toBeTruthy();
     expect(
       screen.getByText("AI generation did not return any text."),
     ).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-
-    expect(mocks.generate).toHaveBeenCalledWith("enhance-task", {
-      model: mocks.model,
-      taskType: "enhance",
-      args: {
-        sessionId: "session-1",
-        enhancedNoteId: "note-1",
-        templateId: "template-1",
-      },
-    });
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(mocks.generate).not.toHaveBeenCalled();
     expect(mocks.signIn).not.toHaveBeenCalled();
   });
 });

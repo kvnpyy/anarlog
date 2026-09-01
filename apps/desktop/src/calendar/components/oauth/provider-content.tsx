@@ -3,11 +3,6 @@ import { CircleNotch } from "@phosphor-icons/react";
 import { useCallback, useMemo } from "react";
 
 import type { ConnectionItem } from "@anlg/api-client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@anlg/ui/components/ui/tooltip";
 
 import {
   OAuthCalendarSelection,
@@ -16,9 +11,10 @@ import {
 import { ReconnectRequiredIndicator } from "./status";
 
 import { useAuth } from "~/auth";
-import { useBillingAccess } from "~/auth/billing-context";
-import { useConnections } from "~/auth/useConnections";
 import type { CalendarProvider } from "~/calendar/components/shared";
+import { usesNativeGoogleCalendarOAuth } from "~/calendar/components/shared";
+import { useGoogleCalendarConnect } from "~/calendar/google-oauth";
+import { useMergedCalendarConnections } from "~/calendar/google-oauth/use-connections";
 import { useOpenIntegrationUrl } from "~/shared/integration";
 
 export function OAuthProviderContent({
@@ -31,9 +27,15 @@ export function OAuthProviderContent({
   onConnectStarted?: () => void;
 }) {
   const auth = useAuth();
-  const { isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isError } = useConnections(isPro);
-  const { openIntegration, openingAction } = useOpenIntegrationUrl();
+  const nativeGoogle = usesNativeGoogleCalendarOAuth(config);
+  const { openIntegration, openingAction: hostedOpeningAction } =
+    useOpenIntegrationUrl();
+  const { connectGoogle, openingAction: googleOpeningAction } =
+    useGoogleCalendarConnect();
+  const { data: connections, isError } = useMergedCalendarConnections();
+  const openingAction = nativeGoogle
+    ? googleOpeningAction
+    : hostedOpeningAction;
   const providerConnections = useMemo(
     () =>
       connections?.filter(
@@ -42,47 +44,39 @@ export function OAuthProviderContent({
     [connections, config.nangoIntegrationId],
   );
 
-  const handleAddAccount = useCallback(() => {
-    onConnectStarted?.();
-    openIntegration({
-      nangoIntegrationId: config.nangoIntegrationId,
-      action: "connect",
+  const startOAuth = useCallback(
+    (action: "connect" | "reconnect" | "disconnect", connectionId?: string) => {
+      onConnectStarted?.();
+      if (nativeGoogle) {
+        connectGoogle({ action, connectionId });
+        return;
+      }
+      openIntegration({
+        nangoIntegrationId: config.nangoIntegrationId,
+        connectionId,
+        action,
+        returnTo,
+      });
+    },
+    [
+      config.nangoIntegrationId,
+      connectGoogle,
+      nativeGoogle,
+      onConnectStarted,
+      openIntegration,
       returnTo,
-    });
-  }, [config.nangoIntegrationId, onConnectStarted, openIntegration, returnTo]);
+    ],
+  );
 
-  if (!auth.session) {
-    return (
-      <div className="pt-1 pb-2">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <span
-              tabIndex={0}
-              className="text-muted-foreground cursor-not-allowed text-xs opacity-50"
-            >
-              {t`Connect ${config.displayName} Calendar`}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            {t`Sign in to connect your calendar`}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  }
-
-  if (!isPro) {
+  if (!nativeGoogle && !auth.session) {
     return (
       <div className="pt-1 pb-2">
         <button
-          onClick={upgradeToPro}
-          disabled={isUpgradingToPro}
-          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-xs underline transition-colors disabled:opacity-50"
+          type="button"
+          onClick={() => void auth.signIn()}
+          className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-xs underline transition-colors"
         >
-          {isUpgradingToPro && (
-            <CircleNotch className="size-3 animate-spin" aria-hidden="true" />
-          )}
-          {t`Upgrade to connect`}
+          {t`Connect ${config.displayName} Calendar`}
         </button>
       </div>
     );
@@ -99,22 +93,11 @@ export function OAuthProviderContent({
           <ReconnectRequiredContent
             key={connection.connection_id}
             config={config}
-            onReconnect={() => {
-              onConnectStarted?.();
-              openIntegration({
-                nangoIntegrationId: config.nangoIntegrationId,
-                connectionId: connection.connection_id,
-                action: "reconnect",
-                returnTo,
-              });
-            }}
+            onReconnect={() =>
+              startOAuth("reconnect", connection.connection_id)
+            }
             onDisconnect={() =>
-              openIntegration({
-                nangoIntegrationId: config.nangoIntegrationId,
-                connectionId: connection.connection_id,
-                action: "disconnect",
-                returnTo,
-              })
+              startOAuth("disconnect", connection.connection_id)
             }
             openingAction={openingAction}
             errorDescription={connection.last_error_description ?? null}
@@ -124,8 +107,10 @@ export function OAuthProviderContent({
         <ConnectedContent
           config={config}
           connections={providerConnections}
-          returnTo={returnTo}
-          onConnectStarted={onConnectStarted}
+          onReconnect={(connectionId) => startOAuth("reconnect", connectionId)}
+          onDisconnect={(connectionId) =>
+            startOAuth("disconnect", connectionId)
+          }
         />
       </div>
     );
@@ -144,7 +129,7 @@ export function OAuthProviderContent({
   return (
     <div className="pt-1 pb-2">
       <button
-        onClick={handleAddAccount}
+        onClick={() => startOAuth("connect")}
         disabled={openingAction !== null}
         className="text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center gap-1 text-xs underline transition-colors disabled:opacity-50"
       >
@@ -211,15 +196,14 @@ function ReconnectRequiredContent({
 function ConnectedContent({
   config,
   connections,
-  returnTo,
-  onConnectStarted,
+  onReconnect,
+  onDisconnect,
 }: {
   config: CalendarProvider;
   connections: ConnectionItem[];
-  returnTo: string;
-  onConnectStarted?: () => void;
+  onReconnect: (connectionId: string) => void;
+  onDisconnect: (connectionId: string) => void;
 }) {
-  const { openIntegration } = useOpenIntegrationUrl();
   const {
     groups,
     connectionSourceMap,
@@ -245,39 +229,17 @@ function ConnectedContent({
             {
               id: `reconnect-${connection.connection_id}`,
               text: t`Reconnect`,
-              action: () => {
-                onConnectStarted?.();
-                void openIntegration({
-                  nangoIntegrationId: config.nangoIntegrationId,
-                  connectionId: connection.connection_id,
-                  action: "reconnect",
-                  returnTo,
-                });
-              },
+              action: () => onReconnect(connection.connection_id),
             },
             {
               id: `disconnect-${connection.connection_id}`,
               text: t`Disconnect`,
-              action: () =>
-                void openIntegration({
-                  nangoIntegrationId: config.nangoIntegrationId,
-                  connectionId: connection.connection_id,
-                  action: "disconnect",
-                  returnTo,
-                }),
+              action: () => onDisconnect(connection.connection_id),
             },
           ],
         };
       }),
-    [
-      config.nangoIntegrationId,
-      connectionSourceMap,
-      connections,
-      groups,
-      onConnectStarted,
-      openIntegration,
-      returnTo,
-    ],
+    [connectionSourceMap, connections, groups, onDisconnect, onReconnect],
   );
 
   return (

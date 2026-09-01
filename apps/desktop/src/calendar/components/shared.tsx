@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import { OutlookIcon } from "@anlg/ui/components/icons/outlook";
 
+import { LOCAL_ONLY } from "~/shared/product";
+
 export type CalendarProvider = {
   disabled: boolean;
   id: string;
@@ -54,6 +56,12 @@ const _PROVIDERS = [
 ] as const satisfies readonly CalendarProvider[];
 
 export const PROVIDERS = [..._PROVIDERS];
+
+export function usesNativeGoogleCalendarOAuth(
+  provider: Pick<CalendarProvider, "id">,
+) {
+  return LOCAL_ONLY && provider.id === "google";
+}
 
 const CALENDAR_NANGO_INTEGRATION_IDS = new Set<string>(
   PROVIDERS.flatMap((provider) =>

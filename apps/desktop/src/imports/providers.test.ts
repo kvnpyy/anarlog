@@ -80,14 +80,12 @@ describe("meeting import providers", () => {
       "plaud",
       "pocket",
       "microsoft-teams",
-      "google-meet",
     ]);
     expect(providers.map((provider) => provider.installedAppId)).toEqual([
       "com.granola.app",
       "ai.plaud.desktop.plaud",
       "com.openvisionengineering.pocket-desktop-app",
       "com.microsoft.teams2",
-      "google-meet",
     ]);
   });
 
@@ -100,7 +98,6 @@ describe("meeting import providers", () => {
     expect(providers.map((provider) => provider.id)).toEqual([
       "plaud",
       "pocket",
-      "google-meet",
     ]);
   });
 
@@ -109,7 +106,7 @@ describe("meeting import providers", () => {
       detectMeetingImportProviders([
         { id: "com.electron.pocket-casts", name: "Pocket Casts" },
       ]).map((provider) => provider.id),
-    ).toEqual(["google-meet"]);
+    ).toEqual([]);
   });
 
   it("does not accept bundle identifier prefixes", () => {
@@ -117,7 +114,7 @@ describe("meeting import providers", () => {
       detectMeetingImportProviders([
         { id: "com.granola.app.helper", name: "Something Else" },
       ]).map((provider) => provider.id),
-    ).toEqual(["google-meet"]);
+    ).toEqual([]);
   });
 
   it("does not infer extension-only products from a browser", () => {
@@ -125,6 +122,19 @@ describe("meeting import providers", () => {
       detectMeetingImportProviders([
         { id: "com.google.Chrome", name: "Google Chrome" },
       ]).map((provider) => provider.id),
+    ).toEqual([]);
+  });
+
+  it("detects Google Meet only when that app is installed", () => {
+    expect(
+      detectMeetingImportProviders([
+        { id: "com.google.meet", name: "Google Meet" },
+      ]).map((provider) => provider.id),
     ).toEqual(["google-meet"]);
+    expect(
+      detectMeetingImportProviders([
+        { id: "com.google.Chrome", name: "Google Chrome" },
+      ]).map((provider) => provider.id),
+    ).toEqual([]);
   });
 });

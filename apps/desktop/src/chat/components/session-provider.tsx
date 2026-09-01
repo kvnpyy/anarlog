@@ -77,6 +77,7 @@ interface ChatSessionProps {
   currentSessionId?: string;
   hasAvailableTranscript?: boolean;
   isBatchTranscriptionPending?: boolean;
+  isLiveAsk?: boolean;
   modelOverride?: LanguageModel;
   extraTools?: ToolSet;
   systemPromptOverride?: string;
@@ -111,6 +112,7 @@ function ChatSessionLifecycle({
   currentSessionId,
   hasAvailableTranscript = false,
   isBatchTranscriptionPending = false,
+  isLiveAsk = false,
   modelOverride,
   extraTools,
   systemPromptOverride,
@@ -201,6 +203,8 @@ function ChatSessionLifecycle({
     extraTools,
     systemPromptOverride,
     ownerUserId || undefined,
+    isLiveAsk,
+    !isLiveAsk && !currentSessionId,
   );
 
   const persistedVisibleMessages = useMemo(

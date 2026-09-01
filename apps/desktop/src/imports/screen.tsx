@@ -37,11 +37,11 @@ import {
   connectedImportSyncQueryOptions,
   disconnectConnectedImport,
   disconnectNangoImport,
-  isDirectMeetingImport,
   isLocalConnectedImport,
   isNangoMeetingImport,
   nangoConnectionIsReady,
   nangoImportSyncQueryOptions,
+  offersMeetingImportConnect,
 } from "./connected-import";
 import { detectImportSources } from "./detection";
 import { providerIconOpticalClass, providerIconSrc } from "./icons";
@@ -127,12 +127,12 @@ export function MeetingImportScreen({
   const history = historyQuery.data ?? EMPTY_MEETING_IMPORT_HISTORY;
   const detectedProviders = detectionQuery.data ?? [];
   const connectedProviders = detectedProviders
-    .filter((provider) => isDirectMeetingImport(provider))
+    .filter((provider) => offersMeetingImportConnect(provider))
     .sort((left, right) => left.name.localeCompare(right.name));
   const mcpProviders = connectedProviders.filter(isLocalConnectedImport);
   const nangoProviders = connectedProviders.filter(isNangoMeetingImport);
   const fileProviders = detectedProviders
-    .filter((provider) => !provider.directImport)
+    .filter((provider) => !offersMeetingImportConnect(provider))
     .sort((left, right) => left.name.localeCompare(right.name));
   const displayedProviders = [...connectedProviders, ...fileProviders];
   const detectionSettled = !detectionQuery.isLoading && !detectionQuery.error;
@@ -383,7 +383,7 @@ export function MeetingImportScreen({
                 const importing =
                   fileImportMutation.isPending &&
                   fileImportMutation.variables.id === provider.id;
-                const connectedProvider = isDirectMeetingImport(provider);
+                const connectedProvider = offersMeetingImportConnect(provider);
                 const nangoProvider = isNangoMeetingImport(provider);
                 const connectedIndex = connectedProviderIndexes.get(
                   provider.id,
@@ -445,7 +445,7 @@ export function MeetingImportScreen({
                           {connected ? (
                             <Trans>
                               Connected · New meetings are imported
-                              automatically while Anarlog is running.
+                              automatically while Acorn is running.
                             </Trans>
                           ) : (
                             <Trans>
@@ -460,6 +460,15 @@ export function MeetingImportScreen({
                           <Trans>
                             Last import: {lastRun.imported} added,{" "}
                             {lastRun.matched} unchanged
+                          </Trans>
+                        </p>
+                      ) : provider.id === "zoom" ||
+                        provider.id === "google-meet" ? (
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          <Trans>
+                            Acorn records {provider.name} on this computer.
+                            Import past transcripts from files — cloud history
+                            isn’t available yet.
                           </Trans>
                         </p>
                       ) : provider.access === "Export" ? (

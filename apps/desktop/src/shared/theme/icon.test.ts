@@ -13,6 +13,7 @@ describe("app icon preference", () => {
     expect(normalizeAppIconPreference("unknown")).toBe("default");
     expect(normalizeAppIconPreference("dev")).toBe("dev");
     expect(normalizeAppIconPreference("staging")).toBe("staging");
+    expect(normalizeAppIconPreference("squirrel")).toBe("squirrel");
     expect(normalizeAppIconPreference("journal")).toBe("journal");
     expect(normalizeAppIconPreference("notepad")).toBe("notepad");
     expect(normalizeAppIconPreference("stone")).toBe("stone");
@@ -59,7 +60,11 @@ describe("app icon preference", () => {
     expect(
       resolveDockIconName("stone", "dark", false, "com.hyprnote.stable"),
     ).toBe("stone");
+    expect(
+      resolveDockIconName("squirrel", "dark", false, "com.hyprnote.stable"),
+    ).toBe("squirrel-dark");
     expect(hasDarkAppIconVariant("anagram")).toBe(true);
+    expect(hasDarkAppIconVariant("squirrel")).toBe(true);
     expect(hasDarkAppIconVariant("walnut")).toBe(false);
   });
 });

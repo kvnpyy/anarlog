@@ -539,41 +539,28 @@ describe("SessionShareButton", () => {
     expect(mocks.loadSessionShareSource).not.toHaveBeenCalled();
   });
 
-  it("shows an upgrade state before sharing for a free user", async () => {
+  it("opens the Acorn Pro dialog when sharing on Free", async () => {
     mocks.billing.isPaid = false;
     mocks.managedNote = null;
     renderShareButton();
 
-    const trigger = screen.getByRole("button", { name: "Share note" });
-    expect((trigger as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(trigger);
-
-    expect(
-      await screen.findByRole("heading", { name: "Share notes with others" }),
-    ).not.toBeNull();
-    expect(
-      screen.getByText(
-        "Upgrade to Pro to invite people and share this note with them.",
-      ),
-    ).not.toBeNull();
-    expect(mocks.billing.upgradeToPro).not.toHaveBeenCalled();
-    expect(mocks.loadSessionShareSource).not.toHaveBeenCalled();
-    expect(mocks.publishSessionShareSnapshot).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Share note" }));
 
     expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("heading", { name: "Share notes with others" }),
+    ).toBeNull();
+    expect(screen.queryByTestId("share-popover")).toBeNull();
   });
 
-  it("closes a free-plan upgrade state when the account changes", async () => {
+  it("closes a free-plan share popover when the account changes", async () => {
     mocks.billing.isPaid = false;
     mocks.managedNote = null;
     const view = renderShareButtonView();
 
     fireEvent.click(screen.getByRole("button", { name: "Share note" }));
-    expect(
-      await screen.findByRole("heading", { name: "Share notes with others" }),
-    ).not.toBeNull();
+    expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
+    expect(screen.queryByTestId("share-popover")).toBeNull();
 
     mocks.auth.session = createSession(OTHER_USER_ID);
     view.rerender();
@@ -1317,9 +1304,8 @@ describe("SessionShareButton", () => {
     const view = renderShareButtonView();
 
     fireEvent.click(screen.getByRole("button", { name: "Share note" }));
-    expect(
-      await screen.findByRole("heading", { name: "Share notes with others" }),
-    ).not.toBeNull();
+    expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
+    expect(screen.queryByTestId("share-popover")).toBeNull();
 
     mocks.auth.session = createSession(OTHER_USER_ID);
     view.rerender();
@@ -1329,9 +1315,6 @@ describe("SessionShareButton", () => {
     view.rerender();
 
     expect(screen.queryByTestId("share-popover")).toBeNull();
-    expect(
-      screen.queryByRole("heading", { name: "Share notes with others" }),
-    ).toBeNull();
   });
 
   it("abandons a billing wait when the account changes", async () => {

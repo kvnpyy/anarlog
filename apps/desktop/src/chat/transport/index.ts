@@ -14,6 +14,7 @@ import {
 } from "@anlg/plugin-template";
 
 import type { ContextRef } from "../context/entities";
+import { getRecentLiveTranscriptContext } from "../context/live-transcript-snippet";
 import { extractContextRefsFromMessages } from "../context/refs";
 import { CONTEXT_TEXT_FIELD } from "../tools/context-text";
 import type { AnlgUIMessage } from "../types";
@@ -180,10 +181,16 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     const effectiveContextRefs = extractContextRefsFromMessages(
       options.messages,
     );
-    const effectiveContextBlock = await this.renderContextBlock(
+    const persistedContextBlock = await this.renderContextBlock(
       effectiveContextRefs,
       cache,
     );
+    const liveTranscriptBlocks =
+      collectLiveTranscriptBlocks(effectiveContextRefs);
+    const effectiveContextBlock = joinContextBlocks([
+      persistedContextBlock,
+      ...liveTranscriptBlocks,
+    ]);
 
     let lastUserMessageIndex = -1;
     for (let i = options.messages.length - 1; i >= 0; i -= 1) {
@@ -209,21 +216,22 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     const messagesWithContext: AnlgUIMessage[] = [];
 
     for (const [index, msg] of options.messages.entries()) {
+      const modelMessage = applyHiddenModelPrompt(msg);
       if (msg.role === "user") {
         if (
           !effectiveContextBlock ||
           lastUserMessageIndex === -1 ||
           index !== lastUserMessageIndex
         ) {
-          messagesWithContext.push(msg);
+          messagesWithContext.push(modelMessage);
           continue;
         }
 
         messagesWithContext.push({
-          ...msg,
+          ...modelMessage,
           parts: [
             { type: "text" as const, text: `${effectiveContextBlock}\n\n` },
-            ...msg.parts,
+            ...modelMessage.parts,
           ],
         });
       } else if (msg.role === "assistant") {
@@ -288,4 +296,50 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     async () => {
       return null;
     };
+}
+
+function collectLiveTranscriptBlocks(contextRefs: ContextRef[]): string[] {
+  const seen = new Set<string>();
+  const blocks: string[] = [];
+
+  for (const ref of contextRefs) {
+    if (ref.kind !== "session" || seen.has(ref.sessionId)) {
+      continue;
+    }
+
+    seen.add(ref.sessionId);
+    const block = getRecentLiveTranscriptContext(ref.sessionId);
+    if (block) {
+      blocks.push(block);
+    }
+  }
+
+  return blocks;
+}
+
+function joinContextBlocks(blocks: Array<string | null>): string | null {
+  const merged = blocks.filter((block): block is string => Boolean(block));
+  return merged.length > 0 ? merged.join("\n\n") : null;
+}
+
+export function applyHiddenModelPrompt(message: AnlgUIMessage): AnlgUIMessage {
+  if (message.role !== "user") {
+    return message;
+  }
+
+  const modelPrompt = message.metadata?.modelPrompt?.trim();
+  if (!modelPrompt) {
+    return message;
+  }
+
+  let replaced = false;
+  const parts = message.parts.map((part) => {
+    if (part.type !== "text" || replaced) {
+      return part;
+    }
+    replaced = true;
+    return { ...part, text: modelPrompt };
+  });
+
+  return { ...message, parts };
 }

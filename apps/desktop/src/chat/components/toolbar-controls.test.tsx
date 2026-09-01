@@ -94,7 +94,7 @@ describe("ChatToolbarControls", () => {
     expect(historyButton.className).toContain("w-auto");
     expect(historyButton.className).toContain("gap-1.5");
     expect(historyButton.className).toContain("hover:bg-primary-foreground/14");
-    expect(screen.queryByText("Ask Anarlog AI anything")).toBeNull();
+    expect(screen.queryByText("Ask Acorn AI anything")).toBeNull();
   });
 
   it("renders the light chat history trigger without title text", () => {
@@ -120,7 +120,7 @@ describe("ChatToolbarControls", () => {
     expect(historyButton.className).toContain("text-muted-foreground");
     expect(historyButton.className).toContain("hover:bg-muted/80");
     expect(historyButton.textContent).toBe("");
-    expect(screen.queryByText("Ask Anarlog AI anything")).toBeNull();
+    expect(screen.queryByText("Ask Acorn AI anything")).toBeNull();
   });
 
   it("opens floating chat history to the right and adapts to viewport collisions", () => {
@@ -268,7 +268,7 @@ describe("ChatToolbarControls", () => {
     expect(historyButton.className).toContain("-ml-2");
     expect(historyButton.className).toContain("h-7");
     expect(historyButton.className).toContain("w-auto");
-    expect(screen.queryByText("Ask Anarlog AI anything")).toBeNull();
+    expect(screen.queryByText("Ask Acorn AI anything")).toBeNull();
     const floatButton = screen.getByRole("button", { name: "Float chat" });
     const closeButton = screen.getByRole("button", { name: "Close chat" });
     expect(historyButton.getAttribute("data-tauri-drag-region")).toBe("false");
@@ -301,5 +301,40 @@ describe("ChatToolbarControls", () => {
     );
 
     expect(mocks.useRecentChatGroups).toHaveBeenCalledWith("automations", 5);
+  });
+
+  it("hides float and close while the Ask rail is pinned during recording", () => {
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        layout="right-panel"
+        pinned
+        onClose={vi.fn()}
+        onNewChat={vi.fn()}
+        onOpenFloating={vi.fn()}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Float chat" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close chat" })).toBeNull();
+    expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
+  });
+
+  it("hides chat history while a meeting has its own conversation", () => {
+    render(
+      <ChatToolbarControls
+        chatScope="general"
+        currentChatGroupId={undefined}
+        isolateConversation
+        onNewChat={vi.fn()}
+        onSelectChat={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Chat history" })).toBeNull();
+    expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
+    expect(mocks.useRecentChatGroups).not.toHaveBeenCalled();
   });
 });

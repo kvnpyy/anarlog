@@ -14,8 +14,10 @@ impl TrayVersion {
             "com.hyprnote.staging" => "staging",
             "com.hyprnote.dev" => "dev",
             _ => match app_name {
-                "Anarlog" | "Char" | "Hyprnote" => "stable",
-                "Anarlog Staging" | "Char Staging" | "Hyprnote Staging" => "staging",
+                "Anarlog" | "Acorn" | "Char" | "Hyprnote" => "stable",
+                "Anarlog Staging" | "Acorn Staging" | "Char Staging" | "Hyprnote Staging" => {
+                    "staging"
+                }
                 _ => "dev",
             },
         }
@@ -57,15 +59,25 @@ mod tests {
             TrayVersion::get_channel("com.hyprnote.dev", "Anarlog Dev"),
             "dev"
         );
+        assert_eq!(
+            TrayVersion::get_channel("com.hyprnote.dev", "Acorn Dev"),
+            "dev"
+        );
     }
 
     #[test]
     fn falls_back_to_product_name_for_unknown_identifier() {
         assert_eq!(TrayVersion::get_channel("unknown", "Anarlog"), "stable");
+        assert_eq!(TrayVersion::get_channel("unknown", "Acorn"), "stable");
         assert_eq!(
             TrayVersion::get_channel("unknown", "Anarlog Staging"),
             "staging"
         );
+        assert_eq!(
+            TrayVersion::get_channel("unknown", "Acorn Staging"),
+            "staging"
+        );
         assert_eq!(TrayVersion::get_channel("unknown", "Anarlog Dev"), "dev");
+        assert_eq!(TrayVersion::get_channel("unknown", "Acorn Dev"), "dev");
     }
 }

@@ -59,15 +59,13 @@ describe("DictionarySettings", () => {
 
   afterEach(cleanup);
 
-  it("offers an upgrade instead of editing on the free plan", () => {
+  it("lets local-only users edit the dictionary without a Pro upgrade", () => {
     mocks.billing.isPro = false;
 
     render(<SettingsDictionary />);
 
-    expect(screen.queryByRole("textbox")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
-
-    expect(mocks.billing.upgradeToPro).toHaveBeenCalledOnce();
+    expect(screen.getByRole("textbox")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Upgrade to Pro" })).toBeNull();
   });
 
   it("shows an empty state and disabled add control", () => {

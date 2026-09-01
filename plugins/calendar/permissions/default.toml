@@ -6,6 +6,8 @@ permissions = [
     "allow-list-connection-ids",
     "allow-list-calendars",
     "allow-list-events",
+    "allow-list-google-calendars-direct",
+    "allow-list-google-events-direct",
     "allow-open-calendar",
     "allow-create-event",
 ]

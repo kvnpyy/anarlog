@@ -3,7 +3,7 @@ import { SpeakerHigh, SpeakerX } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { platform } from "@tauri-apps/plugin-os";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { commands as sfxCommands } from "@anlg/plugin-sfx";
 import { cn } from "@anlg/utils";
@@ -24,6 +24,7 @@ import { OnboardingSection } from "./shared";
 
 import { trackAnalyticsEvent } from "~/analytics";
 import { useAuth } from "~/auth";
+import { LOCAL_ONLY, PRODUCT_NAME, PRODUCT_TAGLINE } from "~/shared/product";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
@@ -88,7 +89,6 @@ function OnboardingScreenContent({
   const [isMuted, setIsMuted] = useState(false);
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const [didSkipLogin, setDidSkipLogin] = useState(false);
-  const onboardingVideoRef = useRef<HTMLVideoElement>(null);
   const currentPlatform = platform();
 
   const goNext = useCallback(() => {
@@ -115,7 +115,9 @@ function OnboardingScreenContent({
   }, [currentStep]);
 
   const handleCalendarSignIn = useCallback(() => {
-    setCurrentStep("login");
+    if (!LOCAL_ONLY) {
+      setCurrentStep("login");
+    }
     void auth.signIn();
   }, [auth]);
 
@@ -137,12 +139,6 @@ function OnboardingScreenContent({
     sfxCommands.setVolume("BGM", isMuted ? 0 : 0.2).catch(console.error);
   }, [isMuted]);
 
-  useEffect(() => {
-    if (onboardingVideoRef.current) {
-      onboardingVideoRef.current.playbackRate = 0.65;
-    }
-  }, []);
-
   const handleFinish = useCallback(
     (sessionId: string) => {
       trackAnalyticsEvent("onboarding_step_completed", {
@@ -158,29 +154,7 @@ function OnboardingScreenContent({
   return (
     <div className="bg-card relative flex h-full min-h-0 flex-col overflow-hidden">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-        >
-          <video
-            ref={onboardingVideoRef}
-            className="absolute inset-0 h-full w-full object-cover object-bottom opacity-28"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-          >
-            <source src="/assets/onboarding-video.mp4" type="video/mp4" />
-          </video>
-          <div className="from-background/8 via-background/18 absolute inset-0 bg-linear-to-t to-transparent" />
-        </motion.div>
-        <div className="absolute inset-x-0 top-0 h-[80%] [mask-image:linear-gradient(to_bottom,black,black_18%,rgba(0,0,0,0.9)_36%,rgba(0,0,0,0.6)_58%,transparent)] backdrop-blur-[32px]" />
-        <div className="absolute inset-x-0 top-0 h-[92%] [mask-image:linear-gradient(to_bottom,black,rgba(0,0,0,0.8)_34%,rgba(0,0,0,0.35)_62%,transparent)] backdrop-blur-[12px]" />
-        <div className="from-background via-background/82 via-background/97 to-background/0 absolute inset-x-0 top-0 h-[84%] bg-linear-to-b via-18% via-42%" />
+        <div className="from-background via-background/90 to-background/40 absolute inset-0 bg-linear-to-b" />
         <motion.div
           className="bg-background absolute inset-0"
           initial={{ opacity: 1 }}
@@ -210,13 +184,25 @@ function OnboardingScreenContent({
       <div
         data-tauri-drag-region={headerDragRegion || undefined}
         className={cn([
-          "relative z-10 flex shrink-0 items-center",
+          "relative z-10 flex shrink-0 flex-col items-start justify-center",
           headerClassName,
         ])}
       >
-        <h1 className="font-hand text-foreground text-4xl leading-none font-semibold tracking-normal">
-          <Trans>Welcome to Anarlog</Trans>
-        </h1>
+        <div className="flex items-center gap-4">
+          <img
+            src="/assets/app-icons/stable-light.png"
+            alt=""
+            className="size-16 shrink-0 rounded-[14px] object-cover object-center"
+          />
+          <div>
+            <h1 className="font-hand text-foreground text-4xl leading-none font-medium tracking-tight">
+              Welcome to {PRODUCT_NAME}
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {PRODUCT_TAGLINE}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="scroll-fade-y relative z-10 flex-1 overflow-y-auto">
@@ -225,18 +211,9 @@ function OnboardingScreenContent({
             title={<Trans>Start with permissions</Trans>}
             completedTitle={<Trans>Permissions granted</Trans>}
             description={
-              currentPlatform === "macos" ? (
-                <Trans>
-                  Anarlog needs microphone and system audio to transcribe your
-                  meetings, plus Accessibility to read meeting controls, visible
-                  chat, and participant status.
-                </Trans>
-              ) : (
-                <Trans>
-                  Anarlog needs access to your microphone and system audio to
-                  record and transcribe your meetings
-                </Trans>
-              )
+              currentPlatform === "macos"
+                ? `${PRODUCT_NAME} needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat, and participant status.`
+                : `${PRODUCT_NAME} needs access to your microphone and system audio to record and transcribe your meetings`
             }
             status={getStepStatus("permissions", currentStep)}
             skippable={false}
@@ -246,50 +223,48 @@ function OnboardingScreenContent({
             <PermissionsSection onContinue={goNext} />
           </OnboardingSection>
 
-          <OnboardingSection
-            title={<Trans>Create account</Trans>}
-            description={
-              <Trans>
-                Sign in to unlock powerful AI models, sync across devices, and
-                personalization.
-              </Trans>
-            }
-            completedTitle={
-              auth.session ? (
-                <Trans>Signed in</Trans>
-              ) : didSkipLogin ? (
-                <Trans>Skipped</Trans>
-              ) : (
-                <Trans>Account</Trans>
-              )
-            }
-            status={getStepStatus("login", currentStep)}
-            onBack={goBack}
-            onNext={goNext}
-            onSkip={() => {
-              setDidSkipLogin(true);
-              trackAnalyticsEvent("onboarding_login_skipped");
-              trackAnalyticsEvent("onboarding_step_skipped", {
-                step: "login",
-                platform: currentPlatform,
-              });
-              const next = getNextStep("login");
-              if (next) setCurrentStep(next);
-            }}
-          >
-            <LoginSection
-              onContinue={goNext}
-              onSkip={() => setDidSkipLogin(true)}
-            />
-          </OnboardingSection>
+          {!LOCAL_ONLY ? (
+            <OnboardingSection
+              title={<Trans>Create account</Trans>}
+              description={
+                <Trans>
+                  Sign in to unlock powerful AI models, sync across devices, and
+                  personalization.
+                </Trans>
+              }
+              completedTitle={
+                auth.session ? (
+                  <Trans>Signed in</Trans>
+                ) : didSkipLogin ? (
+                  <Trans>Skipped</Trans>
+                ) : (
+                  <Trans>Account</Trans>
+                )
+              }
+              status={getStepStatus("login", currentStep)}
+              onBack={goBack}
+              onNext={goNext}
+              onSkip={() => {
+                setDidSkipLogin(true);
+                trackAnalyticsEvent("onboarding_login_skipped");
+                trackAnalyticsEvent("onboarding_step_skipped", {
+                  step: "login",
+                  platform: currentPlatform,
+                });
+                const next = getNextStep("login");
+                if (next) setCurrentStep(next);
+              }}
+            >
+              <LoginSection
+                onContinue={goNext}
+                onSkip={() => setDidSkipLogin(true)}
+              />
+            </OnboardingSection>
+          ) : null}
 
           <OnboardingSection
             title={<Trans>Connect calendar</Trans>}
-            description={
-              <Trans>
-                Anarlog will sync your calendar to get meeting reminders
-              </Trans>
-            }
+            description={`${PRODUCT_NAME} will use your calendar to get meeting reminders`}
             completedTitle={<Trans>Calendar connected</Trans>}
             status={getStepStatus("calendar", currentStep)}
             onBack={goBack}
@@ -303,14 +278,15 @@ function OnboardingScreenContent({
           </OnboardingSection>
 
           <OnboardingSection
-            title={<Trans>Bring your meeting history</Trans>}
+            title={<Trans>Import past notes</Trans>}
             description={
               <Trans>
-                Import notes and transcripts from the meeting apps you already
-                use.
+                Bring in transcripts or exports from Zoom, Meet, or another app.
+                Acorn records new meetings locally — cloud connect isn’t
+                available yet.
               </Trans>
             }
-            completedTitle={<Trans>Meeting history imported</Trans>}
+            completedTitle={<Trans>Notes imported</Trans>}
             status={getStepStatus("imports", currentStep)}
             onBack={goBack}
             onNext={goNext}

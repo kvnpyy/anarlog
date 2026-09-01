@@ -3,6 +3,7 @@ import { resolveIsDarkMode, type ThemePreference } from "./resolve";
 export type AppIconPreference =
   | "default"
   | "stable"
+  | "squirrel"
   | "anagram"
   | "dev"
   | "staging"
@@ -17,6 +18,7 @@ export function normalizeAppIconPreference(
 ): AppIconPreference {
   switch (value) {
     case "stable":
+    case "squirrel":
     case "anagram":
     case "dev":
     case "staging":
@@ -65,6 +67,7 @@ export function hasDarkAppIconVariant(
 ): boolean {
   return (
     name === "stable" ||
+    name === "squirrel" ||
     name === "anagram" ||
     name === "dev" ||
     name === "staging"

@@ -22,6 +22,25 @@ describe("sortProviders", () => {
     ]);
   });
 
+  test("keeps Default next to Anarlog", () => {
+    const sorted = sortProviders(
+      [
+        { id: "custom", displayName: "Custom" },
+        { id: "openai", displayName: "OpenAI" },
+        { id: "acorn", displayName: "Default" },
+        { id: "anarlog", displayName: "Anarlog" },
+      ],
+      ["openai"],
+    );
+
+    expect(sorted.map((provider) => provider.id)).toEqual([
+      "anarlog",
+      "acorn",
+      "openai",
+      "custom",
+    ]);
+  });
+
   test("uses the preferred order before the alphabetical fallback", () => {
     const sorted = sortProviders(
       [

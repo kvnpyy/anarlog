@@ -14,7 +14,7 @@ vi.mock("~/store/zustand/tabs", () => ({
 import { useSessionTab } from "./use-session-tab";
 
 describe("useSessionTab", () => {
-  it("clears the retained session when the empty tab becomes active", () => {
+  it("only attaches the session that is currently open", () => {
     mocks.currentTab = {
       active: true,
       id: "session-1",
@@ -36,7 +36,7 @@ describe("useSessionTab", () => {
     };
     rerender();
 
-    expect(result.current.currentSessionId).toBe("session-1");
+    expect(result.current.currentSessionId).toBeUndefined();
 
     mocks.currentTab = {
       active: true,

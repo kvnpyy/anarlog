@@ -41,6 +41,25 @@ async setDismissedToasts(v: string[]) : Promise<Result<null, string>> {
 async getEnv(key: string) : Promise<string> {
     return await TAURI_INVOKE("get_env", { key });
 },
+async acornHostedAiStatus() : Promise<AcornHostedAiStatus> {
+    return await TAURI_INVOKE("acorn_hosted_ai_status");
+},
+async acornHostedFetch(url: string, method: string, headers: ([string, string])[], body: number[] | null, onEvent: TAURI_CHANNEL<HostedFetchEvent>) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_hosted_fetch", { url, method, headers, body, onEvent }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async googleCalendarToken(body: Partial<{ [key in string]: string }>) : Promise<Result<GoogleCalendarTokenResponse, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("google_calendar_token", { body }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async showDevtool() : Promise<boolean> {
     return await TAURI_INVOKE("show_devtool");
 },
@@ -150,10 +169,14 @@ async installAgentSkill(agent: SkillAgent) : Promise<Result<SkillAgentStatus, st
 
 /** user-defined types **/
 
+export type AcornHostedAiStatus = { stt: boolean; llm: boolean }
 export type EmbeddedCliState = "installed" | "missing" | "conflict" | "unsupported" | "resource_missing"
 export type EmbeddedCliStatus = { supported: boolean; commandName: string; installPath: string; state: EmbeddedCliState; details: string | null }
+export type GoogleCalendarTokenResponse = { status: number; body: string }
+export type HostedFetchEvent = { type: "start"; status: number; headers: ([string, string])[] } | { type: "chunk"; data: number[] } | { type: "end" }
 export type SkillAgent = "claude_code" | "codex" | "cursor" | "opencode"
 export type SkillAgentStatus = { agent: SkillAgent; displayName: string; detected: boolean; installed: boolean; skillPath: string }
+export type TAURI_CHANNEL<TSend> = null
 
 /** tauri-specta globals **/
 

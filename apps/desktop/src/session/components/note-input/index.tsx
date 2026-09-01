@@ -7,15 +7,16 @@ import {
   useDeferredValue,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 import type { JSONContent, NoteEditorRef } from "@anlg/editor/note";
-import { cn } from "@anlg/utils";
 
 import { Enhanced } from "./enhanced";
-import { Header, SessionViewSwitcher, useEditorTabs } from "./header";
+import { Header, useEditorTabs } from "./header";
+import { MeetingNotePane } from "./meeting-panes";
 import { RawEditor } from "./raw";
 import { SearchBar } from "./search/bar";
 import { useSearch } from "./search/context";
@@ -25,7 +26,16 @@ import {
   registerCanonicalSessionEditor,
   unregisterCanonicalSessionEditor,
 } from "~/session-sharing/editor-activity";
-import { useCurrentNoteTab } from "~/session/components/shared";
+import {
+  getMeetingNotePane,
+  getSelectedEnhancedNoteId,
+} from "~/session/components/compute-note-tab";
+import {
+  hasStoredNoteContent,
+  useCurrentNoteTab,
+} from "~/session/components/shared";
+import { useIsSessionEnhancing } from "~/session/hooks/useEnhancedNotes";
+import { useEnhancedNote } from "~/session/queries";
 import { useScrollPreservation } from "~/shared/hooks/useScrollPreservation";
 import type { SessionMode } from "~/store/zustand/listener/general";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
@@ -57,10 +67,6 @@ type NoteInputProps = {
   sessionMode?: SessionMode;
   transcriptEditMode?: boolean;
 };
-
-export function shouldShowTranscriptTabSpinner(sessionMode: SessionMode) {
-  return sessionMode === "finalizing" || sessionMode === "running_batch";
-}
 
 export const NoteInput = forwardRef<NoteInputHandle, NoteInputProps>(
   function NoteInput(props, ref) {
@@ -156,7 +162,8 @@ const NoteInputContent = forwardRef<
     },
     ref,
   ) => {
-    const internalEditorRef = useRef<NoteEditorRef>(null);
+    const rawEditorRef = useRef<NoteEditorRef>(null);
+    const enhancedEditorRef = useRef<NoteEditorRef>(null);
     const sessionId = tab.id;
     const deferredCurrentTab = useDeferredValue(currentTab);
     const renderedCurrentTab = editorTabs.some((editorTab) =>
@@ -165,35 +172,59 @@ const NoteInputContent = forwardRef<
       ? deferredCurrentTab
       : currentTab;
 
+    const isRecording = sessionMode === "active";
     const isMeetingInProgress =
-      sessionMode === "active" ||
+      isRecording ||
       sessionMode === "finalizing" ||
       sessionMode === "running_batch";
-    const shouldShowTranscriptSpinner =
-      shouldShowTranscriptTabSpinner(sessionMode);
-
-    const { scrollRef, onBeforeTabChange } = useScrollPreservation(
-      renderedCurrentTab.type === "enhanced"
-        ? `enhanced-${renderedCurrentTab.id}`
-        : renderedCurrentTab.type,
+    const enhancedNoteIds = useMemo(
+      () =>
+        editorTabs.flatMap((view) =>
+          view.type === "enhanced" ? [view.id] : [],
+        ),
+      [editorTabs],
     );
+    const selectedEnhancedNoteId = getSelectedEnhancedNoteId(
+      renderedCurrentTab,
+      enhancedNoteIds,
+    );
+    const enhancedNote = useEnhancedNote(selectedEnhancedNoteId ?? "");
+    const isEnhancing = useIsSessionEnhancing(sessionId);
+    const meetingPane = getMeetingNotePane({
+      currentView: renderedCurrentTab,
+      isRecording,
+      enhancedHasContent: hasStoredNoteContent(enhancedNote?.content),
+      isEnhancing,
+    });
+    const showTranscript = meetingPane === "transcript";
+    const showEnhanced = meetingPane === "enhanced";
+    const activeEditorRef = showEnhanced ? enhancedEditorRef : rawEditorRef;
+
+    const { scrollRef: transcriptScrollRef, onBeforeTabChange } =
+      useScrollPreservation("transcript", {
+        skipRestoration: !showTranscript,
+      });
+
+    const flushPendingChanges = useCallback(() => {
+      rawEditorRef.current?.flushPendingChanges();
+      enhancedEditorRef.current?.flushPendingChanges();
+    }, []);
 
     useImperativeHandle(
       ref,
       () => ({
-        focus: () => internalEditorRef.current?.commands.focus(),
-        focusAtStart: () => internalEditorRef.current?.commands.focusAtStart(),
+        focus: () => activeEditorRef.current?.commands.focus(),
+        focusAtStart: () => activeEditorRef.current?.commands.focusAtStart(),
         focusAtPixelWidth: (px) =>
-          internalEditorRef.current?.commands.focusAtPixelWidth(px),
+          activeEditorRef.current?.commands.focusAtPixelWidth(px),
         insertAtStartAndFocus: (content) =>
-          internalEditorRef.current?.commands.insertAtStartAndFocus(content),
+          activeEditorRef.current?.commands.insertAtStartAndFocus(content),
         replaceContent: (content) =>
-          internalEditorRef.current?.commands.replaceContent(content),
-        flushPendingChanges: () =>
-          internalEditorRef.current?.flushPendingChanges(),
+          activeEditorRef.current?.commands.replaceContent(content),
+        flushPendingChanges,
         prepareForTabChange: onBeforeTabChange,
       }),
-      [currentTab, onBeforeTabChange],
+      [activeEditorRef, flushPendingChanges, onBeforeTabChange],
     );
 
     const handleTabChange = useCallback(
@@ -202,13 +233,25 @@ const NoteInputContent = forwardRef<
           isSameEditorView(tabView, currentTab) ||
           isSameEditorView(tabView, renderedCurrentTab)
         ) {
+          if (tabView.type === "transcript") {
+            onBeforeTabChange();
+            flushPendingChanges();
+            commitTabChange({ type: "raw" });
+          }
           return;
         }
 
         onBeforeTabChange();
+        flushPendingChanges();
         commitTabChange(tabView);
       },
-      [commitTabChange, currentTab, onBeforeTabChange, renderedCurrentTab],
+      [
+        commitTabChange,
+        currentTab,
+        flushPendingChanges,
+        onBeforeTabChange,
+        renderedCurrentTab,
+      ],
     );
 
     const handleAdjacentViewShortcut = useCallback(
@@ -259,63 +302,28 @@ const NoteInputContent = forwardRef<
     );
 
     useEffect(() => {
-      if (renderedCurrentTab.type === "raw" && isMeetingInProgress) {
+      if (meetingPane === "raw" && isMeetingInProgress) {
         requestAnimationFrame(() => {
-          internalEditorRef.current?.commands.focus();
+          rawEditorRef.current?.commands.focus();
         });
       }
-    }, [renderedCurrentTab, isMeetingInProgress]);
+    }, [isMeetingInProgress, meetingPane]);
 
     const search = useSearch();
-    const showSearchBar = search?.isVisible ?? false;
-    const isEditableTab =
-      renderedCurrentTab.type === "enhanced" ||
-      renderedCurrentTab.type === "raw";
+    const showSearchBar =
+      (search?.isVisible ?? false) && meetingPane !== "transcript";
 
     useEffect(() => {
       search?.close();
     }, [currentTab]);
 
-    const handleContainerMouseDown: MouseEventHandler<HTMLDivElement> = (
-      event,
-    ) => {
-      if (!isEditableTab) {
-        return;
-      }
+    const handleMemoMouseDown = useBlankEditorClick(rawEditorRef);
+    const handleEnhancedMouseDown = useBlankEditorClick(enhancedEditorRef);
 
-      if (event.button !== 0) {
-        return;
-      }
-
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      if (target.closest(".ProseMirror") !== null) {
-        return;
-      }
-
-      if (
-        target.closest(
-          "button, a, input, textarea, select, [role='button'], [contenteditable='true']",
-        ) !== null
-      ) {
-        return;
-      }
-
-      if (event.currentTarget.querySelector(".ProseMirror") === null) {
-        return;
-      }
-
-      event.preventDefault();
-      internalEditorRef.current?.commands.focusAtTrailingEmptyLine();
-    };
-
-    const handleSessionViewReady = useCallback(
+    const handleRawViewReady = useCallback(
       (view: EditorView) =>
         registerCanonicalSessionEditor(sessionId, view, () => {
-          const editor = internalEditorRef.current;
+          const editor = rawEditorRef.current;
           if (!editor || editor.view !== view) {
             throw new Error("Canonical session editor changed");
           }
@@ -323,7 +331,22 @@ const NoteInputContent = forwardRef<
         }),
       [sessionId],
     );
-    const handleSessionViewDisposed = useCallback(
+    const handleRawViewDisposed = useCallback(
+      (view: EditorView) => unregisterCanonicalSessionEditor(sessionId, view),
+      [sessionId],
+    );
+    const handleEnhancedViewReady = useCallback(
+      (view: EditorView) =>
+        registerCanonicalSessionEditor(sessionId, view, () => {
+          const editor = enhancedEditorRef.current;
+          if (!editor || editor.view !== view) {
+            throw new Error("Canonical session editor changed");
+          }
+          editor.flushPendingChanges();
+        }),
+      [sessionId],
+    );
+    const handleEnhancedViewDisposed = useCallback(
       (view: EditorView) => unregisterCanonicalSessionEditor(sessionId, view),
       [sessionId],
     );
@@ -332,75 +355,104 @@ const NoteInputContent = forwardRef<
       <div className="-mx-2 flex h-full flex-col">
         {!hideHeader && (
           <div className="relative px-2">
-            <div className="flex items-center justify-between gap-1">
-              <SessionViewSwitcher
-                sessionId={sessionId}
-                editorTabs={editorTabs}
-                currentTab={renderedCurrentTab}
-                handleTabChange={handleTabChange}
-                isTranscribing={shouldShowTranscriptSpinner}
-              />
+            <div className="flex items-center justify-end gap-1">
               <Header sessionId={sessionId} />
             </div>
           </div>
         )}
 
-        {showSearchBar && isEditableTab && (
+        {showSearchBar && (
           <div className="px-3 pt-1">
-            <SearchBar editorRef={internalEditorRef} />
+            <SearchBar editorRef={activeEditorRef} />
           </div>
         )}
 
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            ref={scrollRef}
-            onMouseDown={handleContainerMouseDown}
-            onScroll={onScroll}
-            className={cn([
-              "h-full px-3",
-              "pt-2",
-              renderedCurrentTab.type === "transcript"
-                ? "overflow-hidden pb-0"
-                : "overflow-x-hidden overflow-y-auto pb-6",
-            ])}
-          >
-            {renderedCurrentTab.type === "enhanced" && (
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          {showTranscript ? (
+            <MeetingNotePane
+              testId="meeting-transcript-pane"
+              scrollRef={transcriptScrollRef}
+            >
+              <div onScroll={onScroll} className="h-full overflow-hidden pt-2">
+                <Transcript
+                  sessionId={sessionId}
+                  scrollRef={transcriptScrollRef}
+                  editMode={transcriptEditMode}
+                />
+              </div>
+            </MeetingNotePane>
+          ) : showEnhanced ? (
+            <MeetingNotePane
+              testId="enhanced-pane"
+              onMouseDown={handleEnhancedMouseDown}
+            >
               <Enhanced
-                ref={internalEditorRef}
+                ref={enhancedEditorRef}
                 sessionId={sessionId}
                 sessionTitle={sessionTitle}
-                enhancedNoteId={renderedCurrentTab.id}
+                enhancedNoteId={selectedEnhancedNoteId}
                 onNavigateToTitle={onNavigateToTitle}
-                onViewReady={handleSessionViewReady}
-                onViewDisposed={handleSessionViewDisposed}
+                onViewReady={handleEnhancedViewReady}
+                onViewDisposed={handleEnhancedViewDisposed}
               />
-            )}
-            {renderedCurrentTab.type === "raw" && (
+            </MeetingNotePane>
+          ) : (
+            <MeetingNotePane
+              testId="memo-pane"
+              onMouseDown={handleMemoMouseDown}
+            >
               <RawEditor
-                ref={internalEditorRef}
+                ref={rawEditorRef}
                 sessionId={sessionId}
                 rawMd={rawMd}
                 sessionTitle={sessionTitle}
                 eventTitle={eventTitle}
                 eventDescription={eventDescription}
                 onNavigateToTitle={onNavigateToTitle}
-                onViewReady={handleSessionViewReady}
-                onViewDisposed={handleSessionViewDisposed}
+                onViewReady={handleRawViewReady}
+                onViewDisposed={handleRawViewDisposed}
               />
-            )}
-            {renderedCurrentTab.type === "transcript" && (
-              <Transcript
-                sessionId={sessionId}
-                scrollRef={scrollRef}
-                editMode={transcriptEditMode}
-              />
-            )}
-          </div>
+            </MeetingNotePane>
+          )}
         </div>
       </div>
     );
   },
 );
+
+function useBlankEditorClick(
+  editorRef: React.RefObject<NoteEditorRef | null>,
+): MouseEventHandler<HTMLDivElement> {
+  return (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest(".ProseMirror") !== null) {
+      return;
+    }
+
+    if (
+      target.closest(
+        "button, a, input, textarea, select, [role='button'], [contenteditable='true']",
+      ) !== null
+    ) {
+      return;
+    }
+
+    if (event.currentTarget.querySelector(".ProseMirror") === null) {
+      return;
+    }
+
+    event.preventDefault();
+    editorRef.current?.commands.focusAtTrailingEmptyLine();
+  };
+}
 
 function isSameEditorView(left: TabEditorView, right: TabEditorView): boolean {
   if (left.type !== right.type) {

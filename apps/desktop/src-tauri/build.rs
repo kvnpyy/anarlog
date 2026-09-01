@@ -9,6 +9,8 @@ use std::{
 const MACOS_MINIMUM_SYSTEM_VERSION: &str = "15.0";
 
 fn main() {
+    embed_hosted_ai_keys();
+
     #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-arg=-fapple-link-rtlib");
 
@@ -18,6 +20,43 @@ fn main() {
     }
 
     tauri_build::build()
+}
+
+fn embed_hosted_ai_keys() {
+    println!("cargo:rerun-if-env-changed=ACORN_DEFAULT_STT_API_KEY");
+    println!("cargo:rerun-if-env-changed=ACORN_DEFAULT_LLM_API_KEY");
+    println!("cargo:rerun-if-env-changed=GOOGLE_CALENDAR_CLIENT_SECRET");
+    println!("cargo:rerun-if-env-changed=ACORN_DEFAULT_LLM_BASE_URL");
+    println!("cargo:rerun-if-env-changed=VITE_ACORN_DEFAULT_LLM_BASE_URL");
+    emit_obfuscated_key(
+        "ACORN_HOSTED_STT_KEY",
+        &std::env::var("ACORN_DEFAULT_STT_API_KEY").unwrap_or_default(),
+    );
+    emit_obfuscated_key(
+        "ACORN_HOSTED_LLM_KEY",
+        &std::env::var("ACORN_DEFAULT_LLM_API_KEY").unwrap_or_default(),
+    );
+    emit_obfuscated_key(
+        "ACORN_HOSTED_GOOGLE_SECRET",
+        &std::env::var("GOOGLE_CALENDAR_CLIENT_SECRET").unwrap_or_default(),
+    );
+    let llm_base_url = std::env::var("ACORN_DEFAULT_LLM_BASE_URL")
+        .or_else(|_| std::env::var("VITE_ACORN_DEFAULT_LLM_BASE_URL"))
+        .unwrap_or_default();
+    println!(
+        "cargo:rustc-env=ACORN_HOSTED_LLM_BASE_URL={}",
+        llm_base_url.trim()
+    );
+}
+
+fn emit_obfuscated_key(name: &str, value: &str) {
+    const XOR: u8 = 0x5A;
+    let encoded: String = value
+        .trim()
+        .bytes()
+        .map(|byte| format!("{:02x}", byte ^ XOR))
+        .collect();
+    println!("cargo:rustc-env={name}={encoded}");
 }
 
 #[cfg(target_os = "macos")]

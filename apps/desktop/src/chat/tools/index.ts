@@ -71,15 +71,15 @@ function withToolLogging<T extends { execute?: (...args: any[]) => any }>(
 }
 
 export const buildChatTools = (deps: ToolDependencies) => ({
-  list_meetings: withToolLogging("list_meetings", buildListMeetingsTool()),
-  get_meeting: withToolLogging("get_meeting", buildGetMeetingTool()),
+  list_meetings: withToolLogging("list_meetings", buildListMeetingsTool(deps)),
+  get_meeting: withToolLogging("get_meeting", buildGetMeetingTool(deps)),
   get_meeting_transcript: withToolLogging(
     "get_meeting_transcript",
-    buildGetMeetingTranscriptTool(),
+    buildGetMeetingTranscriptTool(deps),
   ),
   get_recurring_meeting_history: withToolLogging(
     "get_recurring_meeting_history",
-    buildGetRecurringMeetingHistoryTool(),
+    buildGetRecurringMeetingHistoryTool(deps),
   ),
   search_meeting_content: withToolLogging(
     "search_meeting_content",

@@ -35,11 +35,13 @@ import {
   type CalendarProvider,
   getCalendarConnectionKey,
   PROVIDERS,
+  usesNativeGoogleCalendarOAuth,
 } from "./shared";
 
 import { useAuth } from "~/auth";
 import { useBillingAccess } from "~/auth/billing-context";
-import { useConnections } from "~/auth/useConnections";
+import { useGoogleCalendarConnect } from "~/calendar/google-oauth";
+import { useMergedCalendarConnections } from "~/calendar/google-oauth/use-connections";
 import {
   allowReconnectedCalendarConnections,
   removeDisconnectedCalendarConnection,
@@ -51,6 +53,7 @@ import {
 } from "~/shared/hooks/useNativeContextMenu";
 import { usePermission } from "~/shared/hooks/usePermissions";
 import { useOpenIntegrationUrl } from "~/shared/integration";
+import { LOCAL_ONLY } from "~/shared/product";
 
 function getProviderBadgeClassName(badge: string) {
   if (badge === "Beta") {
@@ -122,13 +125,12 @@ export function CalendarSidebarContent({
 }) {
   const isMacos = platform() === "macos";
   const calendar = usePermission("calendar");
-  const { isPaid } = useBillingAccess();
   const [connectionPollUntil, setConnectionPollUntil] = useState<number | null>(
     null,
   );
   const connectionKeyWhenPollStartedRef = useRef("");
   const isPollingConnections = connectionPollUntil !== null;
-  const { data: connections } = useConnections(isPaid, {
+  const { data: connections } = useMergedCalendarConnections(true, {
     refetchInterval: isPollingConnections ? CONNECTION_POLL_INTERVAL_MS : false,
   });
   const connectionKey = getCalendarConnectionKey(connections);
@@ -229,9 +231,20 @@ function ProviderAccordionItem({
 }) {
   const { t } = useLingui();
   const auth = useAuth();
-  const { isPaid, isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { openIntegration, openingAction } = useOpenIntegrationUrl();
-  const { data: connections, isPending, isError } = useConnections(isPaid);
+  const { isPro, upgradeToPro, isUpgradingToPro } = useBillingAccess();
+  const nativeGoogle = usesNativeGoogleCalendarOAuth(provider);
+  const { openIntegration, openingAction: hostedOpeningAction } =
+    useOpenIntegrationUrl();
+  const { connectGoogle, openingAction: googleOpeningAction } =
+    useGoogleCalendarConnect();
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useMergedCalendarConnections();
+  const openingAction = nativeGoogle
+    ? googleOpeningAction
+    : hostedOpeningAction;
   const [isApplePermissionDialogOpen, setIsApplePermissionDialogOpen] =
     useState(false);
   const providerConnections =
@@ -239,16 +252,13 @@ function ProviderAccordionItem({
       (connection) => connection.integration_id === provider.nangoIntegrationId,
     ) ?? [];
 
-  const requiresPro = !!provider.nangoIntegrationId && !isPro;
+  const requiresPro = !LOCAL_ONLY && !!provider.nangoIntegrationId && !isPro;
   const appleNeedsPermission =
     provider.id === "apple" && calendar.status !== "authorized";
 
-  const canAddAccount =
-    !!provider.nangoIntegrationId &&
-    !!auth.session &&
-    isPaid &&
-    !isPending &&
-    !isError;
+  const canAddAccount = nativeGoogle
+    ? !isPending && !isError
+    : !!provider.nangoIntegrationId && !!auth.session && !isPending && !isError;
   const shouldConnectOnClick =
     canAddAccount && providerConnections.length === 0;
 
@@ -280,10 +290,32 @@ function ProviderAccordionItem({
         console.error("[calendar] failed to sync after disconnect", error);
       });
   }, [calendar]);
+  const startOAuth = useCallback(
+    (action: "connect" | "reconnect" | "disconnect", connectionId?: string) => {
+      if (nativeGoogle) {
+        connectGoogle({ action, connectionId });
+        return;
+      }
+      openIntegration({
+        nangoIntegrationId: provider.nangoIntegrationId,
+        connectionId,
+        action,
+        returnTo,
+      });
+    },
+    [
+      connectGoogle,
+      nativeGoogle,
+      openIntegration,
+      provider.nangoIntegrationId,
+      returnTo,
+    ],
+  );
   const handleTriggerClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
       if (requiresPro) {
         event.preventDefault();
+        upgradeToPro();
         return;
       }
       if (appleNeedsPermission) {
@@ -294,21 +326,16 @@ function ProviderAccordionItem({
       if (!shouldConnectOnClick) return;
       event.preventDefault();
       onConnectStarted();
-      openIntegration({
-        nangoIntegrationId: provider.nangoIntegrationId,
-        action: "connect",
-        returnTo,
-      });
+      startOAuth("connect");
     },
     [
       appleNeedsPermission,
       handleAppleConnect,
       onConnectStarted,
-      openIntegration,
-      provider.nangoIntegrationId,
       requiresPro,
-      returnTo,
       shouldConnectOnClick,
+      startOAuth,
+      upgradeToPro,
     ],
   );
   const handleAddAccount = useCallback(
@@ -317,19 +344,9 @@ function ProviderAccordionItem({
       event.preventDefault();
       event.stopPropagation();
       onConnectStarted();
-      openIntegration({
-        nangoIntegrationId: provider.nangoIntegrationId,
-        action: "connect",
-        returnTo,
-      });
+      startOAuth("connect");
     },
-    [
-      canAddAccount,
-      onConnectStarted,
-      openIntegration,
-      provider.nangoIntegrationId,
-      returnTo,
-    ],
+    [canAddAccount, onConnectStarted, startOAuth],
   );
   const handleUpgradeToPro = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -348,11 +365,7 @@ function ProviderAccordionItem({
               text: t`Add ${provider.displayName} account`,
               action: () => {
                 onConnectStarted();
-                void openIntegration({
-                  nangoIntegrationId: provider.nangoIntegrationId,
-                  action: "connect",
-                  returnTo,
-                });
+                startOAuth("connect");
               },
             },
           ]
@@ -385,9 +398,7 @@ function ProviderAccordionItem({
       onConnectStarted,
       provider.displayName,
       provider.id,
-      provider.nangoIntegrationId,
-      openIntegration,
-      returnTo,
+      startOAuth,
       t,
     ],
   );

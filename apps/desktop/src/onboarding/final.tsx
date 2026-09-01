@@ -1,4 +1,3 @@
-import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import {
   CircleNotch,
@@ -19,6 +18,7 @@ import {
 } from "./welcome-note";
 
 import { createSession } from "~/session/queries";
+import { LOCAL_ONLY, PRODUCT_NAME, PRODUCT_TAGLINE } from "~/shared/product";
 import { flushAutomaticRelaunch } from "~/shared/relaunch";
 import { commands } from "~/types/tauri.gen";
 
@@ -44,6 +44,10 @@ const SOCIALS = [
 const SOCIAL_ICON_SIZE = 18;
 
 export function FinalDescription() {
+  if (LOCAL_ONLY) {
+    return <span>{PRODUCT_TAGLINE}</span>;
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
       <span>
@@ -75,8 +79,6 @@ export function FinalSection({
 }: {
   onContinue: (sessionId: string) => void;
 }) {
-  const { i18n } = useLingui();
-  const translate = i18n._.bind(i18n);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const finishPromiseRef = useRef<Promise<void> | null>(null);
   const welcomeSessionRef = useRef<string | null>(null);
@@ -107,18 +109,15 @@ export function FinalSection({
         {status === "loading" ? (
           <span className="flex items-center gap-2">
             <CircleNotch className="size-4 animate-spin" />
-            <Trans>Open Anarlog</Trans>
+            {`Open ${PRODUCT_NAME}`}
           </span>
         ) : (
-          <Trans>Open Anarlog</Trans>
+          `Open ${PRODUCT_NAME}`
         )}
       </OnboardingButton>
       {status === "error" && (
         <p className="text-sm text-red-500" role="alert">
-          {translate({
-            id: "onboarding.finish-error",
-            message: "Couldn't open Anarlog. Please try again.",
-          })}
+          {`Couldn't open ${PRODUCT_NAME}. Please try again.`}
         </p>
       )}
     </div>

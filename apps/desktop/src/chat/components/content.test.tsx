@@ -266,6 +266,7 @@ describe("ChatContent", () => {
         [{ type: "text", text: "Queued follow-up" }],
         sendMessage,
         [{ kind: "session", key: "session:auto", sessionId: "s1" }],
+        undefined,
       );
     });
   });
@@ -312,5 +313,110 @@ describe("ChatContent", () => {
       expect(handleSendMessage).toHaveBeenCalledTimes(2);
     });
     expect(screen.queryByText("Queued follow-up")).toBeNull();
+  });
+
+  it("shows live Ask recipes above the input while recording", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        isRecording
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Catch me up" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sound smart" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Draft email" })).toBeTruthy();
+  });
+
+  it("shows a live STT warning when recording is batch-only", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        isRecording
+        isBatchOnly
+      />,
+    );
+
+    expect(screen.getByRole("status").textContent).toContain(
+      "Live Ask needs a live transcription model",
+    );
+  });
+
+  it("queues live-ask recipes with the short button label", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="streaming"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        isRecording
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound smart" }));
+
+    expect(
+      screen.getByRole("button", {
+        name: "Remove queued message: Sound smart",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/Using only the in-progress transcript/),
+    ).toBeNull();
+  });
+
+  it("shows a thinking status above the composer while a reply is in flight", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[
+          {
+            id: "user-1",
+            role: "user",
+            parts: [{ type: "text", text: "Draft an email" }],
+          },
+        ]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="submitted"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+      />,
+    );
+
+    const thinking = document.querySelector("[data-chat-thinking-status]");
+    expect(thinking).toBeTruthy();
+    expect(thinking?.textContent).toContain("Thinking...");
   });
 });

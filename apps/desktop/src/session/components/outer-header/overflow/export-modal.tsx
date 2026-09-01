@@ -22,9 +22,11 @@ import { cn } from "@anlg/utils";
 
 import { formatDate, formatDuration } from "./export-utils";
 
+import { getSelectedEnhancedNoteId } from "~/session/components/compute-note-tab";
 import { useTranscriptExportSegments } from "~/session/components/note-input/transcript/export-data";
 import {
   useEnhancedNote,
+  useEnhancedNoteRecords,
   useSession,
   useSessionParticipants,
 } from "~/session/queries";
@@ -85,7 +87,11 @@ export function ExportModal({
   const eventTitle = event?.title;
   const rawMd = session?.raw_md;
 
-  const enhancedNoteId = currentView.type === "enhanced" ? currentView.id : "";
+  const enhancedNoteIds = useEnhancedNoteRecords(sessionId).map(
+    (note) => note.id,
+  );
+  const enhancedNoteId =
+    getSelectedEnhancedNoteId(currentView, enhancedNoteIds) ?? "";
   const enhancedNoteContent = useEnhancedNote(enhancedNoteId)?.content;
   const participants = useSessionParticipants(sessionId);
 

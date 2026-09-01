@@ -1,11 +1,13 @@
 import type { EditorView } from "prosemirror-view";
-import { forwardRef } from "react";
+import { forwardRef, useMemo } from "react";
 
 import type { NoteEditorRef } from "@anlg/editor/note";
 
 import { ConfigError } from "./config-error";
 import { EnhancedEditor } from "./editor";
+import { EmptyEnhanced } from "./empty";
 import { EnhanceError } from "./enhance-error";
+import { getStreamedEnhancePreview } from "./stream-preview";
 import { StreamingView } from "./streaming";
 
 import { useAITaskTask } from "~/ai/hooks";
@@ -20,7 +22,7 @@ export const Enhanced = forwardRef<
   {
     sessionId: string;
     sessionTitle: string;
-    enhancedNoteId: string;
+    enhancedNoteId: string | null;
     onNavigateToTitle?: (pixelWidth?: number) => void;
     onViewReady?: (view: EditorView) => void;
     onViewDisposed?: (view: EditorView) => void;
@@ -37,16 +39,28 @@ export const Enhanced = forwardRef<
     },
     ref,
   ) => {
-    const taskId = createTaskId(enhancedNoteId, "enhance");
+    const taskId = enhancedNoteId
+      ? createTaskId(enhancedNoteId, "enhance")
+      : null;
     const llmStatus = useLLMConnectionStatus();
     const { status, error, streamedText } = useAITaskTask(taskId, "enhance");
-    const enhancedNote = useEnhancedNote(enhancedNoteId);
+    const enhancedNote = useEnhancedNote(enhancedNoteId ?? "");
     const content = enhancedNote?.content;
+    const isConfigError = shouldShowEmptySummaryConfigError(llmStatus);
 
     const hasContent = hasStoredNoteContent(content);
     const isAwaitingPersistedContent =
       status === "success" && streamedText.trim().length > 0 && !hasContent;
     const showStreaming = status === "generating" || isAwaitingPersistedContent;
+    const streamPreview = useMemo(
+      () =>
+        showStreaming ? getStreamedEnhancePreview(streamedText) : undefined,
+      [showStreaming, streamedText],
+    );
+
+    if (!enhancedNoteId) {
+      return isConfigError ? <ConfigError /> : <EmptyEnhanced />;
+    }
 
     if (status === "error") {
       return (
@@ -62,23 +76,15 @@ export const Enhanced = forwardRef<
       );
     }
 
-    if (!enhancedNote) {
-      return showStreaming ? (
-        <StreamingView
-          sessionId={sessionId}
-          sessionTitle={sessionTitle}
-          enhancedNoteId={enhancedNoteId}
-        />
-      ) : null;
+    if (!enhancedNote && !showStreaming) {
+      return isConfigError ? <ConfigError /> : <EmptyEnhanced />;
     }
-
-    const isConfigError = shouldShowEmptySummaryConfigError(llmStatus);
 
     if (status === "idle" && isConfigError && !hasContent) {
       return <ConfigError />;
     }
 
-    if (showStreaming) {
+    if (showStreaming && !streamPreview) {
       return (
         <StreamingView
           sessionId={sessionId}
@@ -86,6 +92,27 @@ export const Enhanced = forwardRef<
           enhancedNoteId={enhancedNoteId}
         />
       );
+    }
+
+    if (showStreaming && streamPreview) {
+      return (
+        <EnhancedEditor
+          key={`${enhancedNoteId}-preview`}
+          ref={ref}
+          sessionId={sessionId}
+          sessionTitle={sessionTitle}
+          enhancedNoteId={enhancedNoteId}
+          content={enhancedNote?.content ?? ""}
+          contentOverride={streamPreview}
+          onNavigateToTitle={onNavigateToTitle}
+          onViewReady={onViewReady}
+          onViewDisposed={onViewDisposed}
+        />
+      );
+    }
+
+    if (!enhancedNote) {
+      return <EmptyEnhanced />;
     }
 
     return (

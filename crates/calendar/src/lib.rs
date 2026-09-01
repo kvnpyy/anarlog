@@ -1,6 +1,7 @@
 mod convert;
 mod error;
 mod fetch;
+mod google_direct;
 pub mod runtime;
 
 pub use anlg_calendar_interface::{
@@ -125,6 +126,19 @@ pub async fn is_provider_enabled(
     Ok(all
         .iter()
         .any(|p| p.provider == provider && !p.connection_ids.is_empty()))
+}
+
+pub async fn list_google_calendars_direct(
+    access_token: &str,
+) -> Result<Vec<CalendarListItem>, Error> {
+    google_direct::list_google_calendars_direct(access_token).await
+}
+
+pub async fn list_google_events_direct(
+    access_token: &str,
+    filter: EventFilter,
+) -> Result<Vec<CalendarEvent>, Error> {
+    google_direct::list_google_events_direct(access_token, filter).await
 }
 
 pub async fn list_calendars(

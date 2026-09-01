@@ -9,7 +9,6 @@ import type { ConnectionItem } from "@anlg/api-client";
 import { OnboardingButton } from "./shared";
 
 import { useAuth } from "~/auth";
-import { useBillingAccess } from "~/auth/billing-context";
 import { useConnections } from "~/auth/useConnections";
 import { useAppleCalendarSelection } from "~/calendar/components/apple/calendar-selection";
 import { TroubleShootingLink } from "~/calendar/components/apple/permission";
@@ -20,11 +19,17 @@ import {
 import { SyncProvider, useSync } from "~/calendar/components/context";
 import { useOAuthCalendarSelection } from "~/calendar/components/oauth/calendar-selection";
 import { ReconnectRequiredIndicator } from "~/calendar/components/oauth/status";
-import { PROVIDERS } from "~/calendar/components/shared";
+import {
+  PROVIDERS,
+  usesNativeGoogleCalendarOAuth,
+} from "~/calendar/components/shared";
+import { useGoogleCalendarConnect } from "~/calendar/google-oauth";
+import { useMergedCalendarConnections } from "~/calendar/google-oauth/use-connections";
 import { useEnabledCalendars } from "~/calendar/hooks";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
 import { usePermission } from "~/shared/hooks/usePermissions";
 import { openIntegrationUrl } from "~/shared/integration";
+import { LOCAL_ONLY } from "~/shared/product";
 
 const GOOGLE_PROVIDER = PROVIDERS.find((provider) => provider.id === "google");
 const OUTLOOK_PROVIDER = PROVIDERS.find(
@@ -132,6 +137,8 @@ function GoogleCalendarConnectedContent({
 }) {
   const auth = useAuth();
   const { scheduleSync } = useSync();
+  const { connectGoogle } = useGoogleCalendarConnect();
+  const nativeGoogle = usesNativeGoogleCalendarOAuth(GOOGLE_PROVIDER!);
   const {
     groups,
     connectionSourceMap,
@@ -154,8 +161,18 @@ function GoogleCalendarConnectedContent({
         connectionSourceMap,
         provider: GOOGLE_PROVIDER!,
         getHeaders: auth.getHeaders,
+        onNativeAction: nativeGoogle
+          ? (action, connectionId) => connectGoogle({ action, connectionId })
+          : undefined,
       }),
-    [auth.getHeaders, connectionSourceMap, groups, providerConnections],
+    [
+      auth.getHeaders,
+      connectGoogle,
+      connectionSourceMap,
+      groups,
+      nativeGoogle,
+      providerConnections,
+    ],
   );
 
   useMountEffect(() => {
@@ -195,12 +212,17 @@ function addIntegrationMenus({
   connectionSourceMap,
   provider,
   getHeaders,
+  onNativeAction,
 }: {
   groups: CalendarGroup[];
   connections: ConnectionItem[];
   connectionSourceMap: Map<string, string>;
   provider: (typeof PROVIDERS)[number];
   getHeaders: () => Record<string, string> | null;
+  onNativeAction?: (
+    action: "reconnect" | "disconnect",
+    connectionId: string,
+  ) => void;
 }) {
   return groups.map((group) => {
     const connection = connections.find(
@@ -217,24 +239,34 @@ function addIntegrationMenus({
         {
           id: `reconnect-${connection.connection_id}`,
           text: "Reconnect",
-          action: () =>
+          action: () => {
+            if (onNativeAction) {
+              onNativeAction("reconnect", connection.connection_id);
+              return;
+            }
             void openOnboardingIntegrationUrl(
               provider.nangoIntegrationId,
               connection.connection_id,
               "reconnect",
               getHeaders(),
-            ),
+            );
+          },
         },
         {
           id: `disconnect-${connection.connection_id}`,
           text: "Disconnect",
-          action: () =>
+          action: () => {
+            if (onNativeAction) {
+              onNativeAction("disconnect", connection.connection_id);
+              return;
+            }
             void openOnboardingIntegrationUrl(
               provider.nangoIntegrationId,
               connection.connection_id,
               "disconnect",
               getHeaders(),
-            ),
+            );
+          },
         },
       ],
     };
@@ -388,8 +420,11 @@ function OAuthCalendarProviderAction({
 
 function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
   const auth = useAuth();
-  const { isPro, isReady, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isPending, isError } = useConnections(isPro);
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useConnections(Boolean(auth.session));
   const [isHovered, setHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   // State alone cannot gate re-entry: a second click can land before the
@@ -410,11 +445,6 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       return;
     }
 
-    if (!isPro) {
-      upgradeToPro();
-      return;
-    }
-
     if (openInFlightRef.current) {
       return;
     }
@@ -429,7 +459,7 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       openInFlightRef.current = false;
       setIsOpening(false);
     });
-  }, [auth.getHeaders, auth.session, isPro, onSignIn, upgradeToPro]);
+  }, [auth.getHeaders, auth.session, onSignIn]);
 
   if (!OUTLOOK_PROVIDER) {
     return null;
@@ -461,9 +491,9 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
         connectLabel={<Trans>Connect Outlook</Trans>}
         isConnected={isConnected}
         isHovered={isHovered}
-        isOpening={isOpening || isUpgradingToPro}
+        isOpening={isOpening}
         isPending={isPending}
-        isReady={isReady}
+        isReady={true}
         isSignedIn={isSignedIn}
         onConnect={handleConnect}
         onHoverChange={setHovered}
@@ -474,8 +504,15 @@ function OutlookCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
 
 function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
   const auth = useAuth();
-  const { isPro, isReady, upgradeToPro, isUpgradingToPro } = useBillingAccess();
-  const { data: connections, isPending, isError } = useConnections(isPro);
+  const nativeGoogle = GOOGLE_PROVIDER
+    ? usesNativeGoogleCalendarOAuth(GOOGLE_PROVIDER)
+    : false;
+  const { connectGoogle, openingAction } = useGoogleCalendarConnect();
+  const {
+    data: connections,
+    isPending,
+    isError,
+  } = useMergedCalendarConnections();
   const [isHovered, setHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   // State alone cannot gate re-entry: a second click can land before the
@@ -491,13 +528,13 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
   );
 
   const handleConnect = useCallback(() => {
-    if (!auth.session) {
-      onSignIn();
+    if (nativeGoogle) {
+      connectGoogle({ action: "connect" });
       return;
     }
 
-    if (!isPro) {
-      upgradeToPro();
+    if (!auth.session) {
+      onSignIn();
       return;
     }
 
@@ -515,7 +552,7 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
       openInFlightRef.current = false;
       setIsOpening(false);
     });
-  }, [auth.getHeaders, auth.session, isPro, onSignIn, upgradeToPro]);
+  }, [auth, connectGoogle, nativeGoogle, onSignIn]);
 
   if (!GOOGLE_PROVIDER) {
     return null;
@@ -529,7 +566,7 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
     );
   }
 
-  const isSignedIn = !!auth.session;
+  const isSignedIn = nativeGoogle || !!auth.session;
   const isConnected = providerConnections.length > 0;
 
   return (
@@ -547,9 +584,9 @@ function GoogleCalendarProvider({ onSignIn }: { onSignIn: () => void }) {
         connectLabel={<Trans>Connect Google Calendar</Trans>}
         isConnected={isConnected}
         isHovered={isHovered}
-        isOpening={isOpening || isUpgradingToPro}
+        isOpening={isOpening || openingAction !== null}
         isPending={isPending}
-        isReady={isReady}
+        isReady={true}
         isSignedIn={isSignedIn}
         onConnect={handleConnect}
         onHoverChange={setHovered}
@@ -586,7 +623,7 @@ function CalendarSectionContent({
         )}
 
         <GoogleCalendarProvider onSignIn={onSignIn} />
-        <OutlookCalendarProvider onSignIn={onSignIn} />
+        {LOCAL_ONLY ? null : <OutlookCalendarProvider onSignIn={onSignIn} />}
       </div>
 
       {hasConnectedCalendar && (

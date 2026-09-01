@@ -1,7 +1,12 @@
 use crate::WindowImpl;
 
-const MAIN_WINDOW_WIDTH: f64 = 910.0;
-const MAIN_WINDOW_HEIGHT: f64 = 600.0;
+const MAIN_WINDOW_WIDTH: f64 = 720.0;
+const MAIN_WINDOW_HEIGHT: f64 = 320.0;
+const MAIN_WINDOW_MIN_WIDTH: f64 = 360.0;
+const MAIN_WINDOW_MAX_WIDTH: f64 = 800.0;
+const MAIN_WINDOW_MIN_HEIGHT: f64 = 260.0;
+const MAIN_WINDOW_HEIGHT_RATIO: f64 = 0.33;
+const MAIN_WINDOW_SCREEN_MARGIN: f64 = 16.0;
 const NOTE_WINDOW_WIDTH: f64 = 720.0;
 const NOTE_WINDOW_HEIGHT: f64 = 820.0;
 const NOTE_WINDOW_POSITION_TOLERANCE: f64 = 1.0;
@@ -185,7 +190,7 @@ impl AppWindow {
 impl WindowImpl for AppWindow {
     fn title(&self) -> String {
         match self {
-            Self::Main => "Anarlog".into(),
+            Self::Main => "Acorn".into(),
             Self::Composer => "Composer".into(),
             Self::Note(_) => "Note".into(),
         }
@@ -203,7 +208,7 @@ impl WindowImpl for AppWindow {
                     .window_builder(app, "/app")
                     .maximizable(true)
                     .minimizable(true)
-                    .min_inner_size(500.0, 500.0)
+                    .min_inner_size(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MIN_HEIGHT)
                     .inner_size(MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT);
                 builder.build()?
             }
@@ -244,6 +249,10 @@ impl WindowImpl for AppWindow {
         app: &tauri::AppHandle<tauri::Wry>,
         window: &tauri::WebviewWindow<tauri::Wry>,
     ) -> Result<(), crate::Error> {
+        if matches!(self, Self::Main) {
+            return apply_compact_main_window_frame(app, window);
+        }
+
         let Self::Note(_) = self else {
             return Ok(());
         };
@@ -458,6 +467,85 @@ fn recenter_work_area(
         .or_else(|| work_areas.first().copied())
 }
 
+fn compact_main_window_size(work_width: f64, work_height: f64) -> (f64, f64) {
+    let usable_width = (work_width - (MAIN_WINDOW_SCREEN_MARGIN * 2.0)).max(0.0);
+    let usable_height = (work_height - (MAIN_WINDOW_SCREEN_MARGIN * 2.0)).max(0.0);
+    let width = MAIN_WINDOW_WIDTH.clamp(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MAX_WIDTH);
+    let height = (work_height * MAIN_WINDOW_HEIGHT_RATIO).max(MAIN_WINDOW_MIN_HEIGHT);
+
+    (
+        width.min(usable_width).max(0.0),
+        height.min(usable_height).max(0.0),
+    )
+}
+
+fn top_right_window_position(
+    work_x: f64,
+    work_y: f64,
+    work_width: f64,
+    work_height: f64,
+    window_width: f64,
+    window_height: f64,
+) -> (f64, f64) {
+    (
+        clamp_to_monitor(
+            work_x + work_width - window_width - MAIN_WINDOW_SCREEN_MARGIN,
+            work_x,
+            work_width,
+            window_width,
+        ),
+        clamp_to_monitor(
+            work_y + MAIN_WINDOW_SCREEN_MARGIN,
+            work_y,
+            work_height,
+            window_height,
+        ),
+    )
+}
+
+fn apply_compact_main_window_frame(
+    app: &tauri::AppHandle<tauri::Wry>,
+    window: &tauri::WebviewWindow<tauri::Wry>,
+) -> Result<(), crate::Error> {
+    use tauri::{LogicalPosition, LogicalSize, Position, Size};
+
+    let _ = window.unmaximize();
+
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| app.primary_monitor().ok().flatten());
+    let (width, height, x, y) = match monitor {
+        Some(monitor) => {
+            let scale = monitor.scale_factor();
+            let work_area = monitor.work_area();
+            let origin = work_area.position.to_logical::<f64>(scale);
+            let size = work_area.size.to_logical::<f64>(scale);
+            let (width, height) = compact_main_window_size(size.width, size.height);
+            let (x, y) = top_right_window_position(
+                origin.x,
+                origin.y,
+                size.width,
+                size.height,
+                width,
+                height,
+            );
+            (width, height, x, y)
+        }
+        None => (
+            MAIN_WINDOW_WIDTH,
+            MAIN_WINDOW_HEIGHT,
+            MAIN_WINDOW_SCREEN_MARGIN,
+            MAIN_WINDOW_SCREEN_MARGIN,
+        ),
+    };
+
+    window.set_size(Size::Logical(LogicalSize::new(width, height)))?;
+    window.set_position(Position::Logical(LogicalPosition::new(x, y)))?;
+    Ok(())
+}
+
 fn centered_window_position(window: WindowFrame, work_area: WindowFrame) -> (i32, i32) {
     let x = work_area.x + ((work_area.width - window.width).max(0.0) / 2.0);
     let y = work_area.y + ((work_area.height - window.height).max(0.0) / 2.0);
@@ -653,5 +741,25 @@ mod tests {
         assert_eq!(scaled_window.width, 900.0);
         assert_eq!(scaled_window.height, 600.0);
         assert_eq!(centered_window_position(scaled_window, target), (510, 225));
+    }
+
+    #[test]
+    fn sizes_the_main_window_to_about_a_third_of_the_screen_height() {
+        assert_eq!(compact_main_window_size(1440.0, 900.0), (720.0, 297.0));
+        assert_eq!(compact_main_window_size(1920.0, 1080.0).0, 720.0);
+        assert!((compact_main_window_size(1920.0, 1080.0).1 - 356.4).abs() < 0.001);
+        assert_eq!(compact_main_window_size(800.0, 500.0), (720.0, 260.0));
+    }
+
+    #[test]
+    fn opens_the_main_window_in_the_top_right() {
+        assert_eq!(
+            top_right_window_position(0.0, 0.0, 1440.0, 900.0, 720.0, 297.0),
+            (704.0, 16.0)
+        );
+        assert_eq!(
+            top_right_window_position(1920.0, 50.0, 1496.0, 939.0, 720.0, 309.87),
+            (2680.0, 66.0)
+        );
     }
 }

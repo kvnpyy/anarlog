@@ -196,37 +196,22 @@ describe("ToastNotifications", () => {
     vi.useRealTimers();
   });
 
-  it("routes the sign-in suggestion through Sonner", () => {
+  it("does not suggest signing in in local-only mode", () => {
     render(<ToastNotifications />);
 
     act(() => vi.advanceTimersByTime(500));
 
-    expect(mocks.message).toHaveBeenCalledWith(
-      "Sign in to get the most out of Anarlog",
-      expect.objectContaining({
-        id: "sign-in-benefits",
-        duration: Infinity,
-        closeButton: true,
-        action: expect.objectContaining({ label: "Sign in" }),
-      }),
-    );
-
-    const options = mocks.message.mock.calls[0][1];
-    options.action.onClick();
-    expect(mocks.signIn).toHaveBeenCalledOnce();
-
-    options.onDismiss();
-    expect(mocks.dismissToast).not.toHaveBeenCalled();
+    expect(mocks.message).not.toHaveBeenCalled();
+    expect(mocks.signIn).not.toHaveBeenCalled();
   });
 
-  it("persists explicit Sonner dismissals", () => {
+  it("does not persist a sign-in promotion in local-only mode", () => {
     render(<ToastNotifications />);
 
     act(() => vi.advanceTimersByTime(500));
 
-    const options = mocks.message.mock.calls[0][1];
-    options.onDismiss();
-    expect(mocks.dismissToast).toHaveBeenCalledWith("auth-promotion");
+    expect(mocks.message).not.toHaveBeenCalled();
+    expect(mocks.dismissToast).not.toHaveBeenCalled();
   });
 
   it("uses a Sonner loading toast for model downloads", () => {
@@ -291,7 +276,6 @@ describe("ToastNotifications", () => {
   });
 
   it("uses the latest registry action while a toast remains visible", () => {
-    mocks.dismissedToastIds.add("auth-promotion");
     mocks.config.current_llm_provider = null;
     mocks.config.current_llm_model = null;
 
@@ -322,7 +306,7 @@ describe("ToastNotifications", () => {
 
     const firstOptions = mocks.message.mock.calls[0][1];
     expect(mocks.message).toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.objectContaining({
         id: "desktop-update:1.0.34:available",
         closeButton: true,
@@ -335,7 +319,7 @@ describe("ToastNotifications", () => {
     mocks.message.mockClear();
     view.rerender(<ToastNotifications />);
     expect(mocks.message).not.toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.anything(),
     );
   });
@@ -356,7 +340,7 @@ describe("ToastNotifications", () => {
     act(() => vi.advanceTimersByTime(500));
 
     expect(mocks.message).not.toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.anything(),
     );
   });
@@ -377,7 +361,7 @@ describe("ToastNotifications", () => {
     act(() => vi.advanceTimersByTime(500));
 
     expect(mocks.message).toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.objectContaining({ id: "desktop-update:1.0.34:available" }),
     );
   });
@@ -396,7 +380,7 @@ describe("ToastNotifications", () => {
     act(() => vi.advanceTimersByTime(500));
 
     expect(mocks.message).toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is ready to install",
+      "Acorn 1.0.34 is ready to install",
       expect.objectContaining({ id: "desktop-update:1.0.34:ready" }),
     );
   });
@@ -432,7 +416,7 @@ describe("ToastNotifications", () => {
     act(() => vi.advanceTimersByTime(500));
 
     expect(mocks.message).toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.objectContaining({ id: "desktop-update:1.0.34:available" }),
     );
 
@@ -447,7 +431,7 @@ describe("ToastNotifications", () => {
     view.rerender(<ToastNotifications />);
 
     expect(mocks.message).toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.objectContaining({ id: "desktop-update:1.0.34:available" }),
     );
   });
@@ -466,7 +450,7 @@ describe("ToastNotifications", () => {
     mocks.live = { status: "active", sessionId: "meeting-1" };
     view.rerender(<ToastNotifications />);
     expect(mocks.message).not.toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.anything(),
     );
 
@@ -474,7 +458,7 @@ describe("ToastNotifications", () => {
     view.rerender(<ToastNotifications />);
 
     expect(mocks.message).not.toHaveBeenCalledWith(
-      "Anarlog 1.0.34 is available",
+      "Acorn 1.0.34 is available",
       expect.anything(),
     );
   });

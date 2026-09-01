@@ -21,6 +21,7 @@ import {
 } from "~/calendar/components/apple/permission";
 import { usePermission } from "~/shared/hooks/usePermissions";
 import { useOpenIntegrationUrl } from "~/shared/integration";
+import { LOCAL_ONLY } from "~/shared/product";
 
 export function TodoProviderContent({ config }: { config: TodoProvider }) {
   if (config.permission === "reminders") {
@@ -65,6 +66,9 @@ function OAuthTodoProviderContent({ config }: { config: TodoProvider }) {
   );
 
   if (!auth.session) {
+    if (LOCAL_ONLY) {
+      return null;
+    }
     return (
       <div className="pt-1 pb-2">
         <Tooltip delayDuration={0}>
@@ -85,6 +89,9 @@ function OAuthTodoProviderContent({ config }: { config: TodoProvider }) {
   }
 
   if (!isPaid) {
+    if (LOCAL_ONLY) {
+      return null;
+    }
     return (
       <div className="pt-1 pb-2">
         <button

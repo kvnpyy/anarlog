@@ -8,6 +8,11 @@ import type {
   IncomingParticipants,
 } from "./types";
 
+import {
+  getFreshGoogleCalendarAccessToken,
+  listGoogleCalendarConnectionIds,
+} from "~/calendar/google-oauth/storage";
+
 export class CalendarFetchError extends Error {
   constructor(
     public readonly calendarTrackingId: string,
@@ -20,6 +25,26 @@ export class CalendarFetchError extends Error {
   }
 }
 
+async function listEventsForConnection(ctx: Ctx, trackingId: string) {
+  const filter = {
+    calendar_tracking_id: trackingId,
+    from: ctx.from.toISOString(),
+    to: ctx.to.toISOString(),
+  };
+
+  if (ctx.provider === "google") {
+    const localIds = await listGoogleCalendarConnectionIds();
+    if (localIds.includes(ctx.connectionId)) {
+      const accessToken = await getFreshGoogleCalendarAccessToken(
+        ctx.connectionId,
+      );
+      return calendarCommands.listGoogleEventsDirect(accessToken, filter);
+    }
+  }
+
+  return calendarCommands.listEvents(ctx.provider, ctx.connectionId, filter);
+}
+
 export async function fetchIncomingEvents(ctx: Ctx): Promise<{
   events: IncomingEvent[];
   participants: IncomingParticipants;
@@ -28,15 +53,7 @@ export async function fetchIncomingEvents(ctx: Ctx): Promise<{
 
   const results = await Promise.all(
     trackingIds.map(async (trackingId) => {
-      const result = await calendarCommands.listEvents(
-        ctx.provider,
-        ctx.connectionId,
-        {
-          calendar_tracking_id: trackingId,
-          from: ctx.from.toISOString(),
-          to: ctx.to.toISOString(),
-        },
-      );
+      const result = await listEventsForConnection(ctx, trackingId);
 
       if (result.status === "error") {
         throw new CalendarFetchError(trackingId, result.error);

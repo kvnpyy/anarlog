@@ -65,7 +65,9 @@ import {
 } from "~/settings/ai/shared/selection";
 import { useAiProvidersState } from "~/settings/providers";
 import { setSettingValues, useSettingsReady } from "~/settings/queries";
+import { getAcornDefaultLlm } from "~/shared/acorn-defaults";
 import { useConfigValues } from "~/shared/config";
+import { LOCAL_ONLY, visibleLlmProviders } from "~/shared/product";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
 
 export function SelectProviderAndModel() {
@@ -97,11 +99,11 @@ export function SelectProviderAndModel() {
     selectedProviderConfigured,
   );
   const providerOptions = getConfiguredProviders(
-    PROVIDERS,
+    visibleLlmProviders(PROVIDERS),
     configuredProviders,
   );
   const configuredProviderIds = getConfiguredProviderIds(
-    PROVIDERS,
+    visibleLlmProviders(PROVIDERS),
     configuredProviders,
     current_llm_provider,
   );
@@ -252,7 +254,7 @@ export function SelectProviderAndModel() {
       : undefined;
 
   const handleProviderChange = (provider: string) => {
-    if (provider === "anarlog" && !billing.isPaid) {
+    if (!LOCAL_ONLY && provider === "anarlog" && !billing.isPaid) {
       billing.upgradeToPro();
       return;
     }
@@ -379,7 +381,7 @@ export function SelectProviderAndModel() {
                   provider.requirements,
                   "pro",
                 );
-                const locked = requiresPro && !billing.isPaid;
+                const locked = !LOCAL_ONLY && requiresPro && !billing.isPaid;
                 const configured =
                   configuredProviders[provider.id]?.configured ?? false;
 
@@ -508,6 +510,33 @@ export function getLlmProviderStatus({
     case "openai":
       listModelsFunc = () => listOpenAIModels(baseUrl, apiKey);
       break;
+    case "acorn": {
+      const bundled = getAcornDefaultLlm();
+      const fallbackModel = bundled?.model ?? "gpt-4o";
+      const kind = bundled?.kind ?? "openai";
+      listModelsFunc = async () => {
+        try {
+          const result =
+            kind === "anthropic"
+              ? await listAnthropicModels(baseUrl, apiKey)
+              : kind === "google"
+                ? await listGoogleModels(baseUrl, apiKey)
+                : await listOpenAIModels(baseUrl, apiKey);
+          if (result.models.length > 0) {
+            return {
+              ...result,
+              models: result.models.includes(fallbackModel)
+                ? result.models
+                : [fallbackModel, ...result.models],
+            };
+          }
+        } catch {
+          // Bundled model still lets first-run selection succeed.
+        }
+        return { models: [fallbackModel], ignored: [], metadata: {} };
+      };
+      break;
+    }
     case "cohere":
       listModelsFunc = () =>
         listGenericModels(baseUrl, apiKey, { filterDateSnapshots: false });
@@ -591,7 +620,7 @@ function useConfiguredMapping(): {
 
   const mapping = useMemo(() => {
     return Object.fromEntries(
-      PROVIDERS.map((provider: Provider) => {
+      visibleLlmProviders(PROVIDERS).map((provider: Provider) => {
         const config = configuredProviders[providerRowId("llm", provider.id)];
         // The selected provider bypasses the reachability gate: a temporarily
         // stopped local server should surface as a connection error, not

@@ -1,7 +1,11 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { computeCurrentNoteTab } from "./compute-note-tab";
+import {
+  computeCurrentNoteTab,
+  getMeetingNotePane,
+  getSelectedEnhancedNoteId,
+} from "./compute-note-tab";
 import {
   hasStoredNoteContent,
   useCanShowTranscript,
@@ -99,7 +103,7 @@ describe("useCurrentNoteTab", () => {
     expect(result.current).toEqual({ type: "raw" });
   });
 
-  it("keeps the transcript view while listening even before transcript evidence arrives", () => {
+  it("keeps a stored transcript view while listening", () => {
     hoisted.sessionMode = "active";
     hoisted.liveSessionId = "session-1";
 
@@ -108,7 +112,7 @@ describe("useCurrentNoteTab", () => {
     expect(result.current).toEqual({ type: "transcript" });
   });
 
-  it("keeps the transcript view while listening when only in-progress audio exists", () => {
+  it("keeps a stored transcript view while listening when only in-progress audio exists", () => {
     hoisted.sessionMode = "active";
     hoisted.liveSessionId = "session-1";
 
@@ -298,14 +302,14 @@ describe("hasStoredNoteContent", () => {
 
 describe("computeCurrentNoteTab", () => {
   describe("when listening is active", () => {
-    it("preserves enhanced view", () => {
+    it("keeps the notepad on personal notes while recording", () => {
       const result = computeCurrentNoteTab(
         { type: "enhanced", id: "note-1" },
         true,
         ["note-1"],
         false,
       );
-      expect(result).toEqual({ type: "enhanced", id: "note-1" });
+      expect(result).toEqual({ type: "raw" });
     });
 
     it("preserves raw view", () => {
@@ -313,7 +317,7 @@ describe("computeCurrentNoteTab", () => {
       expect(result).toEqual({ type: "raw" });
     });
 
-    it("preserves transcript view while listening", () => {
+    it("opens the live transcript when the user asks for it while recording", () => {
       const result = computeCurrentNoteTab(
         { type: "transcript" },
         true,
@@ -321,16 +325,6 @@ describe("computeCurrentNoteTab", () => {
         true,
       );
       expect(result).toEqual({ type: "transcript" });
-    });
-
-    it("normalizes transcript view when transcript cannot show", () => {
-      const result = computeCurrentNoteTab(
-        { type: "transcript" },
-        true,
-        ["note-1"],
-        false,
-      );
-      expect(result).toEqual({ type: "raw" });
     });
 
     it("returns raw view when no persisted view", () => {
@@ -414,5 +408,97 @@ describe("computeCurrentNoteTab", () => {
 
       expect(result).toEqual({ type: "enhanced", id: "sqlite-summary" });
     });
+  });
+
+  describe("getSelectedEnhancedNoteId", () => {
+    it("uses the persisted enhanced note when it still exists", () => {
+      expect(
+        getSelectedEnhancedNoteId({ type: "enhanced", id: "note-2" }, [
+          "note-1",
+          "note-2",
+        ]),
+      ).toBe("note-2");
+    });
+
+    it("falls back to the primary enhanced note from memo or transcript view", () => {
+      expect(
+        getSelectedEnhancedNoteId({ type: "raw" }, ["note-1", "note-2"]),
+      ).toBe("note-1");
+      expect(
+        getSelectedEnhancedNoteId({ type: "transcript" }, ["note-1"]),
+      ).toBe("note-1");
+    });
+
+    it("returns null when the session has no enhanced notes", () => {
+      expect(getSelectedEnhancedNoteId({ type: "raw" }, [])).toBeNull();
+    });
+  });
+});
+
+describe("getMeetingNotePane", () => {
+  it("stays on personal notes while recording", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "enhanced", id: "note-1" },
+        isRecording: true,
+        enhancedHasContent: true,
+        isEnhancing: true,
+      }),
+    ).toBe("raw");
+  });
+
+  it("shows the enhanced note after it has content", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "enhanced", id: "note-1" },
+        isRecording: false,
+        enhancedHasContent: true,
+        isEnhancing: false,
+      }),
+    ).toBe("enhanced");
+  });
+
+  it("shows the enhanced note while it is streaming", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "enhanced", id: "note-1" },
+        isRecording: false,
+        enhancedHasContent: false,
+        isEnhancing: true,
+      }),
+    ).toBe("enhanced");
+  });
+
+  it("keeps personal notes visible until enhance has something to show", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "enhanced", id: "note-1" },
+        isRecording: false,
+        enhancedHasContent: false,
+        isEnhancing: false,
+      }),
+    ).toBe("raw");
+  });
+
+  it("can open the transcript in the same pane during the call", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "transcript" },
+        isRecording: true,
+        enhancedHasContent: true,
+        isEnhancing: false,
+      }),
+    ).toBe("transcript");
+  });
+
+  it("can open the transcript in the same pane after the call", () => {
+    expect(
+      getMeetingNotePane({
+        currentView: { type: "transcript" },
+        isRecording: false,
+        enhancedHasContent: true,
+        isEnhancing: false,
+      }),
+    ).toBe("transcript");
   });
 });

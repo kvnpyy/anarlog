@@ -28,22 +28,26 @@ import type { ChatScope } from "~/chat/types";
 export function ChatToolbarControls({
   chatScope,
   currentChatGroupId,
+  isolateConversation = false,
   layout = "floating",
   onClose,
   onNewChat,
   onOpenFloating,
   onOpenRightPanel,
   onSelectChat,
+  pinned = false,
   surface = "light",
 }: {
   chatScope: ChatScope;
   currentChatGroupId: string | undefined;
-  layout?: "floating" | "right-panel";
+  isolateConversation?: boolean;
+  layout?: "floating" | "right-panel" | "inline";
   onClose?: () => void;
   onNewChat: () => void;
   onOpenFloating?: () => void;
   onOpenRightPanel?: () => void;
   onSelectChat: (chatGroupId: string) => void;
+  pinned?: boolean;
   surface?: "light" | "dark";
 }) {
   const { t } = useLingui();
@@ -66,13 +70,15 @@ export function ChatToolbarControls({
         data-tauri-drag-region={isRightPanel || undefined}
         className="flex min-w-0 flex-1 items-center gap-1"
       >
-        <ChatGroups
-          chatScope={chatScope}
-          currentChatGroupId={currentChatGroupId}
-          layout={layout}
-          onSelectChat={onSelectChat}
-          surface={surface}
-        />
+        {isolateConversation ? null : (
+          <ChatGroups
+            chatScope={chatScope}
+            currentChatGroupId={currentChatGroupId}
+            layout={layout}
+            onSelectChat={onSelectChat}
+            surface={surface}
+          />
+        )}
       </div>
       <div
         data-tauri-drag-region={isRightPanel || undefined}
@@ -86,20 +92,22 @@ export function ChatToolbarControls({
           className={actionButtonClassName}
         />
         {isRightPanel ? (
-          <>
-            <ChatActionButton
-              icon={<PictureInPicture size={16} />}
-              label={t`Float chat`}
-              onClick={onOpenFloating ?? (() => {})}
-              className={actionButtonClassName}
-            />
-            <ChatActionButton
-              icon={<X size={16} />}
-              label={t`Close chat`}
-              onClick={onClose ?? (() => {})}
-              className={actionButtonClassName}
-            />
-          </>
+          pinned ? null : (
+            <>
+              <ChatActionButton
+                icon={<PictureInPicture size={16} />}
+                label={t`Float chat`}
+                onClick={onOpenFloating ?? (() => {})}
+                className={actionButtonClassName}
+              />
+              <ChatActionButton
+                icon={<X size={16} />}
+                label={t`Close chat`}
+                onClick={onClose ?? (() => {})}
+                className={actionButtonClassName}
+              />
+            </>
+          )
         ) : (
           <>
             <ChatActionButton
@@ -155,7 +163,7 @@ function ChatGroups({
 }: {
   chatScope: ChatScope;
   currentChatGroupId: string | undefined;
-  layout: "floating" | "right-panel";
+  layout: "floating" | "right-panel" | "inline";
   onSelectChat: (chatGroupId: string) => void;
   surface?: "light" | "dark";
 }) {

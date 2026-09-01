@@ -12,7 +12,8 @@ import { useAuth } from "~/auth";
 import { env } from "~/env";
 import { captureOperationalError } from "~/error-reporting";
 import { addNangoSessionHandoff } from "~/shared/integration-handoff";
-import { buildWebAppUrl } from "~/shared/utils";
+import { hostedConnectUnavailableMessage } from "~/shared/product";
+import { buildWebAppUrl, hostedDesktopWebFlowsEnabled } from "~/shared/utils";
 
 export async function openIntegrationUrl(
   nangoIntegrationId: string | undefined,
@@ -23,6 +24,11 @@ export async function openIntegrationUrl(
   showInstruction = true,
 ) {
   if (!nangoIntegrationId) return;
+
+  if (!hostedDesktopWebFlowsEnabled()) {
+    sonnerToast.message(hostedConnectUnavailableMessage(nangoIntegrationId));
+    return;
+  }
 
   try {
     const params: Record<string, string> = {

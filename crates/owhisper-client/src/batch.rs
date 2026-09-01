@@ -5,7 +5,7 @@ use owhisper_interface::ListenParams;
 use owhisper_interface::batch::Response as BatchResponse;
 use reqwest_middleware::ClientWithMiddleware;
 
-use crate::adapter::{BatchSttAdapter, append_provider_param, is_anarlog_proxy};
+use crate::adapter::BatchSttAdapter;
 use crate::error::Error;
 use crate::http_client::create_client;
 use crate::{DeepgramAdapter, ListenClientBuilder, normalize_listen_params};
@@ -73,14 +73,7 @@ pub struct BatchClient<A: BatchSttAdapter = DeepgramAdapter> {
 
 impl<A: BatchSttAdapter> BatchClient<A> {
     fn normalize_api_base(api_base: String) -> String {
-        if !is_anarlog_proxy(&api_base) {
-            return api_base;
-        }
-        let provider_name = A::default().provider_name();
-        if provider_name == "unknown" {
-            return api_base;
-        }
-        append_provider_param(&api_base, provider_name)
+        crate::adapter::maybe_append_provider_param(&api_base, A::default().provider_name())
     }
 
     pub fn builder() -> BatchClientBuilder<A> {

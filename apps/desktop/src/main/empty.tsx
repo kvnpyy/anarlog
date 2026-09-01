@@ -16,7 +16,9 @@ export function TabContentEmpty({
   tab: Extract<Tab, { type: "empty" }>;
 }) {
   return (
-    <StandardContentWrapper floatingButton={<FloatingChatCTA />}>
+    <StandardContentWrapper
+      floatingButton={<FloatingChatCTA variant="composer" />}
+    >
       <EmptyView />
     </StandardContentWrapper>
   );

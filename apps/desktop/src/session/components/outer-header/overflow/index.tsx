@@ -6,6 +6,8 @@ import {
   FileArrowDown,
   FileText,
   PictureInPicture,
+  Sparkle,
+  TextAlignLeft,
   Waveform,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -45,11 +47,17 @@ export function OverflowButton({
   standaloneWindow = false,
   sessionId,
   currentView,
+  onViewChange,
+  enhancedNoteIds = [],
+  canShowTranscript = false,
 }: {
   allowListening?: boolean;
   standaloneWindow?: boolean;
   sessionId: string;
   currentView: EditorView;
+  onViewChange?: (view: EditorView) => void;
+  enhancedNoteIds?: readonly string[];
+  canShowTranscript?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -114,6 +122,30 @@ export function OverflowButton({
     setOpen(false);
     void openStandaloneNoteWindow(sessionId);
   };
+  const primaryEnhancedNoteId = enhancedNoteIds[0];
+  const showYourNotesAction = currentView.type !== "raw";
+  const showEnhancedAction =
+    Boolean(primaryEnhancedNoteId) && currentView.type !== "enhanced";
+  const showTranscriptAction =
+    canShowTranscript && currentView.type !== "transcript";
+  const hasNoteViewActions =
+    Boolean(onViewChange) &&
+    (showYourNotesAction || showEnhancedAction || showTranscriptAction);
+  const handleShowYourNotes = () => {
+    setOpen(false);
+    onViewChange?.({ type: "raw" });
+  };
+  const handleShowEnhancedNote = () => {
+    if (!primaryEnhancedNoteId) {
+      return;
+    }
+    setOpen(false);
+    onViewChange?.({ type: "enhanced", id: primaryEnhancedNoteId });
+  };
+  const handleShowTranscript = () => {
+    setOpen(false);
+    onViewChange?.({ type: "transcript" });
+  };
 
   return (
     <>
@@ -139,6 +171,43 @@ export function OverflowButton({
                 <Trans>Export</Trans>
               </span>
             </DropdownMenuItem>
+            {hasNoteViewActions && (
+              <>
+                {showYourNotesAction && (
+                  <DropdownMenuItem
+                    onClick={handleShowYourNotes}
+                    className="cursor-pointer"
+                  >
+                    <TextAlignLeft />
+                    <span>
+                      <Trans>Your notes</Trans>
+                    </span>
+                  </DropdownMenuItem>
+                )}
+                {showEnhancedAction && (
+                  <DropdownMenuItem
+                    onClick={handleShowEnhancedNote}
+                    className="cursor-pointer"
+                  >
+                    <Sparkle />
+                    <span>
+                      <Trans>Enhanced note</Trans>
+                    </span>
+                  </DropdownMenuItem>
+                )}
+                {showTranscriptAction && (
+                  <DropdownMenuItem
+                    onClick={handleShowTranscript}
+                    className="cursor-pointer"
+                  >
+                    <Waveform />
+                    <span>
+                      <Trans>Transcript</Trans>
+                    </span>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
             <DropdownMenuSeparator />
             {showListeningAction && (
               <Listening

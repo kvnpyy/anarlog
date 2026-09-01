@@ -13,6 +13,11 @@ export const env = createEnv({
     VITE_SENTRY_DSN: z.string().min(1).optional(),
     VITE_POSTHOG_API_KEY: z.string().min(1).optional(),
     VITE_POSTHOG_HOST: z.string().min(1).default("https://us.i.posthog.com"),
+    VITE_ACORN_DEFAULT_LLM_BASE_URL: z.string().min(1).optional(),
+    VITE_ACORN_DEFAULT_LLM_MODEL: z.string().min(1).optional(),
+    VITE_ACORN_DEFAULT_LLM_KIND: z
+      .enum(["openai", "anthropic", "google"])
+      .optional(),
     VITE_APP_VERSION: z.string().min(1).optional(),
   },
   runtimeEnv: import.meta.env,

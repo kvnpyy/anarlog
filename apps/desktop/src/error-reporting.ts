@@ -3,6 +3,7 @@ import type { ErrorEvent, SeverityLevel } from "@sentry/react";
 import { emit, listen } from "@tauri-apps/api/event";
 
 import { env } from "./env";
+import { ACORN_SENTRY_DSN } from "./sentry-dsn";
 import { commands as desktopCommands } from "./types/tauri.gen";
 
 type ErrorContextValue = null | boolean | number | string;
@@ -185,12 +186,13 @@ export function sanitizeErrorEvent(event: ErrorEvent): ErrorEvent | null {
 }
 
 export function initializeErrorReporting() {
-  if (!env.VITE_SENTRY_DSN) return;
+  const dsn = env.VITE_SENTRY_DSN ?? ACORN_SENTRY_DSN;
+  if (!dsn) return;
 
   Sentry.init({
-    dsn: env.VITE_SENTRY_DSN,
+    dsn,
     release: env.VITE_APP_VERSION
-      ? `anarlog-desktop@${env.VITE_APP_VERSION}`
+      ? `acorn-desktop@${env.VITE_APP_VERSION}`
       : undefined,
     environment: import.meta.env.MODE,
     sendDefaultPii: false,
@@ -202,8 +204,8 @@ export function initializeErrorReporting() {
     initialScope: {
       tags: {
         "service.name": "desktop",
-        "service.namespace": "anarlog",
-        "anarlog.surface": "desktop",
+        "service.namespace": "acorn",
+        "acorn.surface": "desktop",
       },
     },
   });
@@ -319,22 +321,22 @@ export function captureOperationalError(
 
   return Sentry.withScope((scope) => {
     scope.setLevel(level);
-    scope.setTag("anarlog.operation", operation);
+    scope.setTag("acorn.operation", operation);
     scope.setTag("error.type", metadata.type);
     if (metadata.code) scope.setTag("error.code", metadata.code);
     if (metadata.stage) {
-      scope.setTag("anarlog.error.stage", metadata.stage);
+      scope.setTag("acorn.error.stage", metadata.stage);
     }
     if (metadata.status) {
       scope.setTag("http.response.status_code", metadata.status);
     }
     for (const [key, value] of Object.entries(tags ?? {})) {
       if (value !== null) {
-        scope.setTag(`anarlog.${key}`, value);
+        scope.setTag(`acorn.${key}`, value);
       }
     }
     if (context) {
-      scope.setContext("anarlog.operation", context);
+      scope.setContext("acorn.operation", context);
     }
     return Sentry.captureException(exception);
   });

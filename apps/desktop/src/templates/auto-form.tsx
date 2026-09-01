@@ -29,6 +29,7 @@ import { AutoFormatExamplesDialog } from "./auto-format-examples-dialog";
 import { useBillingAccess } from "~/auth/billing-context";
 import { setSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { LOCAL_ONLY } from "~/shared/product";
 
 const AUTO_FORMAT_TOKENS = [] as const;
 const LEGACY_CUSTOM_INSTRUCTIONS_PREAMBLE =
@@ -76,6 +77,7 @@ export function AutoFormatForm({
 }) {
   const { t } = useLingui();
   const billing = useBillingAccess();
+  const isPro = LOCAL_ONLY || billing.isPro;
   const editorRef = useRef<PromptEditorHandle>(null);
   const [showExamplesDialog, setShowExamplesDialog] = useState(false);
   const selectedTemplateId = useConfigValue("selected_template_id");
@@ -112,7 +114,7 @@ export function AutoFormatForm({
   const form = useForm({
     defaultValues: { format: initialFormat },
     onSubmit: async ({ value }) => {
-      if (!billing.isPro) {
+      if (!isPro) {
         billing.upgradeToPro();
         return;
       }
@@ -125,7 +127,7 @@ export function AutoFormatForm({
   });
 
   const resetToDefault = async () => {
-    if (!billing.isPro) {
+    if (!isPro) {
       billing.upgradeToPro();
       return;
     }
@@ -200,7 +202,7 @@ export function AutoFormatForm({
                     <DropdownMenuItem
                       className="cursor-pointer"
                       disabled={
-                        !billing.isPro ||
+                        !isPro ||
                         (!isCustomized &&
                           formatsMatch(currentFormat, defaultFormat)) ||
                         saveMutation.isPending
@@ -227,7 +229,7 @@ export function AutoFormatForm({
                 <Trans>Summary format</Trans>
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                {billing.isPro ? (
+                {isPro ? (
                   <Trans>
                     Choose how Auto structures and styles your summaries.
                   </Trans>
@@ -245,7 +247,7 @@ export function AutoFormatForm({
               variant="outline"
               className="shrink-0"
               onClick={() => {
-                if (!billing.isPro) {
+                if (!isPro) {
                   billing.upgradeToPro();
                   return;
                 }
@@ -253,7 +255,7 @@ export function AutoFormatForm({
               }}
               disabled={billing.isUpgradingToPro}
             >
-              {billing.isPro ? (
+              {isPro ? (
                 <MagicWand className="size-4" />
               ) : (
                 <LockSimple className="size-4" />
@@ -274,10 +276,10 @@ export function AutoFormatForm({
                     maxLength={16000}
                     onChange={field.handleChange}
                     onBlur={field.handleBlur}
-                    readOnly={!billing.isPro}
+                    readOnly={!isPro}
                     tokens={AUTO_FORMAT_TOKENS}
                   />
-                  {!billing.isPro ? (
+                  {!isPro ? (
                     <button
                       type="button"
                       onClick={billing.upgradeToPro}
@@ -304,7 +306,7 @@ export function AutoFormatForm({
           </form.Field>
 
           <div className="flex items-center justify-end gap-2">
-            {billing.isPro ? (
+            {isPro ? (
               <form.Subscribe
                 selector={(state) => [state.canSubmit, state.isDirty] as const}
               >

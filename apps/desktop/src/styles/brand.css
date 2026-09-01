@@ -1,0 +1,85 @@
+@font-face {
+  font-family: Fraunces;
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/fraunces.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: Fraunces;
+  font-style: italic;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/fraunces-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/source-sans.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/source-sans-italic.woff2") format("woff2");
+}
+
+:root {
+  --background: 37 49% 91%;
+  --foreground: 29 24% 8%;
+  --card: 40 55% 97%;
+  --card-foreground: 29 24% 8%;
+  --popover: 40 55% 97%;
+  --popover-foreground: 29 24% 8%;
+  --primary: 27 30% 13%;
+  --primary-foreground: 39 52% 94%;
+  --secondary: 38 32% 88%;
+  --secondary-foreground: 29 24% 8%;
+  --muted: 38 32% 88%;
+  --muted-foreground: 33 12% 32%;
+  --accent: 38 28% 86%;
+  --accent-foreground: 29 24% 8%;
+  --border: 33 18% 78%;
+  --input: 33 18% 78%;
+  --ring: 29 24% 8%;
+  --app-floating-chrome: 38 32% 88%;
+  --app-floating-panel: 40 55% 97%;
+  --app-floating-border: 33 18% 74%;
+  --sidebar-accent: 38 28% 84%;
+  --radius: 0.7rem;
+  --selection-overlay: rgb(215 180 138 / 0.55);
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+  --font-hand: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+}
+
+.dark {
+  --background: 27 28% 10%;
+  --foreground: 39 40% 94%;
+  --card: 27 24% 14%;
+  --card-foreground: 39 40% 94%;
+  --popover: 27 24% 14%;
+  --popover-foreground: 39 40% 94%;
+  --primary: 27 22% 18%;
+  --primary-foreground: 39 40% 94%;
+  --secondary: 27 18% 18%;
+  --secondary-foreground: 39 40% 94%;
+  --muted: 27 18% 18%;
+  --muted-foreground: 36 16% 72%;
+  --accent: 27 16% 22%;
+  --accent-foreground: 39 40% 94%;
+  --border: 30 14% 26%;
+  --input: 30 14% 26%;
+  --ring: 39 35% 82%;
+  --app-floating-chrome: 27 18% 18%;
+  --app-floating-panel: 27 22% 13%;
+  --app-floating-border: 30 14% 30%;
+  --sidebar-accent: 27 16% 20%;
+  --selection-overlay: rgb(196 122 58 / 0.4);
+}

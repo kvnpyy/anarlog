@@ -7,6 +7,10 @@ import type {
 
 import { applyCalendarInventory, loadEnabledCalendars } from "./storage";
 
+import {
+  getFreshGoogleCalendarAccessToken,
+  listGoogleCalendarConnectionIds,
+} from "~/calendar/google-oauth/storage";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 
 export interface Ctx {
@@ -52,11 +56,59 @@ export async function createCtx(
 export async function getProviderConnections(): Promise<
   ProviderConnectionIds[]
 > {
+  const localGoogleIds = await listGoogleCalendarConnectionIds();
   const result = await calendarCommands.listConnectionIds();
   if (result.status === "error") {
+    if (localGoogleIds.length > 0) {
+      return [{ provider: "google", connection_ids: localGoogleIds }];
+    }
     throw new Error(`Failed to discover calendar connections: ${result.error}`);
   }
-  return result.data;
+  return mergeGoogleConnectionIds(result.data, localGoogleIds);
+}
+
+function mergeGoogleConnectionIds(
+  discovered: ProviderConnectionIds[],
+  localGoogleIds: string[],
+): ProviderConnectionIds[] {
+  if (localGoogleIds.length === 0) {
+    return discovered;
+  }
+
+  const merged = discovered.map((entry) =>
+    entry.provider === "google"
+      ? {
+          ...entry,
+          connection_ids: uniqueIds([
+            ...entry.connection_ids,
+            ...localGoogleIds,
+          ]),
+        }
+      : entry,
+  );
+  if (!merged.some((entry) => entry.provider === "google")) {
+    merged.push({ provider: "google", connection_ids: localGoogleIds });
+  }
+  return merged;
+}
+
+function uniqueIds(ids: string[]) {
+  return [...new Set(ids)];
+}
+
+async function listCalendarsForConnection(
+  provider: CalendarProviderType,
+  connectionId: string,
+) {
+  if (provider === "google") {
+    const localIds = await listGoogleCalendarConnectionIds();
+    if (localIds.includes(connectionId)) {
+      const accessToken = await getFreshGoogleCalendarAccessToken(connectionId);
+      return calendarCommands.listGoogleCalendarsDirect(accessToken);
+    }
+  }
+
+  return calendarCommands.listCalendars(provider, connectionId);
 }
 
 export async function syncCalendars(
@@ -75,10 +127,7 @@ export async function syncCalendars(
     for (const connectionId of connection_ids) {
       if (shouldStop()) return;
 
-      const result = await calendarCommands.listCalendars(
-        provider,
-        connectionId,
-      );
+      const result = await listCalendarsForConnection(provider, connectionId);
       if (shouldStop()) return;
       if (result.status === "error") continue;
       successfulConnections.push({ connectionId, calendars: result.data });

@@ -15,6 +15,11 @@ import { sessionEventSchema } from "@anlg/store";
 import type { TaskArgsMap, TaskArgsMapTransformed, TaskConfig } from ".";
 import { collectEnhanceImageContext } from "./enhance-images";
 
+import {
+  prependNoteAuthorToMemo,
+  readUserProfile,
+  userProfileSubtitle,
+} from "~/chat/context/user-profile";
 import { loadHumansByIds } from "~/contacts/queries";
 import { normalizeSummaryLengthMode } from "~/services/enhancer/summary-length";
 import {
@@ -90,6 +95,7 @@ async function transformArgs(
   }
   const language = getLanguage(settingsValues);
   const formatOverride = getFormatOverride(settingsValues, templateId);
+  const profile = readUserProfile(settingsValues);
   const segments = await getTranscriptSegments(snapshot);
   const imageContext = modelSupportsImageInput(
     getOptionalSettingsValue(settingsValues, "current_llm_provider"),
@@ -105,9 +111,15 @@ async function transformArgs(
     language,
     formatOverride,
     session: sessionContext.session,
-    participants: sessionContext.participants,
+    participants: withNoteAuthorParticipant(
+      sessionContext.participants,
+      profile,
+    ),
     template,
-    preMeetingMemo: sessionContext.preMeetingMemo,
+    preMeetingMemo: prependNoteAuthorToMemo(
+      sessionContext.preMeetingMemo,
+      profile,
+    ),
     postMeetingMemo: sessionContext.postMeetingMemo,
     transcripts: formatTranscripts(segments, sessionContext.transcriptsMeta),
     imageContext,
@@ -277,6 +289,31 @@ function getParticipants(snapshot: SessionContentSnapshot): Participant[] {
       name: participant.name,
       jobTitle: participant.jobTitle || null,
     }));
+}
+
+function withNoteAuthorParticipant(
+  participants: Participant[],
+  profile: ReturnType<typeof readUserProfile>,
+): Participant[] {
+  if (!profile.name) {
+    return participants;
+  }
+
+  const alreadyListed = participants.some(
+    (participant) =>
+      participant.name.trim().toLowerCase() === profile.name.toLowerCase(),
+  );
+  if (alreadyListed) {
+    return participants;
+  }
+
+  return [
+    {
+      name: profile.name,
+      jobTitle: userProfileSubtitle(profile) || null,
+    },
+    ...participants,
+  ];
 }
 
 async function getTranscriptSegments(

@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   microsoftTeamsImportMeetings: vi.fn(),
   notionImportMeetings: vi.fn(),
   webexImportMeetings: vi.fn(),
+  hostedImportConnect: true,
 }));
 
 vi.mock("@anlg/plugin-importer", () => ({
@@ -70,12 +71,17 @@ vi.mock("~/env", () => ({
   env: { VITE_API_URL: "https://api.test" },
 }));
 
+vi.mock("~/shared/utils", () => ({
+  hostedDesktopWebFlowsEnabled: () => mocks.hostedImportConnect,
+}));
+
 import {
   cancelConnectedImport,
   connectConnectedImport,
   connectNangoImport,
   connectedImportSyncQueryOptions,
   nangoImportSyncQueryOptions,
+  offersMeetingImportConnect,
 } from "./connected-import";
 
 const provider = { id: "circleback", name: "Circleback" };
@@ -90,6 +96,7 @@ const credentials = {
 describe("connected meeting imports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.hostedImportConnect = true;
     mocks.openUrl.mockResolvedValue({ status: "ok", data: null });
     mocks.setSecret.mockResolvedValue({ status: "ok", data: null });
   });
@@ -272,6 +279,7 @@ describe("nango meeting imports", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.hostedImportConnect = true;
     mocks.openIntegrationUrl.mockResolvedValue(undefined);
   });
 
@@ -390,5 +398,25 @@ describe("nango meeting imports", () => {
       },
     });
     expect(mocks.zoomImportMeetings).not.toHaveBeenCalled();
+  });
+});
+
+describe("offersMeetingImportConnect", () => {
+  it("keeps local MCP and CLI connects even when hosted OAuth is off", () => {
+    mocks.hostedImportConnect = false;
+    expect(offersMeetingImportConnect({ directImport: "mcp-oauth" })).toBe(
+      true,
+    );
+    expect(offersMeetingImportConnect({ directImport: "cli" })).toBe(true);
+    expect(offersMeetingImportConnect({ directImport: "nango-oauth" })).toBe(
+      false,
+    );
+  });
+
+  it("offers Nango connects only when hosted desktop web flows are on", () => {
+    mocks.hostedImportConnect = true;
+    expect(offersMeetingImportConnect({ directImport: "nango-oauth" })).toBe(
+      true,
+    );
   });
 });

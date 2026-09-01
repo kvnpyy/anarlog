@@ -40,6 +40,14 @@ impl DeepgramFluxAdapter {
         (url, existing_params)
     }
 
+    fn is_allowed_flux_query_key(model: &str, key: &str) -> bool {
+        match key {
+            "eot_threshold" | "eager_eot_threshold" | "eot_timeout_ms" | "keyterm" => true,
+            "language_hint" => model == "flux-general-multi",
+            _ => false,
+        }
+    }
+
     fn build_url(api_base: &str, params: &ListenParams) -> url::Url {
         let (mut url, existing_params) = Self::endpoint_url(api_base);
         let model = params
@@ -47,11 +55,20 @@ impl DeepgramFluxAdapter {
             .as_deref()
             .filter(|model| Self::is_model(model))
             .unwrap_or("flux-general-multi");
+        let forward_provider = crate::adapter::is_anarlog_proxy(api_base);
 
         {
             let mut query = url.query_pairs_mut();
             for (key, value) in existing_params {
-                query.append_pair(&key, &value);
+                if key == "provider" {
+                    if forward_provider {
+                        query.append_pair(&key, &value);
+                    }
+                    continue;
+                }
+                if Self::is_allowed_flux_query_key(model, &key) {
+                    query.append_pair(&key, &value);
+                }
             }
             query
                 .append_pair("model", model)
@@ -68,7 +85,9 @@ impl DeepgramFluxAdapter {
             }
             if let Some(custom_query) = &params.custom_query {
                 for (key, value) in custom_query {
-                    query.append_pair(key, value);
+                    if Self::is_allowed_flux_query_key(model, key) {
+                        query.append_pair(key, value);
+                    }
                 }
             }
         }
@@ -287,6 +306,60 @@ mod tests {
         assert!(url.as_str().contains("language_hint=ja"));
         assert!(url.as_str().contains("keyterm=Anarlog"));
         assert!(!url.as_str().contains("channels="));
+    }
+
+    #[test]
+    fn strips_nova_only_query_params_from_direct_deepgram_flux_url() {
+        let params = ListenParams {
+            model: Some("flux-general-multi".to_string()),
+            languages: vec![ISO639::En.into()],
+            sample_rate: 16000,
+            custom_query: Some(std::collections::HashMap::from([
+                ("redemption_time_ms".to_string(), "400".to_string()),
+                ("eot_timeout_ms".to_string(), "500".to_string()),
+            ])),
+            ..Default::default()
+        };
+
+        let url = DeepgramFluxAdapter.build_ws_url(
+            "https://api.deepgram.com/v1?provider=deepgram",
+            &params,
+            1,
+        );
+        let url_str = url.as_str();
+
+        assert!(url_str.starts_with("wss://api.deepgram.com/v2/listen?"));
+        assert!(url_str.contains("model=flux-general-multi"));
+        assert!(url_str.contains("language_hint=en"));
+        assert!(url_str.contains("eot_timeout_ms=500"));
+        assert!(!url_str.contains("provider="));
+        assert!(!url_str.contains("redemption_time_ms="));
+    }
+
+    #[test]
+    fn proxy_flux_url_keeps_provider_and_drops_nova_params() {
+        let params = ListenParams {
+            model: Some("flux-general-en".to_string()),
+            languages: vec![ISO639::En.into()],
+            sample_rate: 16000,
+            custom_query: Some(std::collections::HashMap::from([(
+                "redemption_time_ms".to_string(),
+                "400".to_string(),
+            )])),
+            ..Default::default()
+        };
+
+        let url = DeepgramFluxAdapter.build_ws_url(
+            "https://api.anarlog.so/stt?provider=deepgram",
+            &params,
+            1,
+        );
+        let url_str = url.as_str();
+
+        assert!(url_str.contains("provider=deepgram"));
+        assert!(url_str.contains("model=flux-general-en"));
+        assert!(!url_str.contains("language_hint="));
+        assert!(!url_str.contains("redemption_time_ms="));
     }
 
     #[test]

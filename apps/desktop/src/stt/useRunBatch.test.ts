@@ -162,6 +162,15 @@ vi.mock("~/stt/capabilities", () => {
             model.startsWith("am-") ||
             model.startsWith("Quantized")))),
     isSupportedLanguagesBatch: isSupportedLanguagesBatchMock,
+    getSttModelTranscriptionMode: (
+      provider: string | null | undefined,
+      model: string | null | undefined,
+    ) =>
+      provider === "deepgram" &&
+      typeof model === "string" &&
+      model.startsWith("flux-")
+        ? ("live" as const)
+        : undefined,
   };
 });
 
@@ -1266,10 +1275,39 @@ describe("useRunBatch", () => {
     expect(sonnerToastWarningMock).toHaveBeenCalledWith(
       "Using a batch transcription provider",
       expect.objectContaining({
+        id: "batch-fallback-provider",
         description:
           "realtime-only is not available for batch transcription. Using Soniqo batch transcription instead.",
       }),
     );
+  });
+
+  test("does not warn when a live-only model such as Flux falls back to Soniqo", async () => {
+    isSupportedLanguagesBatchMock.mockResolvedValue(false);
+    useSTTConnectionMock.mockReturnValue({
+      conn: {
+        provider: "deepgram",
+        model: "flux-general-en",
+        baseUrl: "https://api.deepgram.com",
+        apiKey: "deepgram-key",
+      },
+    });
+    startTranscriptionMock.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useRunBatch("session-1"));
+
+    await act(async () => {
+      await result.current("/tmp/session.wav");
+    });
+
+    expect(startTranscriptionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "soniqo",
+        model: "soniqo-parakeet-batch",
+      }),
+      expect.any(Object),
+    );
+    expect(sonnerToastWarningMock).not.toHaveBeenCalled();
   });
 
   test.each(["windows", "linux"] as const)(

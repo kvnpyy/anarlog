@@ -301,4 +301,44 @@ describe("useChatActions", () => {
       }),
     );
   });
+
+  it("stores a hidden model prompt without showing it as the saved content", async () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useChatActions({
+        chatScope: "general",
+        groupId: "group-existing",
+        onGroupCreated: vi.fn(),
+      }),
+    );
+
+    act(() => {
+      result.current.handleSendMessage(
+        "Sound smart",
+        [{ type: "text", text: "Sound smart" }],
+        sendMessage,
+        undefined,
+        "Help me sound smart in this meeting.",
+      );
+    });
+
+    const message = sendMessage.mock.calls[0]?.[0] as AnlgUIMessage;
+    expect(message.parts).toEqual([{ type: "text", text: "Sound smart" }]);
+    expect(message.metadata?.modelPrompt).toBe(
+      "Help me sound smart in this meeting.",
+    );
+
+    const options = sendMessage.mock.calls[0]?.[1] as ChatSendOptions;
+    await options.beforeSend?.(vi.fn());
+
+    expect(mocks.upsertChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "Sound smart",
+        metadataJson: expect.stringContaining(
+          '"modelPrompt":"Help me sound smart in this meeting."',
+        ),
+        partsJson: expect.stringContaining("Sound smart"),
+      }),
+    );
+  });
 });

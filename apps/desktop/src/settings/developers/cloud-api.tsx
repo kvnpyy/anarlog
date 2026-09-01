@@ -57,7 +57,7 @@ export function CloudApiSection() {
       });
       if (backfillFailed) {
         sonnerToast.error(
-          t`Cloud API enabled, but existing meetings could not be uploaded. Anarlog will retry.`,
+          t`Cloud API enabled, but existing meetings could not be uploaded. Acorn will retry.`,
         );
       } else if (settings.enabled) {
         sonnerToast.success(
@@ -97,7 +97,7 @@ export function CloudApiSection() {
             <p className="text-muted-foreground mt-1 text-xs leading-5">
               <Trans>
                 Access meetings remotely through the REST API and MCP connectors
-                with Anarlog Pro.
+                with Acorn Pro.
               </Trans>
             </p>
           </div>
@@ -162,7 +162,7 @@ function CloudApiHeading({ error }: { error?: string }) {
       </h2>
       <p className="text-muted-foreground mt-1 text-xs">
         <Trans>
-          Uploads meeting content for remote access while Anarlog is closed.
+          Uploads meeting content for remote access while Acorn is closed.
         </Trans>
       </p>
       {error ? <p className="text-destructive mt-2 text-xs">{error}</p> : null}

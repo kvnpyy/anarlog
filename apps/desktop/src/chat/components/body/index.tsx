@@ -9,6 +9,7 @@ import { ChatBodyEmpty } from "./empty";
 import { ChatBodyNonEmpty } from "./non-empty";
 import { useChatAutoScroll } from "./use-chat-auto-scroll";
 
+import { LoadingMessage } from "~/chat/components/message/loading";
 import type { ContextRef } from "~/chat/context/entities";
 import { chatFloatingControlClassNames } from "~/chat/surface";
 import type { AnlgUIMessage } from "~/chat/types";
@@ -22,6 +23,8 @@ export function ChatBody({
   isModelConfigured = true,
   hasContext = false,
   onSendMessage,
+  isRecording = false,
+  layout = "floating",
 }: {
   messages: AnlgUIMessage[];
   status: ChatStatus;
@@ -33,11 +36,15 @@ export function ChatBody({
     content: string,
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
+    modelPrompt?: string,
   ) => void;
+  isRecording?: boolean;
+  layout?: "floating" | "right-panel" | "inline";
 }) {
   const { chat } = useShell();
   const isRightPanel = chat.mode === "RightPanelOpen";
   const isFloating = chat.mode === "FloatingOpen";
+  const isInline = layout === "inline";
   const {
     contentRef,
     isAtBottom,
@@ -50,12 +57,13 @@ export function ChatBody({
     handlePointerMove,
     handleWheel,
   } = useChatAutoScroll(status);
+  const isBusy = status === "submitted" || status === "streaming";
 
   return (
     <div
       className={cn([
         "relative flex min-h-0 flex-col",
-        isRightPanel ? "flex-1" : "flex-auto",
+        isInline || !isRightPanel ? "flex-auto" : "flex-1",
       ])}
     >
       <div
@@ -66,8 +74,12 @@ export function ChatBody({
         onScroll={updateAutoScrollState}
         onWheel={handleWheel}
         className={cn([
-          "flex min-h-0 flex-col overflow-y-auto",
-          isRightPanel ? "flex-1" : "max-h-[min(36rem,70vh)] flex-auto",
+          "flex min-h-0 flex-col overflow-x-hidden overflow-y-auto",
+          isInline
+            ? "max-h-48 flex-auto"
+            : isRightPanel
+              ? "flex-1"
+              : "max-h-[min(36rem,70vh)] flex-auto",
         ])}
       >
         <div
@@ -75,16 +87,21 @@ export function ChatBody({
           className={cn([
             "flex flex-col",
             isRightPanel && "min-h-full flex-1",
-            isRightPanel ? "px-3 py-5" : "px-3 py-3",
+            "px-3 py-3",
           ])}
         >
-          {!isFloating && <div className="flex-1" />}
+          {!isFloating && !isInline && <div className="flex-1" />}
           {messages.length === 0 ? (
-            <ChatBodyEmpty
-              isModelConfigured={isModelConfigured}
-              hasContext={hasContext}
-              onSendMessage={onSendMessage}
-            />
+            isBusy ? (
+              <LoadingMessage />
+            ) : (
+              <ChatBodyEmpty
+                isModelConfigured={isModelConfigured}
+                hasContext={hasContext}
+                onSendMessage={onSendMessage}
+                isRecording={isRecording}
+              />
+            )
           ) : (
             <ChatBodyNonEmpty
               messages={messages}

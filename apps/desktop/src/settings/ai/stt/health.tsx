@@ -3,6 +3,7 @@ import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
 import { Spinner } from "@anlg/ui/components/ui/spinner";
 
+import { isAcornHostedApiKey } from "~/shared/acorn-defaults";
 import { useConfigValues } from "~/shared/config";
 import { isAnarlogCloudSttModel, isOnDeviceSttModel } from "~/stt/capabilities";
 import { useSTTConnection } from "~/stt/useSTTConnection";
@@ -65,7 +66,10 @@ export function useConnectionHealth(): HealthStatus {
     !isManagedProvider;
   const isDeepgram = current_stt_provider === "deepgram";
 
-  const deepgramHealth = useDeepgramHealth(isDeepgram && !!conn, conn?.apiKey);
+  const deepgramHealth = useDeepgramHealth(
+    isDeepgram && !!conn && !isAcornHostedApiKey(conn.apiKey),
+    conn?.apiKey,
+  );
 
   if (isManagedProvider && current_stt_model && !isCloud && !isLocalModel) {
     return {
@@ -102,6 +106,9 @@ export function useConnectionHealth(): HealthStatus {
   }
 
   if (isDeepgram) {
+    if (isAcornHostedApiKey(conn.apiKey)) {
+      return { status: "success" };
+    }
     if (deepgramHealth.isPending) {
       return { status: "pending", message: "Verifying API key..." };
     }

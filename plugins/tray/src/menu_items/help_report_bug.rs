@@ -15,7 +15,5 @@ impl MenuItemHandler for HelpReportBug {
         Ok(MenuItemKind::MenuItem(item))
     }
 
-    fn handle(_app: &AppHandle<tauri::Wry>) {
-        let _ = open::that("https://anarlog.so/discord");
-    }
+    fn handle(_app: &AppHandle<tauri::Wry>) {}
 }

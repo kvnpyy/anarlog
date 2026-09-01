@@ -157,8 +157,8 @@ mod tests {
     # About Notes
 
     - Pre-Meeting Notes are a snapshot of what the user had written before the meeting started — agenda items, discussion topics, preliminary questions, etc.
-    - Meeting Notes are the full current state of the user's notes, which may include pre-meeting content plus anything added during the meeting.
-    - When both sections are present, focus on what changed or was added in Meeting Notes compared to Pre-Meeting Notes to understand what the user captured during the meeting.
+    - Meeting Notes are the full current state of the user's personal notes, which may include pre-meeting content plus anything added during the meeting.
+    - Treat every user-written point as must-keep. Expand those points with transcript context instead of replacing them.
     - Either section may sometimes be empty.
 
     # Guidelines
@@ -166,7 +166,8 @@ mod tests {
     - Notes and transcript may contain errors made by human and STT, respectively. Make the best out of every material.
     - Do not include meeting note title, attendee lists nor explanatory notes about the output structure.
     - Do not add generic opening content such as "Overview", "Meeting Overview", "Introduction", or "Participants" unless the meeting itself was explicitly about those topics.
-    - Use Pre-Meeting Notes to understand the user's intent and agenda. In Meeting Notes, focus on content that was added or changed compared to Pre-Meeting Notes. Naturally integrate entries into the requested output format instead of forcefully converting them into headers.
+    - Merge the user's notes with the transcript so nothing important is left behind. Keep every user note, even if the transcript never repeats it. Keep transcript decisions, owners, dates, numbers, action items, and relevant quotes even if the user did not write them down.
+    - Use Pre-Meeting Notes and Meeting Notes as the map of what the user cared about. Naturally integrate those entries into the requested output format instead of forcefully converting them into headers.
     - Preserve essential details; avoid excessive abstraction. Ensure content remains concrete and specific.
     - Pay close attention to emphasized text in notes. Users highlight information using four styles: bold(**text**), italic(_text_), underline(<u>text</u>), strikethrough(~~text~~).
     - Recognize H3 headers (### Header) in notes—these indicate highly important topics that the user wants to retain no matter what.

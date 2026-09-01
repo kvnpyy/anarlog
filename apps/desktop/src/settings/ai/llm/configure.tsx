@@ -20,6 +20,7 @@ import {
   StyledStreamdown,
 } from "~/settings/ai/shared";
 import { useConfigValue } from "~/shared/config";
+import { LOCAL_ONLY, visibleLlmProviders } from "~/shared/product";
 
 export function ConfigureProviders() {
   const { accordionValue, setAccordionValue } = useLlmSettings();
@@ -28,7 +29,7 @@ export function ConfigureProviders() {
   const [connectingId, setConnectingId] =
     useState<SubscriptionProviderId | null>(null);
   const providers = filterProviders(
-    PROVIDERS.filter((provider) =>
+    visibleLlmProviders(PROVIDERS).filter((provider) =>
       shouldShowInProviderList(provider.id, search),
     ),
     search,
@@ -63,12 +64,14 @@ export function ConfigureProviders() {
               }
               currentProvider={currentProvider}
               onConnect={
-                isSubscriptionProviderId(providerId)
+                !LOCAL_ONLY && isSubscriptionProviderId(providerId)
                   ? () => setConnectingId(providerId)
                   : undefined
               }
               onConnectSubscription={
-                twinId ? () => setConnectingId(twinId) : undefined
+                !LOCAL_ONLY && twinId
+                  ? () => setConnectingId(twinId)
+                  : undefined
               }
               subscriptionProviderId={twinId}
             />

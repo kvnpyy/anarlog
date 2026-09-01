@@ -11,6 +11,7 @@ anlg-api-client = { workspace = true }
 anlg-apple-calendar = { workspace = true, features = ["specta"] }
 anlg-calendar-interface = { workspace = true }
 anlg-google-calendar = { workspace = true, features = ["specta"] }
+anlg-http = { workspace = true }
 anlg-outlook-calendar = { workspace = true, features = ["specta"] }
 
 chrono = { workspace = true, features = ["serde"] }

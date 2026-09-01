@@ -422,6 +422,13 @@ pub fn append_provider_param(base_url: &str, provider: &str) -> String {
     }
 }
 
+pub fn maybe_append_provider_param(base_url: &str, provider: &str) -> String {
+    if provider == "unknown" || !is_anarlog_proxy(base_url) {
+        return base_url.to_string();
+    }
+    append_provider_param(base_url, provider)
+}
+
 const OPENAI_COMPATIBLE_MAX_UPLOAD_BYTES: u64 = 25 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

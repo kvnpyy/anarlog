@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildSearchMeetingsTool } from "./search-meetings";
 
+import {
+  unboundedAiKnowledgeWindow,
+  getAiKnowledgeWindow,
+} from "~/shared/ai-window";
+
 describe("search meetings chat tool", () => {
   it("keeps full-content search results behind meeting vocabulary", async () => {
     const search = vi.fn().mockResolvedValue([
@@ -26,7 +31,10 @@ describe("search meetings chat tool", () => {
         },
       },
     ]);
-    const meetingSearchTool = buildSearchMeetingsTool({ search } as any);
+    const meetingSearchTool = buildSearchMeetingsTool({
+      search,
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+    } as any);
 
     const result = await (meetingSearchTool as any).execute({
       query: "contract renewal",
@@ -55,6 +63,30 @@ describe("search meetings chat tool", () => {
           created_at: 200,
         },
       ],
+      ai_knowledge_window: { days: 365, plan: "pro" },
     });
+  });
+
+  it("refuses date filters that are older than the Free window", async () => {
+    const search = vi.fn();
+    const tool = buildSearchMeetingsTool({
+      search,
+      getAiKnowledgeWindow: () =>
+        getAiKnowledgeWindow(false, new Date("2026-08-28T12:00:00")),
+    } as any);
+
+    const result = await (tool as any).execute({
+      query: "old decision",
+      filters: {
+        created_at: {
+          kind: "absolute",
+          lte: Date.parse("2026-07-01T00:00:00.000Z"),
+        },
+      },
+    });
+
+    expect(search).not.toHaveBeenCalled();
+    expect(result.results).toEqual([]);
+    expect(result.notice).toContain("last 14 days");
   });
 });

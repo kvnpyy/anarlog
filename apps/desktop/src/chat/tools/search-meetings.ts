@@ -4,6 +4,12 @@ import { z } from "zod";
 import type { ToolDependencies } from "./types";
 
 import type { SearchFilters } from "~/search/contexts/engine/types";
+import {
+  clampSearchCreatedAtFilter,
+  getAiKnowledgeWindow,
+  relativeDaysFilter,
+  withAiWindowMeta,
+} from "~/shared/ai-window";
 
 const gteSchema = z
   .number()
@@ -75,31 +81,6 @@ const searchMeetingsFiltersSchema = z
 type AbsoluteCreatedAtFilter = z.infer<typeof absoluteCreatedAtFilterSchema>;
 type SearchMeetingsFiltersInput = z.infer<typeof searchMeetingsFiltersSchema>;
 
-function getRecentDaysFilter(
-  days: number,
-): NonNullable<SearchFilters["created_at"]> {
-  const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const endOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    59,
-    59,
-    999,
-  ).getTime();
-
-  return {
-    gte: startOfToday - Math.max(days - 1, 0) * 24 * 60 * 60 * 1000,
-    lte: endOfToday,
-  };
-}
-
 export const buildSearchMeetingsTool = (deps: ToolDependencies) =>
   tool({
     description: `
@@ -130,24 +111,31 @@ Returns relevant meetings with matching content excerpts.
       filters?: SearchMeetingsFiltersInput;
       limit?: number;
     }) => {
+      const window =
+        deps.getAiKnowledgeWindow?.() ?? getAiKnowledgeWindow(false);
       const query = params.query ?? "";
       const createdAtFilter = params.filters?.created_at;
-      const effectiveFilters: SearchFilters | null = createdAtFilter
-        ? {
-            created_at:
-              createdAtFilter.kind === "absolute"
-                ? (({ gte, lte, gt, lt, eq }: AbsoluteCreatedAtFilter) => ({
-                    gte,
-                    lte,
-                    gt,
-                    lt,
-                    eq,
-                  }))(createdAtFilter)
-                : getRecentDaysFilter(createdAtFilter.recent_days),
-          }
-        : null;
+      const requestedFilter: SearchFilters["created_at"] | undefined =
+        createdAtFilter
+          ? createdAtFilter.kind === "absolute"
+            ? (({ gte, lte, gt, lt, eq }: AbsoluteCreatedAtFilter) => ({
+                gte,
+                lte,
+                gt,
+                lt,
+                eq,
+              }))(createdAtFilter)
+            : relativeDaysFilter(createdAtFilter.recent_days)
+          : undefined;
+      const clamped = clampSearchCreatedAtFilter(
+        requestedFilter,
+        window.cutoffMs,
+      );
+      if (clamped === "empty") {
+        return withAiWindowMeta({ results: [] }, window);
+      }
 
-      const hits = await deps.search(query, effectiveFilters);
+      const hits = await deps.search(query, { created_at: clamped });
       const meetingHits = hits.filter((hit) => hit.document.type === "session");
       const limit = params.limit ?? 5;
       const results = meetingHits.slice(0, limit).map((hit) => ({
@@ -158,6 +146,6 @@ Returns relevant meetings with matching content excerpts.
         created_at: hit.document.created_at,
       }));
 
-      return { results };
+      return withAiWindowMeta({ results }, window);
     },
   });

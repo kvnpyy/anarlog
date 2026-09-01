@@ -51,6 +51,20 @@ pub struct CaptureConfigUpdate {
     pub self_human_id: Option<String>,
 }
 
+const ACORN_HOSTED_API_KEY: &str = "acorn-hosted";
+
+fn resolve_hosted_api_key(api_key: String) -> String {
+    if api_key != ACORN_HOSTED_API_KEY {
+        return api_key;
+    }
+
+    std::env::var("ACORN_DEFAULT_STT_API_KEY")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or(api_key)
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, specta::Type, tauri_specta::Event)]
 #[serde(tag = "type")]
 pub enum CaptureLifecycleEvent {
@@ -195,7 +209,7 @@ impl From<CaptureParams> for listener::actors::SessionParams {
             transcription_mode,
             model: value.model,
             base_url: value.base_url,
-            api_key: value.api_key,
+            api_key: resolve_hosted_api_key(value.api_key),
             keywords: value.keywords,
             mic_device: value.mic_device,
             participant_human_ids: value.participant_human_ids,
@@ -316,7 +330,7 @@ impl From<TranscriptionParams> for listener2::BatchParams {
             file_path: value.file_path,
             model: value.model,
             base_url: value.base_url,
-            api_key: value.api_key,
+            api_key: resolve_hosted_api_key(value.api_key),
             languages: value.languages,
             keywords: value.keywords,
             num_speakers: value.num_speakers,
@@ -343,6 +357,17 @@ mod tests {
 
     fn capture_params(base_url: &str, model: &str) -> CaptureParams {
         capture_params_with_languages(base_url, model, vec![])
+    }
+
+    #[test]
+    fn hosted_placeholder_reads_process_env() {
+        unsafe { std::env::set_var("ACORN_DEFAULT_STT_API_KEY", "dg-hosted") };
+        assert_eq!(
+            super::resolve_hosted_api_key("acorn-hosted".into()),
+            "dg-hosted"
+        );
+        assert_eq!(super::resolve_hosted_api_key("user-key".into()), "user-key");
+        unsafe { std::env::remove_var("ACORN_DEFAULT_STT_API_KEY") };
     }
 
     fn capture_params_with_languages(

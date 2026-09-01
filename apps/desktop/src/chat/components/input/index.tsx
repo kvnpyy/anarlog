@@ -37,9 +37,10 @@ export function ChatMessageInput({
   onStop,
   onDraftContentChange,
   onContextRefsChange,
+  placeholder: placeholderOverride,
 }: {
   draftKey: string;
-  layout?: "floating" | "right-panel";
+  layout?: "floating" | "right-panel" | "inline";
   onSendMessage: (
     content: string,
     parts: Array<{ type: "text"; text: string }>,
@@ -50,6 +51,7 @@ export function ChatMessageInput({
   onStop?: () => void;
   onDraftContentChange?: (hasDraftContent: boolean) => void;
   onContextRefsChange?: (refs: ContextRef[]) => void;
+  placeholder?: string;
 }) {
   const { t } = useLingui();
   const { chat } = useShell();
@@ -83,11 +85,11 @@ export function ChatMessageInput({
   useAutoFocusEditor({ editorRef, disabled, shouldFocus });
   const mentionConfig = useMentionConfig();
   const isSendDisabled = Boolean(disabled) || !hasContent;
-  const isRightPanel = layout === "right-panel";
+  const isRightPanel = layout === "right-panel" || layout === "inline";
   const isFloating = layout === "floating";
   const showSendControl = !isFloating || isStreaming || hasContent;
   const hasVoiceStatus = dictation.phase !== "idle";
-  const placeholderText = t`Ask anything`;
+  const placeholderText = placeholderOverride ?? t`Ask anything`;
   const placeholderTextRef = useRef(placeholderText);
   placeholderTextRef.current = placeholderText;
   const placeholder = useMemo(
@@ -169,9 +171,23 @@ export function ChatMessageInput({
           <div
             className={cn([
               "flex shrink-0 items-center gap-1",
-              isFloating ? "absolute right-0 bottom-0.5" : "justify-end",
+              isFloating
+                ? "absolute right-0 bottom-0.5"
+                : isStreaming
+                  ? "justify-between"
+                  : "justify-end",
             ])}
           >
+            {isStreaming && !isFloating ? (
+              <div
+                role="status"
+                data-chat-input-thinking
+                className="text-muted-foreground flex min-w-0 items-center gap-1.5 px-1 text-xs"
+              >
+                <CircleNotch className="size-3.5 shrink-0 animate-spin" />
+                <span className="truncate">{t`Thinking...`}</span>
+              </div>
+            ) : null}
             {!isStreaming && (
               <button
                 type="button"
@@ -187,15 +203,27 @@ export function ChatMessageInput({
               </button>
             )}
             {isStreaming ? (
-              <Button
-                onClick={onStop}
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 rounded-full"
-                aria-label={t`Stop response`}
-              >
-                <Square size={14} weight="fill" />
-              </Button>
+              <>
+                {isFloating ? (
+                  <span
+                    role="status"
+                    data-chat-input-thinking
+                    className="text-muted-foreground inline-flex size-7 items-center justify-center"
+                  >
+                    <CircleNotch className="size-3.5 animate-spin" />
+                    <span className="sr-only">{t`Thinking...`}</span>
+                  </span>
+                ) : null}
+                <Button
+                  onClick={onStop}
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 rounded-full"
+                  aria-label={t`Stop response`}
+                >
+                  <Square size={14} weight="fill" />
+                </Button>
+              </>
             ) : showSendControl ? (
               <SendButton disabled={isSendDisabled} onClick={handleSubmit} />
             ) : null}

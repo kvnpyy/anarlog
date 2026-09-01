@@ -547,4 +547,47 @@ describe("OverflowButton", () => {
     ).toBeNull();
     expect(screen.getByRole("button", { name: "Delete note" })).not.toBeNull();
   });
+
+  it("lets the same pane open personal notes, the enhanced note, or the transcript", () => {
+    const onViewChange = vi.fn();
+
+    render(
+      <OverflowButton
+        sessionId="session-1"
+        currentView={{ type: "enhanced", id: "note-1" } as EditorView}
+        onViewChange={onViewChange}
+        enhancedNoteIds={["note-1"]}
+        canShowTranscript
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Your notes" }));
+    expect(onViewChange).toHaveBeenCalledWith({ type: "raw" });
+
+    onViewChange.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Transcript" }));
+    expect(onViewChange).toHaveBeenCalledWith({ type: "transcript" });
+    expect(screen.queryByRole("button", { name: "Enhanced note" })).toBeNull();
+  });
+
+  it("can return to the enhanced note from personal notes", () => {
+    const onViewChange = vi.fn();
+
+    render(
+      <OverflowButton
+        sessionId="session-1"
+        currentView={{ type: "raw" } as EditorView}
+        onViewChange={onViewChange}
+        enhancedNoteIds={["note-1"]}
+        canShowTranscript
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Enhanced note" }));
+    expect(onViewChange).toHaveBeenCalledWith({
+      type: "enhanced",
+      id: "note-1",
+    });
+    expect(screen.queryByRole("button", { name: "Your notes" })).toBeNull();
+  });
 });

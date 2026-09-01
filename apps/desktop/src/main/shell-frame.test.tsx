@@ -105,7 +105,7 @@ describe("ClassicMainShellFrame", () => {
     render(<ClassicMainShellFrame />);
 
     expect(screen.getByTestId("toast-notifications")).not.toBeNull();
-    expect(screen.getByTestId("sync-status-indicator")).not.toBeNull();
+    expect(screen.queryByTestId("sync-status-indicator")).toBeNull();
     expect(
       screen
         .getByTestId("main-shell-scaffold")
@@ -118,7 +118,7 @@ describe("ClassicMainShellFrame", () => {
 
     render(<ClassicMainShellFrame />);
 
-    expect(screen.getByTestId("sync-status-indicator")).not.toBeNull();
+    expect(screen.queryByTestId("sync-status-indicator")).toBeNull();
   });
 
   it("hides sync status outside empty and note views", () => {

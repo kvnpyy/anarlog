@@ -50,6 +50,9 @@ export function OuterHeader({
   viewSwitcher,
   transcriptEditMode = false,
   onTranscriptEditModeChange,
+  onViewChange,
+  enhancedNoteIds = [],
+  canShowTranscript = false,
 }: {
   sessionId: string;
   currentView: EditorView;
@@ -58,6 +61,9 @@ export function OuterHeader({
   viewSwitcher?: React.ReactNode;
   transcriptEditMode?: boolean;
   onTranscriptEditModeChange?: (editMode: boolean) => void;
+  onViewChange?: (view: EditorView) => void;
+  enhancedNoteIds?: readonly string[];
+  canShowTranscript?: boolean;
 }) {
   const { leftsidebar } = useShell();
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
@@ -119,6 +125,9 @@ export function OuterHeader({
           standaloneWindow={standaloneWindow}
           sessionId={sessionId}
           currentView={currentView}
+          onViewChange={onViewChange}
+          enhancedNoteIds={enhancedNoteIds}
+          canShowTranscript={canShowTranscript}
         />
       </div>
     </div>
@@ -322,7 +331,7 @@ function HeaderMeetingActionPill({
         title: t`Join meeting and record`,
         icon: isWelcomeDemo ? (
           <img
-            src="/assets/anarlog-icon.png"
+            src="/assets/app-icons/stable-light.png"
             alt=""
             className="size-3.5 shrink-0"
           />
@@ -351,6 +360,7 @@ function HeaderMeetingActionPill({
     sessionMode !== "finalizing";
   const showWelcomeDemoPrompt =
     isWelcomeDemo &&
+    Boolean(meetingLink) &&
     sessionMode === "inactive" &&
     !hasTranscript &&
     !audioExists;
@@ -399,7 +409,7 @@ function HeaderMeetingActionPill({
             />
             <span className="relative block font-medium">{t`Try the demo`}</span>
             <span className="text-muted-foreground relative mt-0.5 block leading-snug">
-              {t`This is a prerecorded demo, so your camera stays off. Click Join & record to see Anarlog in action.`}
+              {t`This is a prerecorded demo, so your camera stays off. Click Join & record to see Acorn in action.`}
             </span>
           </PopoverContent>
         ) : showCountdown ? (

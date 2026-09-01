@@ -82,8 +82,15 @@ describe("AppIconSelector", () => {
     expect(defaultOption.querySelector("img")?.getAttribute("src")).toBe(
       "/assets/app-icons/stable-light.png",
     );
-    expect(iconOptions()).toHaveLength(9);
+    expect(iconOptions()).toHaveLength(10);
     expect(screen.queryByRole("radio", { name: "Production" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Squirrel" })).toBeDefined();
+    expect(
+      screen
+        .getByRole("radio", { name: "Squirrel" })
+        .querySelector("img")
+        ?.getAttribute("src"),
+    ).toBe("/assets/app-icons/squirrel-light.png");
     expect(screen.getByRole("radio", { name: "Blueprint" })).toBeDefined();
     expect(screen.getByRole("radio", { name: "Sketch" })).toBeDefined();
     expect(screen.getByRole("radio", { name: "Field Journal" })).toBeDefined();

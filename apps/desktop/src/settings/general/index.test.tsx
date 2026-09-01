@@ -30,7 +30,7 @@ vi.mock("~/auth", () => ({
 }));
 
 vi.mock("~/auth/billing-context", () => ({
-  useBillingAccess: () => ({ isPro: true }),
+  useBillingAccess: () => ({ isPro: true, upgradeToPro: vi.fn() }),
 }));
 
 vi.mock("~/auth/cloudsync", () => ({
@@ -44,7 +44,10 @@ vi.mock("~/settings/queries", () => ({
 }));
 
 vi.mock("./account", () => ({ SettingsAccount: () => null }));
-vi.mock("./app-settings", () => ({ AppSettingsView: () => null }));
+vi.mock("./app-settings", () => ({
+  AppSettingsView: () => null,
+  AcornProSettingsCard: () => null,
+}));
 vi.mock("./audio-settings", () => ({
   AudioSettingsView: () => <span>Audio settings</span>,
 }));

@@ -101,6 +101,7 @@ const lingui = vi.hoisted(() => {
 });
 
 vi.mock("@lingui/react/macro", () => ({
+  Trans: ({ children }: { children: string }) => children,
   useLingui: () => ({
     _: lingui.t,
     t: lingui.t,
@@ -108,6 +109,7 @@ vi.mock("@lingui/react/macro", () => ({
 }));
 
 vi.mock("@lingui/react", () => ({
+  Trans: ({ children }: { children: string }) => children,
   useLingui: () => ({
     _: lingui.t,
     t: lingui.t,
@@ -127,6 +129,10 @@ vi.mock("@anlg/plugin-analytics", () => ({
 
 vi.mock("@anlg/ui/components/ui/spinner", () => ({
   Spinner: () => <span data-testid="view-spinner" />,
+}));
+
+vi.mock("@anlg/ui/components/ui/toast", () => ({
+  sonnerToast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
 }));
 
 vi.mock("@anlg/ui/components/ui/dancing-sticks", () => ({
@@ -154,6 +160,12 @@ vi.mock("~/ai/hooks", () => ({
   useLanguageModel: () => "model",
   useLLMConnectionStatus: () => "connected",
   useTitleGenerating: () => false,
+}));
+
+vi.mock("~/ai/task-window-sync", () => ({
+  isMainAITaskHostWindow: () => true,
+  requestMainAITaskCancel: vi.fn(),
+  requestMainEnhance: vi.fn(),
 }));
 
 vi.mock("~/session/enhance-config", () => ({
@@ -315,6 +327,7 @@ vi.mock("~/templates", () => ({
 }));
 
 import { Header, SessionViewSwitcher, useEditorTabs } from "./header";
+import { EnhancedPaneHeader } from "./header-enhanced";
 
 describe("Header", () => {
   beforeEach(() => {
@@ -352,7 +365,7 @@ describe("Header", () => {
     cleanup();
   });
 
-  it("renders icon views and focuses summary before opening the template picker", () => {
+  it("keeps the session switcher as a transcript toggle", () => {
     const editorTabs: EditorView[] = [
       { type: "enhanced", id: "note-1" },
       { type: "raw" },
@@ -360,7 +373,7 @@ describe("Header", () => {
     ];
     const handleTabChange = vi.fn();
 
-    const view = render(
+    render(
       <SessionViewSwitcher
         sessionId="session-1"
         editorTabs={editorTabs}
@@ -369,105 +382,48 @@ describe("Header", () => {
       />,
     );
 
-    const summaryTab = screen.getByRole("button", { name: "Customer Call" });
-    const memoTab = screen.getByRole("button", { name: "Memos" });
     const transcriptTab = screen.getByRole("button", { name: "Transcript" });
     const viewSwitcher = screen.getByRole("group", {
       name: "Session note views",
     });
 
-    expect(summaryTab.getAttribute("data-state")).toBeNull();
     expect(viewSwitcher.getAttribute("data-tauri-drag-region")).toBe("false");
     expect(viewSwitcher.className).toContain("h-[30px]");
     expect(viewSwitcher.className).toContain("p-[2px]");
     expect(viewSwitcher.className).toContain("gap-[2px]");
     expect(viewSwitcher.className).toContain("bg-foreground/10");
     expect(viewSwitcher.className).toContain("dark:bg-accent/55");
-    expect(summaryTab.getAttribute("aria-current")).toBeNull();
-    expect(memoTab.getAttribute("aria-current")).toBe("page");
-    expect(memoTab.textContent).toBe("Memos");
-    expect(memoTab.className).toContain("h-[26px]");
-    expect(memoTab.className).not.toContain("-my-px");
-    expect(memoTab.className).toContain("bg-white");
-    expect(memoTab.className).toContain("text-foreground");
-    expect(memoTab.className).toContain("shadow-xs");
-    expect(memoTab.className).toContain("dark:text-foreground");
-    expect(memoTab.className).toContain("dark:bg-accent");
-    expect(memoTab.className).toContain("dark:shadow-none");
-    expect(memoTab.className).toContain("@max-[480px]:max-w-10");
-    expect(memoTab.querySelector("span")?.className).toContain(
-      "@max-[480px]:sr-only",
-    );
-    expect(summaryTab.className).toContain("h-[26px]");
-    expect(summaryTab.className).toContain("px-2");
-    expect(summaryTab.className).not.toContain("min-w-10");
-    expect(summaryTab.className).toContain("dark:hover:bg-accent/80");
-    expect(summaryTab.querySelector("svg")).not.toBeNull();
-    expect(summaryTab.querySelectorAll("svg")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Memos" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Customer Call" })).toBeNull();
     expect(transcriptTab.querySelector("svg")).not.toBeNull();
     expect(transcriptTab.className).toContain("px-2");
-    expect(transcriptTab.className).not.toContain("min-w-10");
-    expect(summaryTab.textContent).toBe("");
     expect(transcriptTab.textContent).toBe("");
+
+    fireEvent.click(transcriptTab);
+
+    expect(handleTabChange).toHaveBeenCalledWith({ type: "transcript" });
+  });
+
+  it("keeps the enhance control off the meeting page", () => {
+    render(
+      <EnhancedPaneHeader
+        sessionId="session-1"
+        enhancedNoteIds={["note-1"]}
+        selectedNoteId="note-1"
+      />,
+    );
+
+    const summaryTab = screen.getByRole("button", { name: "Customer Call" });
+    expect(summaryTab.textContent).toBe("Customer Call");
     expect(summaryTab.getAttribute("title")).toBe(
       "Customer Call was used to generate this summary.",
     );
+    expect(screen.queryByRole("button", { name: "Enhance" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Enhancing" })).toBeNull();
 
     fireEvent.click(summaryTab);
 
-    expect(handleTabChange).toHaveBeenNthCalledWith(1, {
-      type: "enhanced",
-      id: "note-1",
-    });
-
-    view.rerender(
-      <SessionViewSwitcher
-        sessionId="session-1"
-        editorTabs={editorTabs}
-        currentTab={{ type: "enhanced", id: "note-1" }}
-        handleTabChange={handleTabChange}
-      />,
-    );
-
-    const activeSummaryTab = screen.getByRole("button", {
-      name: "Customer Call",
-    });
-    expect(activeSummaryTab.textContent).toBe("Customer Call");
-    expect(activeSummaryTab.className).toContain("text-foreground");
-    expect(activeSummaryTab.className).toContain("dark:text-foreground");
-    expect(activeSummaryTab.className).toContain("dark:bg-accent");
-    expect(activeSummaryTab.className).toContain("@max-[480px]:max-w-12");
-    expect(activeSummaryTab.querySelector("span")?.className).toContain(
-      "@max-[480px]:sr-only",
-    );
-    const activeSummaryIcons = activeSummaryTab.querySelectorAll("svg");
-    expect(activeSummaryIcons).toHaveLength(2);
-    expect(activeSummaryIcons[1]?.getAttribute("class")).not.toContain(
-      "@max-[480px]:hidden",
-    );
-
-    fireEvent.click(activeSummaryTab);
-
     expect(screen.getByPlaceholderText("Search templates...")).not.toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Memos" }));
-
-    view.rerender(
-      <SessionViewSwitcher
-        sessionId="session-1"
-        editorTabs={editorTabs}
-        currentTab={{ type: "raw" }}
-        handleTabChange={handleTabChange}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Customer Call" }));
-
-    expect(handleTabChange).toHaveBeenNthCalledWith(2, { type: "raw" });
-    expect(handleTabChange).toHaveBeenNthCalledWith(3, {
-      type: "enhanced",
-      id: "note-1",
-    });
   });
 
   it("hides the view switcher when the memo is the only view", () => {
@@ -498,35 +454,26 @@ describe("Header", () => {
     expect(screen.queryByPlaceholderText("Untitled")).toBeNull();
   });
 
-  it("can switch from transcript back to memo or summary tabs", () => {
-    const editorTabs: EditorView[] = [
-      { type: "enhanced", id: "note-1" },
-      { type: "raw" },
-      { type: "transcript" },
-    ];
+  it("shows the transcript label when the transcript pane is open", () => {
     const handleTabChange = vi.fn();
 
     render(
       <SessionViewSwitcher
         sessionId="session-1"
-        editorTabs={editorTabs}
+        editorTabs={[
+          { type: "enhanced", id: "note-1" },
+          { type: "raw" },
+          { type: "transcript" },
+        ]}
         currentTab={{ type: "transcript" }}
         handleTabChange={handleTabChange}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Memos" }));
     expect(screen.getByRole("button", { name: "Transcript" }).textContent).toBe(
       "Transcript",
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "Customer Call" }));
-
-    expect(handleTabChange).toHaveBeenNthCalledWith(1, { type: "raw" });
-    expect(handleTabChange).toHaveBeenNthCalledWith(2, {
-      type: "enhanced",
-      id: "note-1",
-    });
+    expect(screen.queryByRole("button", { name: "Memos" })).toBeNull();
   });
 
   it("adds recording actions to the transcript tab context menu", () => {
@@ -720,18 +667,14 @@ describe("Header", () => {
       type: "started",
       noteId: "note-1",
     });
-    const editorTabs: EditorView[] = [
-      { type: "enhanced", id: "note-1" },
-      { type: "raw" },
-    ];
-    const handleTabChange = vi.fn();
+    const handleSelectNote = vi.fn();
 
     render(
-      <SessionViewSwitcher
+      <EnhancedPaneHeader
         sessionId="session-1"
-        editorTabs={editorTabs}
-        currentTab={{ type: "enhanced", id: "note-1" }}
-        handleTabChange={handleTabChange}
+        enhancedNoteIds={["note-1"]}
+        selectedNoteId="note-1"
+        onSelectNote={handleSelectNote}
       />,
     );
 
@@ -744,10 +687,7 @@ describe("Header", () => {
       templateTitle: "Decision Log",
     });
     await waitFor(() =>
-      expect(handleTabChange).toHaveBeenCalledWith({
-        type: "enhanced",
-        id: "note-1",
-      }),
+      expect(handleSelectNote).toHaveBeenCalledWith("note-1"),
     );
   });
 
@@ -765,17 +705,12 @@ describe("Header", () => {
       type: "started",
       noteId: "note-1",
     });
-    const editorTabs: EditorView[] = [
-      { type: "enhanced", id: "note-1" },
-      { type: "raw" },
-    ];
 
     render(
-      <SessionViewSwitcher
+      <EnhancedPaneHeader
         sessionId="session-1"
-        editorTabs={editorTabs}
-        currentTab={{ type: "enhanced", id: "note-1" }}
-        handleTabChange={vi.fn()}
+        enhancedNoteIds={["note-1"]}
+        selectedNoteId="note-1"
       />,
     );
 
@@ -789,26 +724,22 @@ describe("Header", () => {
     });
   });
 
-  it("shows a spinner in the active enhanced tab while generating", () => {
+  it("shows a spinner in the enhanced pane while generating", () => {
     hoisted.isGenerating = true;
-    const editorTabs: EditorView[] = [
-      { type: "enhanced", id: "note-1" },
-      { type: "raw" },
-    ];
 
     render(
-      <SessionViewSwitcher
+      <EnhancedPaneHeader
         sessionId="session-1"
-        editorTabs={editorTabs}
-        currentTab={{ type: "enhanced", id: "note-1" }}
-        handleTabChange={vi.fn()}
+        enhancedNoteIds={["note-1"]}
+        selectedNoteId="note-1"
       />,
     );
 
-    expect(screen.getByTestId("view-spinner")).not.toBeNull();
+    expect(screen.getAllByTestId("view-spinner").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: "Customer Call" }).textContent,
     ).toBe("Customer Call");
+    expect(screen.queryByRole("button", { name: "Enhancing" })).toBeNull();
   });
 
   it("shows a spinner in the transcript tab while transcribing", () => {
@@ -968,7 +899,7 @@ describe("Header", () => {
     expect(
       transcriptTab.querySelector("[data-testid='dancing-sticks']"),
     ).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Memos" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Memos" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Open event metadata" }),
@@ -981,7 +912,7 @@ describe("Header", () => {
     expect(hoisted.requestMainListenerControl).not.toHaveBeenCalled();
   });
 
-  it("keeps memos and transcript grouped when transcript is the only extra view", () => {
+  it("shows only the transcript toggle when transcript is the extra view", () => {
     hoisted.sessionMode = "active";
 
     render(
@@ -996,13 +927,11 @@ describe("Header", () => {
     const viewSwitcher = screen.getByRole("group", {
       name: "Session note views",
     });
-    const memos = screen.getByRole("button", { name: "Memos" });
     const transcript = screen.getByRole("button", { name: "Transcript" });
 
-    expect(viewSwitcher.contains(memos)).toBe(true);
     expect(viewSwitcher.contains(transcript)).toBe(true);
+    expect(screen.queryByRole("button", { name: "Memos" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
-    expect(memos.nextElementSibling).toBe(transcript);
   });
 
   it("does not stop a finalizing live meeting from the transcript tab", () => {

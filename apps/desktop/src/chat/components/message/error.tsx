@@ -6,6 +6,7 @@ import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { ActionButton, MessageBubble, MessageContainer } from "./shared";
 
 import { env } from "~/env";
+import { LOCAL_ONLY } from "~/shared/product";
 
 const WEB_APP_BASE_URL = env.VITE_APP_URL ?? "http://localhost:3000";
 
@@ -30,6 +31,10 @@ export function ErrorMessage({
   const showContextLengthHelp = isContextLengthError(error.message);
 
   const handleOpenFaq = () => {
+    if (LOCAL_ONLY) {
+      return;
+    }
+
     void openerCommands.openUrl(
       `${WEB_APP_BASE_URL}/docs/faq/local-llm-setup#context-length-error`,
       null,
@@ -40,7 +45,7 @@ export function ErrorMessage({
     <MessageContainer align="start">
       <MessageBubble variant="error" withActionButton={!!onRetry}>
         <p className="text-sm">{error.message}</p>
-        {showContextLengthHelp && (
+        {showContextLengthHelp && !LOCAL_ONLY && (
           <button
             onClick={handleOpenFaq}
             className="mt-2 flex items-center gap-1 text-xs text-red-700 underline hover:text-red-900"

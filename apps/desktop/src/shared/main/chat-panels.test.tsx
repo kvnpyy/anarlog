@@ -6,8 +6,9 @@ const mocks = vi.hoisted(() => ({
     | "FloatingClosed"
     | "FloatingOpen"
     | "RightPanelOpen",
-  currentTab: { type: "empty" } as { type: string } | null,
+  currentTab: { type: "empty" } as { type: string; id?: string } | null,
   leftSidebarExpanded: true,
+  inlineAsk: false,
   persistentChatPanel: vi.fn(),
   sendEvent: vi.fn(),
   sessionProps: { sessionId: "chat-session-1" },
@@ -85,6 +86,7 @@ vi.mock("~/contexts/shell", () => ({
   useShell: () => ({
     chat: {
       mode: mocks.chatMode,
+      inlineAsk: mocks.inlineAsk,
       sendEvent: mocks.sendEvent,
     },
     leftsidebar: {
@@ -106,7 +108,7 @@ vi.mock("~/chat/components/chat-panel", () => ({
     onOpenFloating,
     sessionProps,
   }: {
-    layout?: "floating" | "right-panel";
+    layout?: "floating" | "right-panel" | "inline";
     onOpenFloating?: () => void;
     sessionProps: unknown;
   }) => (
@@ -150,6 +152,7 @@ describe("MainChatPanels", () => {
     restorePanelWidths?.();
     restorePanelWidths = null;
     mocks.chatMode = "FloatingClosed";
+    mocks.inlineAsk = false;
     mocks.currentTab = { type: "empty" };
     mocks.leftSidebarExpanded = true;
     mocks.persistentChatPanel.mockClear();
@@ -213,6 +216,28 @@ describe("MainChatPanels", () => {
     expect(rightPanel?.className).not.toContain("rounded-t-xl");
     expect(rightPanel?.className).not.toContain("ml-2");
     expect(rightPanel?.className).not.toContain("mr-1");
+  });
+
+  it("docks live Ask under the notepad instead of a second column", () => {
+    mocks.chatMode = "RightPanelOpen";
+    mocks.inlineAsk = true;
+    mocks.currentTab = { type: "sessions", id: "session-1" };
+
+    render(
+      <MainChatPanels>
+        <div data-testid="main-content" />
+      </MainChatPanels>,
+    );
+
+    expect(screen.getAllByTestId("panel")).toHaveLength(1);
+    expect(screen.queryByTestId("resize-handle")).toBeNull();
+    expect(screen.queryByTestId("persistent-chat-panel")).toBeNull();
+    expect(document.querySelector("[data-chat-right-panel]")).toBeNull();
+    expect(document.querySelector("[data-live-ask-column]")).toBeInstanceOf(
+      HTMLDivElement,
+    );
+    expect(screen.getByTestId("chat-view").dataset.layout).toBe("inline");
+    expect(screen.getByTestId("main-content")).toBeTruthy();
   });
 
   it("keeps Automations chat docked without a floating chat host", () => {

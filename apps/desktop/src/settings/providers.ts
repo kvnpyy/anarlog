@@ -4,6 +4,7 @@ import { commands as store2Commands } from "@anlg/plugin-store2";
 
 import { executeTransaction, liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { withAcornBundledProviders } from "~/shared/acorn-defaults";
 
 export { isKeychainAccessError, repairKeychainAccess } from "~/shared/keychain";
 
@@ -50,14 +51,17 @@ export function useAiProvidersState(type: AiProviderType): {
   const secureApiKeys = secureApiKeysQuery.data ?? EMPTY_PROVIDER_API_KEYS;
 
   return {
-    providers: Object.fromEntries(
-      Object.entries(providers).map(([rowId, provider]) => [
-        rowId,
-        {
-          ...provider,
-          api_key: secureApiKeys[rowId] ?? provider.api_key,
-        },
-      ]),
+    providers: withAcornBundledProviders(
+      type,
+      Object.fromEntries(
+        Object.entries(providers).map(([rowId, provider]) => [
+          rowId,
+          {
+            ...provider,
+            api_key: secureApiKeys[rowId] ?? provider.api_key,
+          },
+        ]),
+      ),
     ),
     isReady: !isLoading && secureApiKeysQuery.data !== undefined,
   };
@@ -83,16 +87,19 @@ export async function getStoredAiProvider(
     `,
     [providerStorageId(type, providerId), LEGACY_SETTINGS_ID],
   );
-  const provider = parseAiProviders(rows, type)[
-    providerRowId(type, providerId)
-  ];
-  if (!provider) return undefined;
+  const rowId = providerRowId(type, providerId);
+  const provider = parseAiProviders(rows, type)[rowId];
+  const stored = provider
+    ? {
+        ...provider,
+        api_key:
+          (await getProviderApiKey(type, providerId)) ?? provider.api_key,
+      }
+    : undefined;
 
-  const secureApiKey = await getProviderApiKey(type, providerId);
-  return {
-    ...provider,
-    api_key: secureApiKey ?? provider.api_key,
-  };
+  return withAcornBundledProviders(type, stored ? { [rowId]: stored } : {})[
+    rowId
+  ];
 }
 
 export function setAiProvider(

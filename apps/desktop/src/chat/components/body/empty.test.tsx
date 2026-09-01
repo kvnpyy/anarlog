@@ -49,13 +49,38 @@ describe("ChatBodyEmpty", () => {
     fireEvent.click(decisions);
 
     expect(onSendMessage).toHaveBeenCalledWith(
-      "What were the key decisions that have been made?",
+      "Find key decisions.",
       [
         {
           type: "text",
-          text: "What were the key decisions that have been made?",
+          text: "Find key decisions.",
         },
       ],
+      undefined,
+      "What were the key decisions that have been made?",
+    );
+  });
+
+  it("offers workspace-wide prompts when no meeting is attached", () => {
+    const onSendMessage = vi.fn();
+
+    render(<ChatBodyEmpty onSendMessage={onSendMessage} />);
+
+    expect(screen.getByText("Ask across all your meetings.")).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Catch me up on recent meetings." }),
+    );
+
+    expect(onSendMessage).toHaveBeenCalledWith(
+      "Catch me up on recent meetings.",
+      [
+        {
+          type: "text",
+          text: "Catch me up on recent meetings.",
+        },
+      ],
+      undefined,
+      expect.stringContaining("Catch me up on my recent meetings"),
     );
   });
 });

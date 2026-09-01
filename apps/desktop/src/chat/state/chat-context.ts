@@ -10,6 +10,7 @@ type ChatSelection = {
 
 interface ChatContextState {
   chatByScope: Record<ChatScope, ChatSelection>;
+  chatByMeetingId: Record<string, ChatSelection>;
 }
 
 interface ChatContextActions {
@@ -17,6 +18,14 @@ interface ChatContextActions {
   rollbackFailedGroup: (scope: ChatScope, failedGroupId: string) => void;
   startNewChat: (scope: ChatScope) => void;
   selectChat: (scope: ChatScope, groupId: string) => void;
+  ensureMeetingChat: (meetingId: string) => void;
+  setMeetingGroupId: (meetingId: string, groupId: string | undefined) => void;
+  rollbackFailedMeetingGroup: (
+    meetingId: string,
+    failedGroupId: string,
+  ) => void;
+  startNewMeetingChat: (meetingId: string) => void;
+  selectMeetingChat: (meetingId: string, groupId: string) => void;
 }
 
 export const useChatContext = create<ChatContextState & ChatContextActions>(
@@ -25,6 +34,7 @@ export const useChatContext = create<ChatContextState & ChatContextActions>(
       general: createChatSelection(),
       automations: createChatSelection(),
     },
+    chatByMeetingId: {},
     setGroupId: (scope, groupId) =>
       set((state) => ({
         chatByScope: {
@@ -62,8 +72,86 @@ export const useChatContext = create<ChatContextState & ChatContextActions>(
           [scope]: { groupId, sessionId: groupId },
         },
       })),
+    ensureMeetingChat: (meetingId) =>
+      set((state) => {
+        if (state.chatByMeetingId[meetingId]) {
+          return state;
+        }
+
+        return {
+          chatByMeetingId: {
+            ...state.chatByMeetingId,
+            [meetingId]: createMeetingChatSelection(meetingId),
+          },
+        };
+      }),
+    setMeetingGroupId: (meetingId, groupId) =>
+      set((state) => ({
+        chatByMeetingId: {
+          ...state.chatByMeetingId,
+          [meetingId]: {
+            ...(state.chatByMeetingId[meetingId] ??
+              createMeetingChatSelection(meetingId)),
+            groupId,
+          },
+        },
+      })),
+    rollbackFailedMeetingGroup: (meetingId, failedGroupId) =>
+      set((state) => {
+        const selection = state.chatByMeetingId[meetingId];
+        if (!selection || selection.groupId !== failedGroupId) {
+          return state;
+        }
+
+        return {
+          chatByMeetingId: {
+            ...state.chatByMeetingId,
+            [meetingId]: { ...selection, groupId: undefined },
+          },
+        };
+      }),
+    startNewMeetingChat: (meetingId) =>
+      set((state) => ({
+        chatByMeetingId: {
+          ...state.chatByMeetingId,
+          [meetingId]: createChatSelection(),
+        },
+      })),
+    selectMeetingChat: (meetingId, groupId) =>
+      set((state) => ({
+        chatByMeetingId: {
+          ...state.chatByMeetingId,
+          [meetingId]: { groupId, sessionId: groupId },
+        },
+      })),
   }),
 );
+
+export function getMeetingChatId({
+  scope,
+  isRecording,
+  liveSessionId,
+  currentSessionId,
+}: {
+  scope: ChatScope;
+  isRecording: boolean;
+  liveSessionId: string | null | undefined;
+  currentSessionId: string | undefined;
+}): string | undefined {
+  if (scope !== "general") {
+    return undefined;
+  }
+
+  if (isRecording) {
+    return liveSessionId ?? currentSessionId ?? undefined;
+  }
+
+  return currentSessionId;
+}
+
+export function createMeetingChatSelection(meetingId: string): ChatSelection {
+  return { groupId: undefined, sessionId: `meeting:${meetingId}` };
+}
 
 function createChatSelection(): ChatSelection {
   return { groupId: undefined, sessionId: id() };

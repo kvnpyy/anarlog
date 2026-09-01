@@ -41,6 +41,22 @@ async listEvents(provider: CalendarProviderType, connectionId: string, filter: E
     else return { status: "error", error: e  as any };
 }
 },
+async listGoogleCalendarsDirect(accessToken: string) : Promise<Result<CalendarListItem[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:calendar|list_google_calendars_direct", { accessToken }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async listGoogleEventsDirect(accessToken: string, filter: EventFilter) : Promise<Result<CalendarEvent[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:calendar|list_google_events_direct", { accessToken, filter }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async openCalendar(provider: CalendarProviderType) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:calendar|open_calendar", { provider }) };

@@ -183,8 +183,7 @@ export function NotificationSettingsView() {
               title={<Trans>Bounce app icon</Trans>}
               description={
                 <Trans>
-                  Get your attention when Anarlog finishes work in the
-                  background.
+                  Get your attention when Acorn finishes work in the background.
                 </Trans>
               }
               checked={field.state.value}

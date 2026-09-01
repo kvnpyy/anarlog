@@ -9,6 +9,9 @@ import { defineConfig, type UserConfig } from "vite";
 import { relayShim } from "@anlg/plugin-relay/vite";
 
 import { changelog } from "./plugins/changelog";
+import { ACORN_SENTRY_DSN } from "./src/sentry-dsn";
+
+process.env.VITE_SENTRY_DSN ??= ACORN_SENTRY_DSN;
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -61,7 +64,7 @@ const tauri: UserConfig = {
   server: {
     port: 1422,
     strictPort: true,
-    host: host || false,
+    host: host || "127.0.0.1",
     hmr: host
       ? {
           protocol: "ws",

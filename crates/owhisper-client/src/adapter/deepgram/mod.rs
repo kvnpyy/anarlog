@@ -85,6 +85,10 @@ impl DeepgramModel {
     }
 
     pub fn supports_language(&self, lang: &anlg_language::Language) -> bool {
+        if self.is_flux() {
+            return self.supported_languages().contains(&lang.iso639().code());
+        }
+
         lang.matches_any_code(self.supported_languages())
     }
 
@@ -368,6 +372,18 @@ mod tests {
             !DeepgramAdapter::language_support_live(&languages, Some(DeepgramModel::Nova3General))
                 .is_supported()
         );
+    }
+
+    #[test]
+    fn test_en_ca_with_flux_general_multi_supported() {
+        let en_ca: anlg_language::Language = "en-CA".parse().unwrap();
+        let languages = vec![en_ca.clone()];
+
+        assert!(DeepgramAdapter::is_supported_languages_live(
+            &languages,
+            Some("flux-general-multi")
+        ));
+        assert!(DeepgramModel::FluxGeneralMulti.supports_language(&en_ca));
     }
 
     #[test]

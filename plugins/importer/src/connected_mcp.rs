@@ -152,6 +152,7 @@ struct AuthorizationCallback {
 
 pub async fn begin_connection(
     provider_id: &str,
+    product_name: &str,
     state: &ConnectedImportOAuthState,
 ) -> Result<ConnectedImportAuthorization, String> {
     let provider = provider(provider_id)?;
@@ -175,7 +176,7 @@ pub async fn begin_connection(
     let scopes = manager.select_scopes(None, &[]);
     let scope_refs = scopes.iter().map(String::as_str).collect::<Vec<_>>();
     let client = manager
-        .register_client("Anarlog", &redirect_uri, &scope_refs)
+        .register_client(product_name, &redirect_uri, &scope_refs)
         .await
         .map_err(|error| auth_error(provider, error))?;
     let authorization_url = manager
@@ -185,10 +186,15 @@ pub async fn begin_connection(
 
     let cancellation = CancellationToken::new();
     let callback_cancellation = cancellation.clone();
+    let callback_product_name = product_name.to_string();
     let (callback_tx, callback_rx) = oneshot::channel();
     tokio::spawn(async move {
         let result = tokio::select! {
-            result = receive_authorization_callback(listener, provider.name) => result,
+            result = receive_authorization_callback(
+                listener,
+                provider.name,
+                &callback_product_name,
+            ) => result,
             _ = callback_cancellation.cancelled() => {
                 Err(format!("{} sign-in cancelled.", provider.name))
             }
@@ -448,6 +454,7 @@ pub async fn sync(
 async fn receive_authorization_callback(
     listener: TcpListener,
     provider_name: &'static str,
+    product_name: &str,
 ) -> Result<AuthorizationCallback, String> {
     let (mut stream, _) = listener
         .accept()
@@ -458,12 +465,14 @@ async fn receive_authorization_callback(
         Ok(_) => (
             "200 OK",
             format!("{provider_name} connected"),
-            "Your meeting history is being brought into Anarlog. You can close this window.",
+            format!(
+                "Your meeting history is being brought into {product_name}. You can close this window."
+            ),
         ),
         Err(_) => (
             "400 Bad Request",
             format!("{provider_name} connection failed"),
-            "Return to Anarlog and try connecting again.",
+            format!("Return to {product_name} and try connecting again."),
         ),
     };
     let body = format!(

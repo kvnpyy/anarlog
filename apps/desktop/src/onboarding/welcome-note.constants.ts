@@ -1,5 +1,4 @@
-export const WELCOME_NOTE_DEMO_URL = "https://anarlog.so/onboarding-demo/";
-export const WELCOME_NOTE_TRACKING_ID = "anarlog-onboarding-demo-v1";
+export const WELCOME_NOTE_TRACKING_ID = "acorn-welcome-v1";
 export const WELCOME_NOTE_COMPLETE_PATH = "/onboarding-demo/complete";
 export const WELCOME_NOTE_DEMO_AUTOJOIN_PARAM = "autojoin";
 

@@ -342,7 +342,7 @@ mod platform {
             WINDOW_LABEL,
             WebviewUrl::App("app/floating-bar".into()),
         )
-        .title("Anarlog")
+        .title(crate::window::product_window_title(app))
         .inner_size(width, height)
         .visible(false)
         .focused(false)

@@ -56,11 +56,11 @@ it("reuses an existing onboarding welcome note", async () => {
   await expect(getOrCreateWelcomeSession()).resolves.toBe("welcome-session");
   expect(mocks.createSession).not.toHaveBeenCalled();
   expect(mocks.execute).toHaveBeenCalledWith(expect.any(String), [
-    "anarlog-onboarding-demo-v1",
+    "acorn-welcome-v1",
   ]);
 });
 
-it("creates a prerecorded demo note with normal meeting metadata", async () => {
+it("creates a local welcome note without a hosted demo meeting", async () => {
   mocks.execute.mockResolvedValueOnce([]);
   mocks.createSession.mockResolvedValueOnce("welcome-session");
 
@@ -68,22 +68,18 @@ it("creates a prerecorded demo note with normal meeting metadata", async () => {
 
   const [title, , initial] = mocks.createSession.mock.calls[0];
   const event = JSON.parse(initial.event_json);
-  expect(title).toBe("Welcome to Anarlog");
-  expect(event.meeting_link).toBe("https://anarlog.so/onboarding-demo/");
-  expect(event.tracking_id).toBe("anarlog-onboarding-demo-v1");
-  expect(initial.raw_md).toContain("prerecorded demo meeting");
-  expect(initial.raw_md).toContain("Join & record");
-  expect(initial.raw_md).toContain("Settings → Transcription");
-  expect(initial.raw_md).toContain(
-    "If transcription and intelligence are configured",
-  );
-  expect(initial.raw_md).not.toContain("Anarlog will listen, transcribe");
+  expect(title).toBe("Welcome to Acorn");
+  expect(event.meeting_link).toBe("");
+  expect(event.tracking_id).toBe("acorn-welcome-v1");
+  expect(initial.raw_md).toContain("records meetings on this computer");
+  expect(initial.raw_md).toContain("Record");
+  expect(initial.raw_md).toContain("VTT, SRT, Markdown, or text file");
+  expect(initial.raw_md).not.toContain("Join & record");
+  expect(initial.raw_md).not.toContain("prerecorded demo meeting");
+  expect(initial.raw_md).not.toContain("anarlog.so");
 
   const note = JSON.parse(initial.raw_md);
-  expect(note.content).toHaveLength(7);
-  expect(note.content[1]).toEqual({ type: "paragraph" });
-  expect(note.content[3]).toEqual({ type: "paragraph" });
-  expect(note.content[5]).toEqual({ type: "paragraph" });
+  expect(note.content.length).toBeGreaterThan(0);
 });
 
 it("guards empty event metadata before reading its tracking ID", async () => {
@@ -117,7 +113,7 @@ it("stops an active welcome demo after its browser callback", async () => {
 
   expect(mocks.execute).toHaveBeenCalledWith(expect.any(String), [
     "welcome-session",
-    "anarlog-onboarding-demo-v1",
+    "acorn-welcome-v1",
   ]);
   expect(mocks.listenerState.stop).toHaveBeenCalledOnce();
 });
@@ -174,12 +170,10 @@ it("ignores a demo callback when listening already stopped", async () => {
 });
 
 it("auto-joins the hosted demo and optionally attaches a completion callback", () => {
-  expect(buildWelcomeNoteDemoUrl("https://anarlog.so/onboarding-demo/")).toBe(
-    "https://anarlog.so/onboarding-demo/?autojoin=1",
+  expect(buildWelcomeNoteDemoUrl("https://example.com/demo/")).toBe(
+    "https://example.com/demo/?autojoin=1",
   );
-  expect(
-    buildWelcomeNoteDemoUrl("https://anarlog.so/onboarding-demo/", 43210),
-  ).toBe(
-    "https://anarlog.so/onboarding-demo/?autojoin=1&completion_url=http%3A%2F%2F127.0.0.1%3A43210%2Fonboarding-demo%2Fcomplete",
+  expect(buildWelcomeNoteDemoUrl("https://example.com/demo/", 43210)).toBe(
+    "https://example.com/demo/?autojoin=1&completion_url=http%3A%2F%2F127.0.0.1%3A43210%2Fonboarding-demo%2Fcomplete",
   );
 });

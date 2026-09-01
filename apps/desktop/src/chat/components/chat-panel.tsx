@@ -2,7 +2,6 @@ import { type ReactNode, useCallback } from "react";
 
 import { cn } from "@anlg/utils";
 
-import { ChatBody } from "./body";
 import { ChatContent } from "./content";
 import { ChatSession, type ChatSessionRenderProps } from "./session-provider";
 import { ChatToolbarControls } from "./toolbar-controls";
@@ -23,7 +22,7 @@ export function ChatView({
   onOpenFloating,
   onOpenRightPanel,
 }: {
-  layout?: "floating" | "right-panel";
+  layout?: "floating" | "right-panel" | "inline";
   onOpenFloating?: () => void;
   onOpenRightPanel?: () => void;
 }) {
@@ -49,14 +48,29 @@ export function ChatSessionHost({
   const { chat } = useShell();
   const { groupId, sessionId } = chat;
   const { currentSessionId } = useSessionTab();
+  const liveSessionId = useListener((state) => state.live.sessionId);
+  const isLiveAsk = useListener((state) => {
+    if (chat.scope !== "general") {
+      return false;
+    }
+    const sessionId = state.live.sessionId ?? currentSessionId;
+    if (!sessionId) {
+      return false;
+    }
+    return state.getSessionMode(sessionId) === "active";
+  });
   const contextSessionId =
-    chat.scope === "automations" ? undefined : currentSessionId;
+    chat.scope === "automations"
+      ? undefined
+      : isLiveAsk
+        ? (liveSessionId ?? currentSessionId)
+        : currentSessionId;
   const ownerUserId = useOwnerUserId();
   const hasAvailableTranscript = useSessionHasTranscript(
     contextSessionId ?? "",
   );
   const batchTranscriptionPending = useListener((state) => {
-    if (!contextSessionId) {
+    if (chat.scope !== "general" || !contextSessionId) {
       return false;
     }
     return isBatchTranscriptionPending(
@@ -77,6 +91,7 @@ export function ChatSessionHost({
       currentSessionId={contextSessionId}
       hasAvailableTranscript={hasAvailableTranscript}
       isBatchTranscriptionPending={batchTranscriptionPending}
+      isLiveAsk={isLiveAsk}
       unstyled
     >
       {children}
@@ -91,7 +106,7 @@ export function ChatPanelFrame({
   onOpenRightPanel,
   sessionProps,
 }: {
-  layout?: "floating" | "right-panel";
+  layout?: "floating" | "right-panel" | "inline";
   onDraftContentChange?: (hasDraftContent: boolean) => void;
   onOpenFloating?: () => void;
   onOpenRightPanel?: () => void;
@@ -101,6 +116,7 @@ export function ChatPanelFrame({
   const { groupId, setGroupId, rollbackFailedGroup } = chat;
   const { panelClassName, toolbarSurface } = useChatAppearance();
   const isFloating = layout === "floating";
+  const isInline = layout === "inline";
   const model = useLanguageModel("chat");
 
   const handleGroupCreated = useCallback(
@@ -128,11 +144,19 @@ export function ChatPanelFrame({
     <div
       className={cn([
         "flex min-h-0 flex-col overflow-hidden",
-        isFloating ? "max-h-full" : "h-full",
-        isFloating ? chatFloatingPanelClassNames() : panelClassName,
+        isInline
+          ? "h-auto max-h-[22rem]"
+          : isFloating
+            ? "max-h-full"
+            : "h-full",
+        isFloating
+          ? chatFloatingPanelClassNames()
+          : isInline
+            ? null
+            : panelClassName,
       ])}
     >
-      {chat.scope === "automations" ? null : (
+      {chat.scope === "automations" || isInline ? null : (
         <div
           data-tauri-drag-region={!isFloating || undefined}
           className={cn([
@@ -143,7 +167,9 @@ export function ChatPanelFrame({
           <ChatToolbarControls
             chatScope={chat.scope}
             currentChatGroupId={groupId}
+            isolateConversation={chat.isolateConversation}
             layout={layout}
+            pinned={chat.isRecording}
             onClose={() => chat.sendEvent({ type: "CLOSE" })}
             onNewChat={chat.startNewChat}
             onOpenFloating={onOpenFloating}
@@ -160,24 +186,9 @@ export function ChatPanelFrame({
           onDraftContentChange={onDraftContentChange}
           model={model}
           handleSendMessage={handleSendMessage}
-        >
-          <ChatBody
-            messages={sessionProps.messages}
-            status={sessionProps.status}
-            error={sessionProps.error}
-            onReload={sessionProps.regenerate}
-            isModelConfigured={!!model}
-            hasContext={sessionProps.contextEntities.length > 0}
-            onSendMessage={(content, parts) => {
-              handleSendMessage(
-                content,
-                parts,
-                sessionProps.sendMessage,
-                sessionProps.pendingRefs,
-              );
-            }}
-          />
-        </ChatContent>
+          isRecording={chat.isRecording}
+          isBatchOnly={chat.isBatchOnly}
+        />
       )}
     </div>
   );

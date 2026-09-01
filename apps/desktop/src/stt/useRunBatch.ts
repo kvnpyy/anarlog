@@ -24,6 +24,7 @@ import { useConfigValue } from "~/shared/config";
 import { id } from "~/shared/utils";
 import type { BatchPersistCallback } from "~/store/zustand/listener/transcript";
 import {
+  getSttModelTranscriptionMode,
   getTranscriptionLanguages,
   isDesktopLocalSttAvailable,
   isOnDeviceSttModel,
@@ -767,8 +768,13 @@ export const useRunBatch = (sessionId: string) => {
         );
       }
 
-      if (!shouldUseSelectedTarget) {
+      if (
+        !shouldUseSelectedTarget &&
+        getSttModelTranscriptionMode(selectedProviderId, selectedModel) !==
+          "live"
+      ) {
         sonnerToast.warning("Using a batch transcription provider", {
+          id: "batch-fallback-provider",
           description: `${
             selectedTarget
               ? selectedProviderLabel(conn, selectedModel)

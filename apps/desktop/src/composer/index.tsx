@@ -29,6 +29,7 @@ import { useChatActions } from "~/chat/store/use-chat-actions";
 import { useShell } from "~/contexts/shell";
 import { useMentionConfig } from "~/editor-bridge/mention-config";
 import { useOwnerUserId } from "~/shared/owner-user";
+import { PRODUCT_NAME } from "~/shared/product";
 
 export function ComposerScreen() {
   const { chat } = useShell();
@@ -100,7 +101,7 @@ export function ComposerScreen() {
               }
               onStop={sessionProps.stop}
               onSendMessage={sendMessage}
-              title={currentChatGroup?.title || t`Ask Anarlog AI anything`}
+              title={currentChatGroup?.title || `Ask ${PRODUCT_NAME} anything`}
             />
           ) : (
             <ComposerSettingsCard />
@@ -226,7 +227,7 @@ function ComposerInput({
             ])}
           >
             <ArrowUpRight className="size-3.5" />
-            {t`Open Anarlog`}
+            {`Open ${PRODUCT_NAME}`}
           </button>
           <button
             type="button"
@@ -307,7 +308,7 @@ function ComposerInput({
 
 const composerPlaceholder: PlaceholderFunction = ({ node, pos }) => {
   if (node.type.name === "paragraph" && pos === 0) {
-    return t`Message Anarlog AI`;
+    return `Message ${PRODUCT_NAME}`;
   }
 
   return "";

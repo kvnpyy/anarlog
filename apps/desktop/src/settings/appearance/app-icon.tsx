@@ -21,6 +21,7 @@ import type { ThemePreference } from "~/shared/theme/resolve";
 const APP_ICON_OPTIONS = [
   "default",
   "stable",
+  "squirrel",
   "anagram",
   "dev",
   "staging",
@@ -50,6 +51,7 @@ export function AppIconSelector() {
   const labels = {
     default: t`Default`,
     stable: t`Production`,
+    squirrel: t`Squirrel`,
     anagram: t`Anagram`,
     dev: t`Blueprint`,
     staging: t`Sketch`,
@@ -76,7 +78,7 @@ export function AppIconSelector() {
           <Trans>App icon</Trans>
         </h3>
         <p className="text-muted-foreground mt-1 text-sm">
-          <Trans>Choose how Anarlog appears in the Dock.</Trans>
+          <Trans>Choose how Acorn appears in the Dock.</Trans>
         </p>
       </div>
       <div

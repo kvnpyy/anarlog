@@ -16,6 +16,13 @@ pub(crate) fn exclude_from_capture(window: &tauri::WebviewWindow<tauri::Wry>) {
 
 pub type AppWindow = v1::AppWindow;
 
+pub(crate) fn product_window_title(app: &tauri::AppHandle<tauri::Wry>) -> String {
+    app.config()
+        .product_name
+        .clone()
+        .unwrap_or_else(|| "Acorn".into())
+}
+
 pub trait WindowImpl:
     std::fmt::Display
     + std::str::FromStr

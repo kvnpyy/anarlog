@@ -117,7 +117,7 @@ mod tests {
         assert!(
             error
                 .to_string()
-                .contains("created by a newer version of Anarlog")
+                .contains("created by a newer version of this app")
         );
 
         let recorded: Vec<i64> =
@@ -155,7 +155,7 @@ mod tests {
         assert!(
             error
                 .to_string()
-                .contains("created by a newer version of Anarlog")
+                .contains("created by a newer version of this app")
         );
     }
 

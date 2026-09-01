@@ -1,5 +1,6 @@
 import "./styles/globals.css";
 import "./styles/cursor.css";
+import "./styles/brand.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
@@ -38,6 +39,7 @@ import { useRemoteSessionDeletionUndoListener } from "./session/hooks/useDeleteS
 import { refreshLegacySettingsSnapshots } from "./settings/legacy-snapshots";
 import { migratePlaintextAiProviderApiKeys } from "./settings/providers";
 import { initializeApplicationSettings } from "./settings/queries";
+import { hydrateAcornHostedFromNative } from "./shared/acorn-defaults";
 import { initializeAppExitFlush } from "./shared/app-exit";
 import { initializeAppStoreBuild, isAppStoreBuild } from "./shared/app-store";
 import { useConfigValue } from "./shared/config";
@@ -167,15 +169,13 @@ async function enableReactScanInDev() {
   } catch (error) {
     console.warn("Failed to start React Scan:", error);
   }
-
-  startInteractionProfiler();
 }
 
 async function renderApp() {
   await Promise.all([
     bootstrapThemeFromSettings(),
-    enableReactScanInDev(),
     initializeAppStoreBuild(),
+    hydrateAcornHostedFromNative(),
   ]);
   const root = ReactDOM.createRoot(rootElement);
   root.render(
@@ -183,6 +183,13 @@ async function renderApp() {
       <AppRoot />
     </StrictMode>,
   );
+
+  if (import.meta.env.DEV) {
+    startInteractionProfiler();
+    if (import.meta.env.VITE_REACT_SCAN === "1") {
+      void enableReactScanInDev();
+    }
+  }
 }
 
 if (!rootElement.innerHTML) {

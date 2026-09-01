@@ -1,6 +1,8 @@
 import { t } from "@lingui/core/macro";
 import {
+  ClockCounterClockwise,
   Envelope,
+  Lightning,
   ListChecks,
   MagnifyingGlass,
   Sparkle,
@@ -11,12 +13,14 @@ import { cn } from "@anlg/utils";
 
 import type { ContextRef } from "~/chat/context/entities";
 import { useChatAppearance } from "~/chat/hooks/use-chat-appearance";
+import { PRODUCT_NAME } from "~/shared/product";
 import { useTabs } from "~/store/zustand/tabs";
 
 export function ChatBodyEmpty({
   isModelConfigured = true,
   hasContext = false,
   onSendMessage,
+  isRecording = false,
 }: {
   isModelConfigured?: boolean;
   hasContext?: boolean;
@@ -24,35 +28,60 @@ export function ChatBodyEmpty({
     content: string,
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
+    modelPrompt?: string,
   ) => void;
+  isRecording?: boolean;
 }) {
   const { isDarkAppearance } = useChatAppearance();
   const openNew = useTabs((state) => state.openNew);
-  const suggestions = [
-    {
-      label: t`List action items.`,
-      icon: ListChecks,
-      prompt: t`What are my action items from this meeting?`,
-    },
-    {
-      label: t`Draft follow-up email.`,
-      icon: Envelope,
-      prompt: t`Draft a follow-up email to the participants`,
-    },
-    {
-      label: t`Find key decisions.`,
-      icon: MagnifyingGlass,
-      prompt: t`What were the key decisions that have been made?`,
-    },
-  ];
+  const suggestions = hasContext
+    ? [
+        {
+          label: t`List action items.`,
+          icon: ListChecks,
+          prompt: t`What are my action items from this meeting?`,
+        },
+        {
+          label: t`Draft follow-up email.`,
+          icon: Envelope,
+          prompt: t`Draft a follow-up email to the participants. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
+        },
+        {
+          label: t`Find key decisions.`,
+          icon: MagnifyingGlass,
+          prompt: t`What were the key decisions that have been made?`,
+        },
+      ]
+    : [
+        {
+          label: t`Catch me up on recent meetings.`,
+          icon: ClockCounterClockwise,
+          prompt: t`Catch me up on my recent meetings. Search across my notes and transcripts and summarize the important decisions, follow-ups, and anything I should remember.`,
+        },
+        {
+          label: t`Find something someone said.`,
+          icon: MagnifyingGlass,
+          prompt: t`Search across my meetings for something someone said recently that I might need to remember. Summarize the quote, who said it, and which meeting it was from.`,
+        },
+        {
+          label: t`Help me prep.`,
+          icon: Lightning,
+          prompt: t`Help me prep using my past meetings. Search related notes and transcripts and give talking points, open questions, and what was already decided.`,
+        },
+      ];
 
   const handleGoToSettings = useCallback(() => {
     openNew({ type: "settings", state: { tab: "intelligence" } });
   }, [openNew]);
 
   const handleSuggestionClick = useCallback(
-    (prompt: string) => {
-      onSendMessage?.(prompt, [{ type: "text", text: prompt }]);
+    (label: string, prompt: string) => {
+      onSendMessage?.(
+        label,
+        [{ type: "text", text: label }],
+        undefined,
+        prompt,
+      );
     },
     [onSendMessage],
   );
@@ -70,7 +99,7 @@ export function ChatBodyEmpty({
                   : "text-foreground",
               ])}
             >
-              Anarlog AI
+              {PRODUCT_NAME}
             </span>
             <BetaChip isDarkAppearance={isDarkAppearance} />
           </div>
@@ -82,7 +111,7 @@ export function ChatBodyEmpty({
                 : "text-muted-foreground",
             ])}
           >
-            {t`Hi, I'm Anarlog AI. Set up a language model and I'll be ready to help.`}
+            {`Hi, I'm ${PRODUCT_NAME}. Set up a language model and I'll be ready to help.`}
           </p>
           <button
             onClick={handleGoToSettings}
@@ -102,12 +131,24 @@ export function ChatBodyEmpty({
   return (
     <div className="flex justify-start pb-1">
       <div className="flex w-full flex-col">
-        {hasContext && (
+        {!isRecording && (
           <div className="flex flex-col gap-0.5">
+            {!hasContext ? (
+              <p
+                className={cn([
+                  "mb-1 text-xs",
+                  isDarkAppearance
+                    ? "text-primary-foreground/70"
+                    : "text-muted-foreground",
+                ])}
+              >
+                {t`Ask across all your meetings.`}
+              </p>
+            ) : null}
             {suggestions.map(({ label, icon: Icon, prompt }) => (
               <button
                 key={label}
-                onClick={() => handleSuggestionClick(prompt)}
+                onClick={() => handleSuggestionClick(label, prompt)}
                 className={cn([
                   "group grid w-full grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-1.5 rounded-lg py-2 pr-3 pl-0 text-left text-sm",
                   isDarkAppearance

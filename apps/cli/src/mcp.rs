@@ -40,7 +40,7 @@ impl AnarlogMcpServer {
 #[tool_router]
 impl AnarlogMcpServer {
     #[tool(
-        description = "List recent Anarlog meetings with pagination metadata. Use query to narrow by title or meeting id, then pass next_offset as offset to continue.",
+        description = "List recent Acorn meetings with pagination metadata. Use query to narrow by title or meeting id, then pass next_offset as offset to continue.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -59,7 +59,7 @@ impl AnarlogMcpServer {
     }
 
     #[tool(
-        description = "Get one Anarlog meeting with its canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for transcript words.",
+        description = "Get one Acorn meeting with its canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for transcript words.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -78,7 +78,7 @@ impl AnarlogMcpServer {
     }
 
     #[tool(
-        description = "Get a bounded page of transcript words and readable text for an Anarlog meeting. Pass pagination.next_offset as offset to continue.",
+        description = "Get a bounded page of transcript words and readable text for an Acorn meeting. Pass pagination.next_offset as offset to continue.",
         annotations(
             read_only_hint = true,
             destructive_hint = false,
@@ -131,7 +131,7 @@ impl ServerHandler for AnarlogMcpServer {
             env!("CARGO_PKG_VERSION"),
         ))
         .with_instructions(
-            "Read-only, local access to Anarlog meeting data. Start with list_meetings to resolve a meeting_id, then call get_meeting for notes, summaries, participants, and action items. Request transcript pages with get_meeting_transcript and continue with pagination.next_offset; each page is capped at 500 words. Use get_recurring_meeting_history for series context. Never invent meeting ids, access SQLite directly, or claim a write occurred: every tool is idempotent and performs no writes. Documentation: https://docs.anarlog.so",
+            "Read-only, local access to Acorn meeting data. Start with list_meetings to resolve a meeting_id, then call get_meeting for notes, summaries, participants, and action items. Request transcript pages with get_meeting_transcript and continue with pagination.next_offset; each page is capped at 500 words. Use get_recurring_meeting_history for series context. Never invent meeting ids, access SQLite directly, or claim a write occurred: every tool is idempotent and performs no writes. Documentation: https://docs.anarlog.so",
         )
     }
 
@@ -173,7 +173,7 @@ impl ServerHandler for AnarlogMcpServer {
                     meeting.title
                 };
                 RawResource::new(format!("anarlog://meetings/{}", meeting.id), name)
-                    .with_description("Anarlog meeting context")
+                    .with_description("Acorn meeting context")
                     .with_mime_type("text/markdown")
                     .no_annotation()
             })
@@ -194,18 +194,18 @@ impl ServerHandler for AnarlogMcpServer {
         use rmcp::model::AnnotateAble;
 
         Ok(ListResourceTemplatesResult::with_all_items(vec![
-            RawResourceTemplate::new("anarlog://meetings/{meeting_id}", "Anarlog meeting")
+            RawResourceTemplate::new("anarlog://meetings/{meeting_id}", "Acorn meeting")
                 .with_description("Meeting metadata, note, summaries, people, and action items")
                 .with_mime_type("text/markdown")
                 .no_annotation(),
             RawResourceTemplate::new(
                 "anarlog://meetings/{meeting_id}/transcript{?offset,limit}",
-                "Anarlog meeting transcript",
+                "Acorn meeting transcript",
             )
             .with_description("A bounded page of meeting transcript text")
             .with_mime_type("text/plain")
             .no_annotation(),
-            RawResourceTemplate::new("anarlog://series/{series_id}", "Anarlog meeting series")
+            RawResourceTemplate::new("anarlog://series/{series_id}", "Acorn meeting series")
                 .with_description("Recurring meeting history")
                 .with_mime_type("text/markdown")
                 .no_annotation(),
@@ -527,17 +527,17 @@ mod tests {
             template_contract,
             [
                 (
-                    "Anarlog meeting".to_string(),
+                    "Acorn meeting".to_string(),
                     "anarlog://meetings/{meeting_id}".to_string(),
                     None,
                 ),
                 (
-                    "Anarlog meeting transcript".to_string(),
+                    "Acorn meeting transcript".to_string(),
                     "anarlog://meetings/{meeting_id}/transcript{?offset,limit}".to_string(),
                     None,
                 ),
                 (
-                    "Anarlog meeting series".to_string(),
+                    "Acorn meeting series".to_string(),
                     "anarlog://series/{series_id}".to_string(),
                     None,
                 ),

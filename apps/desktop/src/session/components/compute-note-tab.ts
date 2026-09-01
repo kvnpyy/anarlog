@@ -1,5 +1,49 @@
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
+export function getSelectedEnhancedNoteId(
+  currentView: EditorView | null,
+  enhancedNoteIds: readonly string[],
+): string | null {
+  if (
+    currentView?.type === "enhanced" &&
+    enhancedNoteIds.includes(currentView.id)
+  ) {
+    return currentView.id;
+  }
+
+  return enhancedNoteIds[0] ?? null;
+}
+
+export function getMeetingNotePane({
+  currentView,
+  isRecording,
+  enhancedHasContent,
+  isEnhancing,
+}: {
+  currentView: EditorView;
+  isRecording: boolean;
+  enhancedHasContent: boolean;
+  isEnhancing: boolean;
+}): "raw" | "enhanced" | "transcript" {
+  if (isRecording) {
+    if (currentView.type === "transcript") {
+      return "transcript";
+    }
+
+    return "raw";
+  }
+
+  if (currentView.type === "transcript") {
+    return "transcript";
+  }
+
+  if (currentView.type === "enhanced" && (enhancedHasContent || isEnhancing)) {
+    return "enhanced";
+  }
+
+  return "raw";
+}
+
 export function computeCurrentNoteTab(
   tabView: EditorView | null,
   isLiveSessionActive: boolean,
@@ -10,15 +54,10 @@ export function computeCurrentNoteTab(
   const hasEnhancedNote = (id: string) => enhancedNoteIds.includes(id);
 
   if (isLiveSessionActive) {
-    if (tabView?.type === "raw") {
-      return tabView;
-    }
-    if (tabView?.type === "enhanced" && hasEnhancedNote(tabView.id)) {
-      return tabView;
-    }
     if (tabView?.type === "transcript" && canShowTranscript) {
       return tabView;
     }
+
     return { type: "raw" };
   }
 

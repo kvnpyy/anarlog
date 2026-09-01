@@ -7,6 +7,7 @@ import { CalendarNav } from "./calendar";
 import { ContactsNav } from "./contacts";
 import type { SidebarNoteFilter } from "./note-filter";
 import { SettingsNav } from "./settings";
+import { SidebarUserFooter } from "./settings-link";
 import { SharedNotesNav } from "./shared-notes";
 import { TemplatesNav } from "./templates";
 import { TimelineView } from "./timeline";
@@ -65,27 +66,20 @@ export function LeftSidebar({
             <TemplatesNav />
           ) : isAutomationsMode ? (
             <AutomationsNav />
+          ) : noteFilter === "mine" ? (
+            <TimelineView
+              showIgnoredEvents={showIgnoredTimelineEvents}
+              onShowIgnoredEventsChange={onShowIgnoredTimelineEventsChange}
+              topChromeInset={isTimelineSidebarLayout && !timelineHeader}
+              topChipsOverlapHeader={
+                isTimelineSidebarLayout && !!timelineHeader
+              }
+            />
           ) : (
-            <div className="flex h-full min-h-0 flex-col">
-              {noteFilter === "mine" ? (
-                <div className="relative min-h-0 flex-1">
-                  <TimelineView
-                    showIgnoredEvents={showIgnoredTimelineEvents}
-                    onShowIgnoredEventsChange={
-                      onShowIgnoredTimelineEventsChange
-                    }
-                    topChromeInset={isTimelineSidebarLayout && !timelineHeader}
-                    topChipsOverlapHeader={
-                      isTimelineSidebarLayout && !!timelineHeader
-                    }
-                  />
-                </div>
-              ) : (
-                <SharedNotesNav />
-              )}
-            </div>
+            <SharedNotesNav />
           )}
         </div>
+        {isTimelineSidebarLayout ? <SidebarUserFooter /> : null}
       </div>
     </div>
   );

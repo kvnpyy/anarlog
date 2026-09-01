@@ -1,7 +1,8 @@
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { Effect } from "effect";
 
 import { modelName } from "./model-id";
+
+import { hostedFetch } from "~/shared/hosted-fetch";
 
 export type ModelIgnoreReason =
   | "common_keyword"
@@ -83,7 +84,7 @@ const modelPriorityPatterns = [
 export const fetchJson = (url: string, headers: Record<string, string>) =>
   Effect.tryPromise({
     try: async () => {
-      const r = await tauriFetch(url, { method: "GET", headers });
+      const r = await hostedFetch(url, { method: "GET", headers });
       if (!r.ok) {
         const errorBody = await readResponseTextWithLimit(
           r,

@@ -16,6 +16,7 @@ describe("LLM providers", () => {
   test("orders providers by popularity", () => {
     expect(PROVIDERS.map(({ id }) => id)).toEqual([
       "anarlog",
+      "acorn",
       "claude",
       "chatgpt",
       "grok",
@@ -83,6 +84,26 @@ describe("getLlmProviderStatus", () => {
 
     expect(status.configured).toBe(true);
     expect(status.listModels).toBeTypeOf("function");
+  });
+
+  test("treats Default as a bundled API provider", () => {
+    const missing = getLlmProviderStatus({
+      provider: provider("acorn"),
+      config: { api_key: "" },
+      isAuthenticated: false,
+      isPaid: false,
+    });
+    const configured = getLlmProviderStatus({
+      provider: provider("acorn"),
+      config: { api_key: "sk-test" },
+      isAuthenticated: false,
+      isPaid: false,
+    });
+
+    expect(provider("acorn").displayName).toBe("Default");
+    expect(missing.configured).toBe(false);
+    expect(configured.configured).toBe(true);
+    expect(configured.listModels).toBeTypeOf("function");
   });
 
   test.each(["claude", "chatgpt", "grok", "github_copilot", "kimi_code"])(

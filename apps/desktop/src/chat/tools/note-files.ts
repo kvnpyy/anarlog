@@ -10,10 +10,26 @@ import {
   type SessionContentSnapshot,
 } from "~/session/content-queries";
 import {
+  getAiKnowledgeWindow,
+  isWithinAiWindow,
+  parseMeetingTimeMs,
+  withAiWindowMeta,
+} from "~/shared/ai-window";
+import {
   formatMeetingChatRecordsAsMarkdown,
   loadMeetingChatRecords,
 } from "~/stt/meeting-chat-records";
 
+function noteInWindow(
+  note: Pick<LoadedNoteFile, "date" | "sessionId">,
+  deps: ToolDependencies,
+): boolean {
+  if (deps.getSessionId?.() === note.sessionId) {
+    return true;
+  }
+  const window = deps.getAiKnowledgeWindow?.() ?? getAiKnowledgeWindow(false);
+  return isWithinAiWindow(parseMeetingTimeMs(note.date), window.cutoffMs);
+}
 const DEFAULT_READ_MAX_CHARS = 16_000;
 const MAX_READ_CHARS = 30_000;
 const DEFAULT_SEARCH_LIMIT = 5;
@@ -360,30 +376,41 @@ async function searchMeetingContent({
   query,
   sessionIds,
   limit,
+  deps,
 }: {
   query: string;
   sessionIds?: string[];
   limit: number;
+  deps: ToolDependencies;
 }) {
   const trimmedQuery = query.trim();
+  const window = deps.getAiKnowledgeWindow?.() ?? getAiKnowledgeWindow(false);
   if (!trimmedQuery) {
-    return {
-      query,
-      results: [],
-      message: "Query is empty",
-    };
+    return withAiWindowMeta(
+      {
+        query,
+        results: [] as SearchMatch[],
+        message: "Query is empty",
+      },
+      window,
+    );
   }
 
   const candidateIds = sessionIds?.length
     ? sessionIds
     : await loadActiveSessionIds();
   const results: SearchMatch[] = [];
+  let scanned = 0;
 
   for (const sessionId of candidateIds) {
     const note = await loadNoteFile(sessionId);
     if (!note) {
       continue;
     }
+    if (!noteInWindow(note, deps)) {
+      continue;
+    }
+    scanned += 1;
 
     const match = searchNote(note, trimmedQuery);
     if (match) {
@@ -392,11 +419,14 @@ async function searchMeetingContent({
   }
 
   results.sort((a, b) => b.score - a.score);
-  return {
-    query: trimmedQuery,
-    scanned: candidateIds.length,
-    results: results.slice(0, limit),
-  };
+  return withAiWindowMeta(
+    {
+      query: trimmedQuery,
+      scanned,
+      results: results.slice(0, limit),
+    },
+    window,
+  );
 }
 
 function sharedParticipantReasons(
@@ -433,18 +463,24 @@ function getDateDistanceDays(
 async function listRelatedNotes({
   sessionId,
   limit,
+  deps,
 }: {
   sessionId: string;
   limit: number;
+  deps: ToolDependencies;
 }) {
+  const window = deps.getAiKnowledgeWindow?.() ?? getAiKnowledgeWindow(false);
   const base = await loadNoteFile(sessionId);
   if (!base) {
-    return {
-      status: "error" as const,
-      message: `Could not read note ${sessionId}`,
-      sessionId,
-      results: [],
-    };
+    return withAiWindowMeta(
+      {
+        status: "error" as const,
+        message: `Could not read note ${sessionId}`,
+        sessionId,
+        results: [],
+      },
+      window,
+    );
   }
 
   const baseParticipantIds = new Set(base.participantIds);
@@ -462,7 +498,7 @@ async function listRelatedNotes({
     }
 
     const candidate = await loadNoteFile(candidateId);
-    if (!candidate) {
+    if (!candidate || !noteInWindow(candidate, deps)) {
       continue;
     }
 
@@ -501,12 +537,15 @@ async function listRelatedNotes({
   }
 
   results.sort((a, b) => b.score - a.score);
-  return {
-    status: "ok" as const,
-    sessionId,
-    title: base.title,
-    results: results.slice(0, limit),
-  };
+  return withAiWindowMeta(
+    {
+      status: "ok" as const,
+      sessionId,
+      title: base.title,
+      results: results.slice(0, limit),
+    },
+    window,
+  );
 }
 
 export const buildReadCurrentNoteTool = (deps: ToolDependencies) =>
@@ -547,7 +586,7 @@ export const buildReadNoteTool = (_deps: ToolDependencies) =>
       }),
   });
 
-export const buildSearchMeetingContentTool = (_deps: ToolDependencies) =>
+export const buildSearchMeetingContentTool = (deps: ToolDependencies) =>
   tool({
     description:
       "Search local meeting notes and transcripts for exact words or phrases. Use search_meetings first for open-ended questions about past meetings, people, decisions, or topics. This is lexical content search, not vector search.",
@@ -574,6 +613,7 @@ export const buildSearchMeetingContentTool = (_deps: ToolDependencies) =>
         query: params.query,
         sessionIds: params.meeting_ids,
         limit: Math.min(params.limit ?? DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT),
+        deps,
       });
       return {
         ...result,
@@ -617,6 +657,7 @@ export const buildFindRelatedMeetingsTool = (deps: ToolDependencies) =>
       const result = await listRelatedNotes({
         sessionId,
         limit: Math.min(params.limit ?? DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT),
+        deps,
       });
       const { sessionId: resolvedMeetingId, ...related } = result;
       return {

@@ -162,6 +162,11 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "cloud_sync_enabled"],
     default: true as boolean,
   },
+  acorn_pro: {
+    type: "boolean",
+    path: ["general", "acorn_pro"],
+    default: false as boolean,
+  },
   ai_language: {
     type: "string",
     path: ["language", "ai_language"],
@@ -176,6 +181,30 @@ export const SETTING_DEFINITIONS = {
     type: "string",
     path: ["personalization", "dictionary_terms"],
     default: "[]" as string,
+  },
+  user_profile_name: {
+    type: "string",
+    path: ["personalization", "user_name"],
+    default: "" as string,
+    synced: true,
+  },
+  user_profile_role: {
+    type: "string",
+    path: ["personalization", "user_role"],
+    default: "" as string,
+    synced: true,
+  },
+  user_profile_department: {
+    type: "string",
+    path: ["personalization", "user_department"],
+    default: "" as string,
+    synced: true,
+  },
+  user_profile_context: {
+    type: "string",
+    path: ["personalization", "user_context"],
+    default: "" as string,
+    synced: true,
   },
   custom_summary_instructions: {
     type: "string",

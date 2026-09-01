@@ -7,12 +7,14 @@ const mocks = vi.hoisted(() => ({
     | "FloatingOpen"
     | "RightPanelOpen",
   sendEvent: vi.fn(),
+  inlineAsk: false,
 }));
 
 vi.mock("~/contexts/shell", () => ({
   useShell: () => ({
     chat: {
       mode: mocks.chatMode,
+      inlineAsk: mocks.inlineAsk,
       sendEvent: mocks.sendEvent,
     },
   }),
@@ -24,6 +26,7 @@ describe("ChatCTA", () => {
   beforeEach(() => {
     cleanup();
     mocks.chatMode = "FloatingClosed";
+    mocks.inlineAsk = false;
     mocks.sendEvent.mockClear();
   });
 
@@ -31,7 +34,7 @@ describe("ChatCTA", () => {
     render(<ChatCTA />);
 
     const button = screen.getByRole("button", {
-      name: "Ask Anarlog anything",
+      name: "Ask Acorn anything",
     });
 
     fireEvent.click(button);
@@ -43,7 +46,7 @@ describe("ChatCTA", () => {
     render(<ChatCTA />);
 
     const button = screen.getByRole("button", {
-      name: "Ask Anarlog anything",
+      name: "Ask Acorn anything",
     });
     const surface = button.querySelector("[data-chat-cta-surface]");
     const label = screen.getByText("Ask anything");
@@ -114,11 +117,27 @@ describe("ChatCTA", () => {
     expect(label.className).not.toContain("max-w");
   });
 
+  it("shows an always-visible workspace composer", () => {
+    render(<ChatCTA variant="composer" />);
+
+    const button = screen.getByRole("button", {
+      name: "Ask Acorn anything",
+    });
+    const surface = button.querySelector("[data-chat-cta-surface]");
+    const label = screen.getByText("Ask across your meetings");
+
+    expect(button.getAttribute("data-chat-cta-variant")).toBe("composer");
+    expect(button.className).toContain("w-[min(640px,calc(100cqw_-_2rem))]");
+    expect(surface?.className).toContain("h-10");
+    expect(surface?.className).toContain("w-full");
+    expect(label.className).toContain("opacity-100");
+  });
+
   it("uses a compact hover rectangle for the floating trigger", () => {
     render(<FloatingChatCTA />);
 
     const hoverZone = screen.getByRole("button", {
-      name: "Ask Anarlog anything",
+      name: "Ask Acorn anything",
     }).parentElement?.parentElement;
 
     expect(hoverZone?.className).toContain("h-10");
@@ -133,7 +152,7 @@ describe("ChatCTA", () => {
     render(<ChatCTA />);
 
     expect(
-      screen.queryByRole("button", { name: "Ask Anarlog anything" }),
+      screen.queryByRole("button", { name: "Ask Acorn anything" }),
     ).toBeNull();
   });
 
@@ -143,7 +162,17 @@ describe("ChatCTA", () => {
     render(<ChatCTA />);
 
     expect(
-      screen.queryByRole("button", { name: "Ask Anarlog anything" }),
+      screen.queryByRole("button", { name: "Ask Acorn anything" }),
+    ).toBeNull();
+  });
+
+  it("hides while live Ask is docked in the meeting column", () => {
+    mocks.inlineAsk = true;
+
+    render(<ChatCTA />);
+
+    expect(
+      screen.queryByRole("button", { name: "Ask Acorn anything" }),
     ).toBeNull();
   });
 });

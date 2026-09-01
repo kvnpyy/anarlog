@@ -780,8 +780,8 @@ describe("OuterHeader", () => {
   it("opens the welcome demo with an automatic completion callback", async () => {
     mocks.sessionEvents = {
       "session-1": {
-        tracking_id: "anarlog-onboarding-demo-v1",
-        meeting_link: "https://anarlog.so/onboarding-demo/",
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "https://example.com/demo/",
       },
     };
 
@@ -797,7 +797,9 @@ describe("OuterHeader", () => {
 
     fireEvent.click(joinButton);
 
-    expect(logo?.getAttribute("src")).toBe("/assets/anarlog-icon.png");
+    expect(logo?.getAttribute("src")).toBe(
+      "/assets/app-icons/stable-light.png",
+    );
     expect(logo?.getAttribute("alt")).toBe("");
     expect(logo?.className).toContain("size-3.5");
     expect(mocks.startListening).toHaveBeenCalledOnce();
@@ -811,7 +813,7 @@ describe("OuterHeader", () => {
 
     const openedUrl = new URL(mocks.openUrl.mock.calls[0][0]);
     expect(openedUrl.origin + openedUrl.pathname).toBe(
-      "https://anarlog.so/onboarding-demo/",
+      "https://example.com/demo/",
     );
     expect(openedUrl.searchParams.get("autojoin")).toBe("1");
     expect(openedUrl.searchParams.get("completion_url")).toBe(
@@ -826,8 +828,8 @@ describe("OuterHeader", () => {
     mocks.startCallbackServer.mockRejectedValue(new Error("unavailable"));
     mocks.sessionEvents = {
       "session-1": {
-        tracking_id: "anarlog-onboarding-demo-v1",
-        meeting_link: "https://anarlog.so/onboarding-demo/",
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "https://example.com/demo/",
       },
     };
 
@@ -847,7 +849,7 @@ describe("OuterHeader", () => {
 
       const openedUrl = new URL(mocks.openUrl.mock.calls[0][0]);
       expect(openedUrl.origin + openedUrl.pathname).toBe(
-        "https://anarlog.so/onboarding-demo/",
+        "https://example.com/demo/",
       );
       expect(openedUrl.searchParams.get("autojoin")).toBe("1");
       expect(openedUrl.searchParams.get("completion_url")).toBeNull();
@@ -860,8 +862,8 @@ describe("OuterHeader", () => {
   it("prompts new users to try the prerecorded welcome demo", () => {
     mocks.sessionEvents = {
       "session-1": {
-        tracking_id: "anarlog-onboarding-demo-v1",
-        meeting_link: "https://anarlog.so/onboarding-demo/",
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "https://example.com/demo/",
       },
     };
 
@@ -881,7 +883,7 @@ describe("OuterHeader", () => {
       "This is a prerecorded demo, so your camera stays off.",
     );
     expect(prompt?.textContent).toContain(
-      "Click Join & record to see Anarlog in action.",
+      "Click Join & record to see Acorn in action.",
     );
     expect(
       prompt?.querySelector("[data-welcome-demo-prompt-tail]"),
@@ -893,8 +895,8 @@ describe("OuterHeader", () => {
     mocks.audioExists = true;
     mocks.sessionEvents = {
       "session-1": {
-        tracking_id: "anarlog-onboarding-demo-v1",
-        meeting_link: "https://anarlog.so/onboarding-demo/",
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "https://example.com/demo/",
       },
     };
 
@@ -906,6 +908,26 @@ describe("OuterHeader", () => {
     );
 
     expect(screen.queryByText("Try the demo")).toBeNull();
+  });
+
+  it("does not treat the local welcome note as a joinable demo meeting", () => {
+    mocks.sessionEvents = {
+      "session-1": {
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "",
+      },
+    };
+
+    render(
+      <OuterHeader
+        sessionId="session-1"
+        currentView={{ type: "raw" } as EditorView}
+      />,
+    );
+
+    expect(screen.queryByText("Try the demo")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Join & record" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Record" })).toBeTruthy();
   });
 
   it("ignores repeated welcome demo joins while startup is in progress", async () => {
@@ -920,8 +942,8 @@ describe("OuterHeader", () => {
     );
     mocks.sessionEvents = {
       "session-1": {
-        tracking_id: "anarlog-onboarding-demo-v1",
-        meeting_link: "https://anarlog.so/onboarding-demo/",
+        tracking_id: "acorn-welcome-v1",
+        meeting_link: "https://example.com/demo/",
       },
     };
 

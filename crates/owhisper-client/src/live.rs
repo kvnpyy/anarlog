@@ -11,10 +11,7 @@ use owhisper_interface::ListenParams;
 use owhisper_interface::stream::StreamResponse;
 use owhisper_interface::{ControlMessage, MixedMessage};
 
-use crate::{
-    DeepgramAdapter, RealtimeSttAdapter, append_provider_param, is_anarlog_proxy,
-    normalize_listen_params,
-};
+use crate::{DeepgramAdapter, RealtimeSttAdapter, is_anarlog_proxy, normalize_listen_params};
 
 pub struct ListenClientBuilder<A: RealtimeSttAdapter = DeepgramAdapter> {
     pub(crate) api_base: Option<String>,
@@ -93,7 +90,8 @@ impl<A: RealtimeSttAdapter> ListenClientBuilder<A> {
         channels: u8,
     ) -> Result<anlg_ws_client::client::ClientRequestBuilder, crate::Error> {
         let original_api_base = self.get_api_base();
-        let api_base = append_provider_param(original_api_base, adapter.provider_name());
+        let api_base =
+            crate::adapter::maybe_append_provider_param(original_api_base, adapter.provider_name());
         let url = adapter
             .build_ws_url_with_api_key(&api_base, params, channels, self.api_key.as_deref())
             .await
