@@ -1,0 +1,18 @@
+---
+description: When Kevin says deploy, commit all non-secret work and ship Acorn — ignore Anarlog staging vs stable jargon.
+alwaysApply: true
+---
+
+# Acorn deploy
+
+Kevin tests Acorn on this Mac. He does not choose staging vs stable channels.
+
+When he says **deploy**, **push update**, or **ship**:
+
+1. Commit every non-secret change (never `.env`, updater private keys, or credentials).
+2. Push the current branch.
+3. Actually ship the Mac app people install — do not stop at opening a PR.
+
+Staging/stable in GitHub Actions is leftover Anarlog wiring. For Acorn, ship the production Mac build (the Action input is still `channel: stable` if that workflow is used). Do not explain those channel names unless he asks.
+
+A PR is not a deploy. GitHub check failures are GitHub tests, not his local app.

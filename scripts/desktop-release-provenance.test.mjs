@@ -305,12 +305,15 @@ test("stable desktop releases submit both store packages", async () => {
   assert.match(storeWorkflow, /Submitted to App Review/);
 
   const expectedSecrets = [
+    "ACORN_DEFAULT_LLM_API_KEY",
+    "ACORN_DEFAULT_STT_API_KEY",
     "APPLE_TEAM_ID",
     "APPSTORE_API_KEY_ID",
     "APPSTORE_API_PRIVATE_KEY",
     "APPSTORE_ISSUER_ID",
     "AZURE_AD_APPLICATION_SECRET",
     "CN_API_KEY",
+    "GOOGLE_CALENDAR_CLIENT_SECRET",
     "KEYCHAIN_PASSWORD",
     "MAC_APP_STORE_APPLICATION_CERTIFICATE",
     "MAC_APP_STORE_APPLICATION_CERTIFICATE_PASSWORD",
@@ -319,7 +322,6 @@ test("stable desktop releases submit both store packages", async () => {
     "MAC_APP_STORE_PROVISIONING_PROFILE",
     "POSTHOG_API_KEY",
     "SELLER_ID",
-    "SENTRY_DSN_HYPRNOTE_2",
     "VITE_PRO_PRODUCT_ID",
     "VITE_SUPABASE_ANON_KEY",
     "VITE_SUPABASE_URL",
