@@ -65,10 +65,7 @@ import {
 } from "~/settings/ai/shared/selection";
 import { useAiProvidersState } from "~/settings/providers";
 import { setSettingValues, useSettingsReady } from "~/settings/queries";
-import {
-  getAcornDefaultLlm,
-  restrictAcornHostedLlmModels,
-} from "~/shared/acorn-defaults";
+import { listAcornHostedLlmModels } from "~/shared/acorn-defaults";
 import { useConfigValue, useConfigValues } from "~/shared/config";
 import { LOCAL_ONLY, visibleLlmProviders } from "~/shared/product";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
@@ -89,10 +86,13 @@ export function SelectProviderAndModel() {
   } | null>(null);
   const [isResolvingProvider, setIsResolvingProvider] = useState(false);
 
-  const { current_llm_model, current_llm_provider } = useConfigValues([
-    "current_llm_model",
-    "current_llm_provider",
-  ] as const);
+  const { current_llm_model, current_llm_provider, acorn_pro } =
+    useConfigValues([
+      "current_llm_model",
+      "current_llm_provider",
+      "acorn_pro",
+    ] as const);
+  const acornPro = acorn_pro === true;
   const selectedProviderConfigured = current_llm_provider
     ? (configuredProviders[current_llm_provider]?.configured ?? false)
     : false;
@@ -101,12 +101,16 @@ export function SelectProviderAndModel() {
     current_llm_model,
     selectedProviderConfigured,
   );
+  const visibleProviders = visibleLlmProviders(
+    PROVIDERS,
+    LOCAL_ONLY ? acornPro : true,
+  );
   const providerOptions = getConfiguredProviders(
-    visibleLlmProviders(PROVIDERS),
+    visibleProviders,
     configuredProviders,
   );
   const configuredProviderIds = getConfiguredProviderIds(
-    visibleLlmProviders(PROVIDERS),
+    visibleProviders,
     configuredProviders,
     current_llm_provider,
   );
@@ -424,6 +428,8 @@ export function SelectProviderAndModel() {
             value={effectiveSelection.model}
             onChange={handleModelChange}
             disabled={!effectiveSelection.provider}
+            allowCustom={effectiveSelection.provider !== "acorn"}
+            allowIgnored={effectiveSelection.provider !== "acorn"}
             listModels={
               effectiveSelection.provider
                 ? configuredProviders[effectiveSelection.provider]?.listModels
@@ -515,46 +521,9 @@ export function getLlmProviderStatus({
     case "openai":
       listModelsFunc = () => listOpenAIModels(baseUrl, apiKey);
       break;
-    case "acorn": {
-      const bundled = getAcornDefaultLlm();
-      const fallbackModel = bundled?.model ?? "gpt-4o";
-      const kind = bundled?.kind ?? "openai";
-      listModelsFunc = async () => {
-        try {
-          const result =
-            kind === "anthropic"
-              ? await listAnthropicModels(baseUrl, apiKey)
-              : kind === "google"
-                ? await listGoogleModels(baseUrl, apiKey)
-                : await listOpenAIModels(baseUrl, apiKey);
-          if (result.models.length > 0) {
-            const models = restrictAcornHostedLlmModels(
-              result.models.includes(fallbackModel)
-                ? result.models
-                : [fallbackModel, ...result.models],
-              fallbackModel,
-              isPro,
-            );
-            return {
-              ...result,
-              models,
-            };
-          }
-        } catch {
-          // Bundled model still lets first-run selection succeed.
-        }
-        return {
-          models: restrictAcornHostedLlmModels(
-            [fallbackModel],
-            fallbackModel,
-            isPro,
-          ),
-          ignored: [],
-          metadata: {},
-        };
-      };
+    case "acorn":
+      listModelsFunc = async () => listAcornHostedLlmModels(isPro);
       break;
-    }
     case "cohere":
       listModelsFunc = () =>
         listGenericModels(baseUrl, apiKey, { filterDateSnapshots: false });
@@ -638,8 +607,12 @@ function useConfiguredMapping(): {
     useAiProvidersState("llm");
 
   const mapping = useMemo(() => {
+    const visibleProviders = visibleLlmProviders(
+      PROVIDERS,
+      LOCAL_ONLY ? acornPro : true,
+    );
     return Object.fromEntries(
-      visibleLlmProviders(PROVIDERS).map((provider: Provider) => {
+      visibleProviders.map((provider: Provider) => {
         const config = configuredProviders[providerRowId("llm", provider.id)];
         // The selected provider bypasses the reachability gate: a temporarily
         // stopped local server should surface as a connection error, not

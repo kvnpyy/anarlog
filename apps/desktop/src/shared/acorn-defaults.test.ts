@@ -23,6 +23,7 @@ import {
   getAcornDefaultStt,
   hydrateAcornHostedAi,
   isAcornHostedApiKey,
+  listAcornHostedLlmModels,
   resolveAcornHostedLlmModel,
   restrictAcornHostedLlmModels,
 } from "./acorn-defaults";
@@ -88,6 +89,16 @@ describe("Acorn bundled AI defaults", () => {
   });
 
   it("restricts the hosted key to Haiku on Free and Sonnet or Haiku on Pro", () => {
+    expect(listAcornHostedLlmModels(false)).toEqual({
+      models: [ACORN_HOSTED_HAIKU_MODEL],
+      ignored: [],
+      metadata: {},
+    });
+    expect(listAcornHostedLlmModels(true)).toEqual({
+      models: [ACORN_HOSTED_SONNET_MODEL, ACORN_HOSTED_HAIKU_MODEL],
+      ignored: [],
+      metadata: {},
+    });
     expect(
       restrictAcornHostedLlmModels(
         ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5", "gpt-4o"],

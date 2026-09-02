@@ -524,6 +524,33 @@ Start with decisions.`);
     );
   });
 
+  it("moves Free off own-key LLMs onto Default Haiku", async () => {
+    vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
+      stt: true,
+      llm: true,
+    });
+    mocks.execute.mockResolvedValue([
+      {
+        id: "current_llm_provider",
+        value_json: JSON.stringify("openai"),
+      },
+      {
+        id: "current_llm_model",
+        value_json: JSON.stringify("gpt-4o"),
+      },
+    ]);
+
+    await initializeApplicationSettings();
+
+    const statements = mocks.executeTransaction.mock.calls[0][0];
+    expect(statements.map((statement) => statement.params.slice(0, 2))).toEqual(
+      expect.arrayContaining([
+        ["current_llm_provider", JSON.stringify("acorn")],
+        ["current_llm_model", JSON.stringify("claude-haiku-4-5")],
+      ]),
+    );
+  });
+
   it("moves a batch on-device STT selection onto hosted live Deepgram", async () => {
     vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
       stt: true,

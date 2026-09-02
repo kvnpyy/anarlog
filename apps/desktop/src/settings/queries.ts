@@ -180,17 +180,22 @@ export async function initializeApplicationSettings(): Promise<void> {
 
     const defaultLlm = getAcornDefaultLlm();
     if (defaultLlm) {
+      const isPro = (updates.acorn_pro ?? stored.values.acorn_pro) === true;
       const provider =
         updates.current_llm_provider ?? stored.values.current_llm_provider;
-      if (!provider) {
+      if (!isPro && provider !== defaultLlm.providerId) {
+        updates.current_llm_provider = defaultLlm.providerId;
+      } else if (!provider) {
         updates.current_llm_provider = defaultLlm.providerId;
       }
-      if (!provider || provider === defaultLlm.providerId) {
+      const nextProvider =
+        updates.current_llm_provider ?? stored.values.current_llm_provider;
+      if (!nextProvider || nextProvider === defaultLlm.providerId) {
         const allowedModel = resolveAcornHostedLlmModel(
           updates.current_llm_model ??
             stored.values.current_llm_model ??
             defaultLlm.model,
-          stored.values.acorn_pro === true,
+          isPro,
         );
         if (
           (updates.current_llm_model ?? stored.values.current_llm_model) !==

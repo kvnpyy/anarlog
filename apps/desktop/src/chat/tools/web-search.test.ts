@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("~/env", () => ({
+  env: { VITE_API_URL: "http://localhost:3001" },
+}));
+
 import { runWebSearch } from "./web-search";
 
 describe("web search chat tool", () => {

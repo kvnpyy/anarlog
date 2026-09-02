@@ -81,6 +81,8 @@ export function ModelCombobox({
   placeholder,
   suffix,
   isConfigured = false,
+  allowCustom = true,
+  allowIgnored = true,
 }: {
   providerId: string;
   value: string;
@@ -90,6 +92,8 @@ export function ModelCombobox({
   placeholder?: string;
   suffix?: React.ReactNode;
   isConfigured?: boolean;
+  allowCustom?: boolean;
+  allowIgnored?: boolean;
 }) {
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
@@ -120,8 +124,9 @@ export function ModelCombobox({
       ),
     [options, trimmedQuery],
   );
-  const canSelectFreeform = trimmedQuery.length > 0 && !hasExactMatch;
-  const hasIgnoredOptions = ignoredOptions.length > 0;
+  const canSelectFreeform =
+    allowCustom && trimmedQuery.length > 0 && !hasExactMatch;
+  const hasIgnoredOptions = allowIgnored && ignoredOptions.length > 0;
 
   const handleSelect = useCallback(
     (option: string) => {
@@ -304,17 +309,21 @@ export function ModelCombobox({
             </CommandList>
 
             <div className="text-muted-foreground flex items-center justify-between border-t px-2 py-1.5 text-xs">
-              <button
-                type="button"
-                onClick={toggleShowIgnored}
-                className="hover:text-foreground mr-1 flex items-center gap-1 text-xs transition-colors"
-              >
-                {showIgnored ? (
-                  <EyeSlash className="h-3 w-3" />
-                ) : (
-                  <Eye className="h-3 w-3" />
-                )}
-              </button>
+              {allowIgnored ? (
+                <button
+                  type="button"
+                  onClick={toggleShowIgnored}
+                  className="hover:text-foreground mr-1 flex items-center gap-1 text-xs transition-colors"
+                >
+                  {showIgnored ? (
+                    <EyeSlash className="h-3 w-3" />
+                  ) : (
+                    <Eye className="h-3 w-3" />
+                  )}
+                </button>
+              ) : (
+                <span />
+              )}
 
               {hasIgnoredOptions && (
                 <span>

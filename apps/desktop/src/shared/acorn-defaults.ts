@@ -205,6 +205,20 @@ export function resolveAcornHostedLlmModel(
   return modelId as string;
 }
 
+export function listAcornHostedLlmModels(isPro: boolean): {
+  models: string[];
+  ignored: [];
+  metadata: Record<string, never>;
+} {
+  return {
+    models: isPro
+      ? [ACORN_HOSTED_SONNET_MODEL, ACORN_HOSTED_HAIKU_MODEL]
+      : [ACORN_HOSTED_HAIKU_MODEL],
+    ignored: [],
+    metadata: {},
+  };
+}
+
 export function restrictAcornHostedLlmModels(
   models: readonly string[],
   fallbackModel: string,

@@ -25,12 +25,13 @@ import { LOCAL_ONLY, visibleLlmProviders } from "~/shared/product";
 export function ConfigureProviders() {
   const { accordionValue, setAccordionValue } = useLlmSettings();
   const currentProvider = useConfigValue("current_llm_provider");
+  const acornPro = useConfigValue("acorn_pro") === true;
   const [search, setSearch] = useState("");
   const [connectingId, setConnectingId] =
     useState<SubscriptionProviderId | null>(null);
   const providers = filterProviders(
-    visibleLlmProviders(PROVIDERS).filter((provider) =>
-      shouldShowInProviderList(provider.id, search),
+    visibleLlmProviders(PROVIDERS, LOCAL_ONLY ? acornPro : true).filter(
+      (provider) => shouldShowInProviderList(provider.id, search),
     ),
     search,
   );

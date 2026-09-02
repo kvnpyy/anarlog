@@ -100,10 +100,10 @@ vi.mock("~/shared/product", () => ({
   PRODUCT_TAGLINE: "Local meeting notes. Live Ask.",
   PRODUCT_ATTRIBUTION: "Acorn is built on Anarlog (MIT).",
   PRODUCT_COPYRIGHT: "Copyright (c) 2023-present Fastrepl, Inc.",
-  FREE_AI_WINDOW_DAYS: 14,
+  FREE_AI_WINDOW_DAYS: 30,
   PRO_AI_WINDOW_DAYS: 365,
   FREE_AI_WINDOW_NOTICE:
-    "Free only searches the last 14 days. Acorn Pro remembers 365 days.",
+    "Free only searches the last 30 days. Acorn Pro remembers 365 days.",
   withoutHostedCloudProviders: <T extends { id: string }>(providers: T[]) =>
     providers,
 }));

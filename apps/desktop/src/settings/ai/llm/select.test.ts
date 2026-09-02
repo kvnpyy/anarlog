@@ -106,6 +106,34 @@ describe("getLlmProviderStatus", () => {
     expect(configured.listModels).toBeTypeOf("function");
   });
 
+  test("lists only Haiku on Free and Haiku plus Sonnet on Pro for Default AI", async () => {
+    const free = getLlmProviderStatus({
+      provider: provider("acorn"),
+      config: { api_key: "acorn-hosted" },
+      isAuthenticated: false,
+      isPaid: false,
+      isPro: false,
+    });
+    const pro = getLlmProviderStatus({
+      provider: provider("acorn"),
+      config: { api_key: "acorn-hosted" },
+      isAuthenticated: false,
+      isPaid: false,
+      isPro: true,
+    });
+
+    await expect(free.listModels?.()).resolves.toEqual({
+      models: ["claude-haiku-4-5"],
+      ignored: [],
+      metadata: {},
+    });
+    await expect(pro.listModels?.()).resolves.toEqual({
+      models: ["claude-sonnet-4-5", "claude-haiku-4-5"],
+      ignored: [],
+      metadata: {},
+    });
+  });
+
   test.each(["claude", "chatgpt", "grok", "github_copilot", "kimi_code"])(
     "treats %s as a subscription provider that needs a saved credential",
     (id) => {

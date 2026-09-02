@@ -28,6 +28,11 @@ describe("AcornPlansDialog", () => {
     expect(screen.getByText("Default AI (Haiku)")).toBeTruthy();
     expect(screen.getByText("30-day AI memory")).toBeTruthy();
     expect(screen.getAllByText("365-day AI memory").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        "Your own Anthropic, OpenAI, Grok, Gemini, or custom keys",
+      ).length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("CLI, MCP & webhooks").length).toBeGreaterThan(
       0,
     );

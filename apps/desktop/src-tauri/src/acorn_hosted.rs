@@ -145,6 +145,8 @@ fn prepare_hosted_fetch(
         return Err("hosted fetch requires the Acorn placeholder key".into());
     }
 
+    hosted_model_allowed(body.as_deref())?;
+
     let hosted_key =
         llm_api_key().ok_or_else(|| "Acorn hosted LLM is not configured".to_string())?;
     rewrite_placeholder_query(&mut parsed, &hosted_key);
@@ -164,6 +166,31 @@ fn request_has_placeholder(url: &reqwest::Url, headers: &[(String, String)]) -> 
         || headers
             .iter()
             .any(|(name, value)| rewrite_header_value(name, value, "x").is_some())
+}
+
+fn hosted_model_allowed(body: Option<&[u8]>) -> Result<(), String> {
+    let Some(bytes) = body.filter(|value| !value.is_empty()) else {
+        return Ok(());
+    };
+    let Ok(value) = serde_json::from_slice::<serde_json::Value>(bytes) else {
+        return Ok(());
+    };
+    let Some(model) = value.get("model").and_then(|model| model.as_str()) else {
+        return Ok(());
+    };
+    if hosted_model_id_allowed(model) {
+        Ok(())
+    } else {
+        Err("hosted AI only allows Haiku or Sonnet".into())
+    }
+}
+
+fn hosted_model_id_allowed(model: &str) -> bool {
+    let normalized = model.to_ascii_lowercase();
+    if normalized.contains("opus") {
+        return false;
+    }
+    normalized.contains("haiku") || normalized.contains("sonnet")
 }
 
 fn hosted_fetch_url_allowed(url: &reqwest::Url) -> Result<(), String> {
@@ -423,6 +450,50 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.contains("placeholder"));
+    }
+
+    #[test]
+    fn rejects_hosted_requests_for_opus_and_gpt() {
+        let headers = vec![("x-api-key".into(), ACORN_HOSTED_API_KEY.into())];
+        let opus = prepare_hosted_fetch(
+            "https://api.anthropic.com/v1/messages",
+            "POST",
+            headers.clone(),
+            Some(br#"{"model":"claude-opus-4-6","messages":[]}"#.to_vec()),
+        )
+        .unwrap_err();
+        assert!(opus.contains("Haiku or Sonnet"));
+
+        let gpt = prepare_hosted_fetch(
+            "https://api.openai.com/v1/chat/completions",
+            "POST",
+            vec![(
+                "Authorization".into(),
+                format!("Bearer {ACORN_HOSTED_API_KEY}"),
+            )],
+            Some(br#"{"model":"gpt-4o","messages":[]}"#.to_vec()),
+        )
+        .unwrap_err();
+        assert!(gpt.contains("Haiku or Sonnet"));
+    }
+
+    #[test]
+    fn allows_hosted_haiku_and_sonnet() {
+        unsafe { std::env::set_var("ACORN_DEFAULT_LLM_API_KEY", "sk-live") };
+        prepare_hosted_fetch(
+            "https://api.anthropic.com/v1/messages",
+            "POST",
+            vec![("x-api-key".into(), ACORN_HOSTED_API_KEY.into())],
+            Some(br#"{"model":"claude-haiku-4-5","messages":[]}"#.to_vec()),
+        )
+        .expect("haiku is allowed");
+        prepare_hosted_fetch(
+            "https://api.anthropic.com/v1/messages",
+            "POST",
+            vec![("x-api-key".into(), ACORN_HOSTED_API_KEY.into())],
+            Some(br#"{"model":"claude-sonnet-4-5","messages":[]}"#.to_vec()),
+        )
+        .expect("sonnet is allowed");
     }
 
     #[test]
