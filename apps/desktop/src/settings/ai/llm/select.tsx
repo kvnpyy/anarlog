@@ -86,13 +86,10 @@ export function SelectProviderAndModel() {
   } | null>(null);
   const [isResolvingProvider, setIsResolvingProvider] = useState(false);
 
-  const { current_llm_model, current_llm_provider, acorn_pro } =
-    useConfigValues([
-      "current_llm_model",
-      "current_llm_provider",
-      "acorn_pro",
-    ] as const);
-  const acornPro = acorn_pro === true;
+  const { current_llm_model, current_llm_provider } = useConfigValues([
+    "current_llm_model",
+    "current_llm_provider",
+  ] as const);
   const selectedProviderConfigured = current_llm_provider
     ? (configuredProviders[current_llm_provider]?.configured ?? false)
     : false;
@@ -101,10 +98,7 @@ export function SelectProviderAndModel() {
     current_llm_model,
     selectedProviderConfigured,
   );
-  const visibleProviders = visibleLlmProviders(
-    PROVIDERS,
-    LOCAL_ONLY ? acornPro : true,
-  );
+  const visibleProviders = visibleLlmProviders(PROVIDERS);
   const providerOptions = getConfiguredProviders(
     visibleProviders,
     configuredProviders,
@@ -607,10 +601,7 @@ function useConfiguredMapping(): {
     useAiProvidersState("llm");
 
   const mapping = useMemo(() => {
-    const visibleProviders = visibleLlmProviders(
-      PROVIDERS,
-      LOCAL_ONLY ? acornPro : true,
-    );
+    const visibleProviders = visibleLlmProviders(PROVIDERS);
     return Object.fromEntries(
       visibleProviders.map((provider: Provider) => {
         const config = configuredProviders[providerRowId("llm", provider.id)];

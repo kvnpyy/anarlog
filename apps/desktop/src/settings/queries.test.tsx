@@ -524,7 +524,7 @@ Start with decisions.`);
     );
   });
 
-  it("moves Free off own-key LLMs onto Default Haiku", async () => {
+  it("leaves an own-key LLM selection on Free", async () => {
     vi.mocked(desktopCommands.acornHostedAiStatus).mockResolvedValue({
       stt: true,
       llm: true,
@@ -542,13 +542,10 @@ Start with decisions.`);
 
     await initializeApplicationSettings();
 
-    const statements = mocks.executeTransaction.mock.calls[0][0];
-    expect(statements.map((statement) => statement.params.slice(0, 2))).toEqual(
-      expect.arrayContaining([
-        ["current_llm_provider", JSON.stringify("acorn")],
-        ["current_llm_model", JSON.stringify("claude-haiku-4-5")],
-      ]),
-    );
+    const statements = mocks.executeTransaction.mock.calls[0]?.[0] ?? [];
+    expect(
+      statements.map((statement) => statement.params.slice(0, 2)),
+    ).not.toContainEqual(["current_llm_provider", JSON.stringify("acorn")]);
   });
 
   it("moves a batch on-device STT selection onto hosted live Deepgram", async () => {

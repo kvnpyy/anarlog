@@ -21,26 +21,18 @@ describe("hostedConnectUnavailableMessage", () => {
 });
 
 describe("visibleLlmProviders", () => {
-  const providers = [
-    { id: "acorn", displayName: "Default" },
-    { id: "openai", displayName: "OpenAI" },
-    { id: "ollama", displayName: "Ollama" },
-    { id: "xai", displayName: "xAI" },
-    { id: "openrouter", displayName: "OpenRouter" },
-    { id: "google_generative_ai", displayName: "Google Gemini" },
-    { id: "custom", displayName: "Custom" },
-    { id: "anthropic", displayName: "Anthropic" },
-    { id: "anarlog", displayName: "Anarlog" },
-  ];
-
-  it("keeps only Default AI on Free", () => {
-    expect(
-      visibleLlmProviders(providers).map((provider) => provider.id),
-    ).toEqual(["acorn"]);
-  });
-
-  it("keeps Default plus the bring-your-own providers on Pro", () => {
-    const visible = visibleLlmProviders(providers, true);
+  it("keeps Default plus the bring-your-own providers", () => {
+    const visible = visibleLlmProviders([
+      { id: "acorn", displayName: "Default" },
+      { id: "openai", displayName: "OpenAI" },
+      { id: "ollama", displayName: "Ollama" },
+      { id: "xai", displayName: "xAI" },
+      { id: "openrouter", displayName: "OpenRouter" },
+      { id: "google_generative_ai", displayName: "Google Gemini" },
+      { id: "custom", displayName: "Custom" },
+      { id: "anthropic", displayName: "Anthropic" },
+      { id: "anarlog", displayName: "Anarlog" },
+    ]);
 
     expect(visible.map((provider) => provider.id)).toEqual([
       "acorn",

@@ -183,9 +183,7 @@ export async function initializeApplicationSettings(): Promise<void> {
       const isPro = (updates.acorn_pro ?? stored.values.acorn_pro) === true;
       const provider =
         updates.current_llm_provider ?? stored.values.current_llm_provider;
-      if (!isPro && provider !== defaultLlm.providerId) {
-        updates.current_llm_provider = defaultLlm.providerId;
-      } else if (!provider) {
+      if (!provider) {
         updates.current_llm_provider = defaultLlm.providerId;
       }
       const nextProvider =

@@ -21,13 +21,13 @@ export const ACORN_PLANS = [
       { label: "Unlimited local notes — never locked", included: true },
       { label: "Live transcription and Live Ask", included: true },
       { label: "Default AI (Haiku)", included: true },
+      {
+        label: "Your own Anthropic, OpenAI, Grok, Gemini, or custom keys",
+        included: true,
+      },
       { label: "30-day AI memory", included: true },
       { label: "Smarter AI", included: false },
       { label: "365-day AI memory", included: false },
-      {
-        label: "Your own Anthropic, OpenAI, Grok, Gemini, or custom keys",
-        included: false,
-      },
       { label: "Teams & shared notes", included: false },
       { label: "CLI, MCP & webhooks", included: false },
     ],
@@ -42,10 +42,6 @@ export const ACORN_PLANS = [
       { label: "Everything in Free", included: true },
       { label: "Smarter AI", included: true },
       { label: "365-day AI memory", included: true },
-      {
-        label: "Your own Anthropic, OpenAI, Grok, Gemini, or custom keys",
-        included: true,
-      },
       { label: "Teams & shared notes", included: true },
       { label: "CLI, MCP & webhooks", included: true },
     ],
@@ -98,15 +94,11 @@ export function withoutHostedCloudProviders<T extends { id: string }>(
 
 export function visibleLlmProviders<
   T extends { id: string; displayName: string },
->(providers: readonly T[], isPro = false): T[] {
+>(providers: readonly T[]): T[] {
   const withoutHosted = withoutHostedCloudProviders(providers);
 
   if (!LOCAL_ONLY) {
     return withoutHosted.filter((provider) => provider.id !== "acorn");
-  }
-
-  if (!isPro) {
-    return withoutHosted.filter((provider) => provider.id === "acorn");
   }
 
   const allow = new Set<string>(["acorn", ...ACORN_OWN_KEY_LLM_PROVIDER_IDS]);
