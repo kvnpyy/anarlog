@@ -8,7 +8,7 @@ const repoRoot = resolve(
   fileURLToPath(new URL("../../../../", import.meta.url)),
 );
 const desktopRoot = join(repoRoot, "apps/desktop");
-const githubRepo = "kvnpyy/anarlog";
+const githubRepo = argValue("--repo") ?? "kvnpyy/acorn-releases";
 
 function argValue(flag) {
   const index = process.argv.indexOf(flag);
@@ -68,7 +68,7 @@ const outPath = resolve(argValue("--out") ?? join(artifactDir, "latest.json"));
 
 if (!version || !tag) {
   throw new Error(
-    "Usage: node write-acorn-latest-json.mjs --version 0.1.0 [--tag acorn-v0.1.0]",
+    "Usage: node write-acorn-latest-json.mjs --version 0.1.2 [--tag v0.1.2] [--repo kvnpyy/acorn-releases]",
   );
 }
 

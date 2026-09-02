@@ -36,7 +36,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/kvnpyy/anarlog/releases/latest/download/latest.json"
+        "https://github.com/kvnpyy/acorn-releases/releases/latest/download/latest.json"
       ]
     }
   }
