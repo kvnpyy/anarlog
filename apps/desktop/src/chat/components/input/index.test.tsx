@@ -499,6 +499,27 @@ describe("ChatMessageInput", () => {
     expect(surface?.className).not.toContain("max-h-28");
   });
 
+  it("uses an opaque notepad-page surface before a chat starts", () => {
+    render(
+      <ChatMessageInput
+        draftKey="chat-input-page"
+        pageIntegrated
+        onSendMessage={vi.fn()}
+      />,
+    );
+
+    const surface = screen
+      .getByTestId("chat-editor")
+      .closest("[data-chat-message-input]")?.parentElement;
+
+    expect(surface?.getAttribute("data-chat-input-surface")).toBe("page");
+    expect(surface?.className).toContain("bg-white");
+    expect(surface?.className).toContain("dark:bg-card");
+    expect(surface?.className).toContain("rounded-[18px]");
+    expect(surface?.className).not.toContain("bg-transparent");
+    expect(surface?.className).not.toContain("shadow-[");
+  });
+
   it("anchors the floating send control to the bottom edge", () => {
     render(
       <ChatMessageInput draftKey="chat-input-test" onSendMessage={vi.fn()} />,

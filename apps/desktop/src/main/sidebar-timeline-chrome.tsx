@@ -3,7 +3,6 @@ import {
   NotePencil,
   Sidebar,
   SidebarSimple,
-  Sparkle,
 } from "@phosphor-icons/react";
 import { memo, type ReactNode } from "react";
 
@@ -17,7 +16,6 @@ export const SidebarTimelineChromeWithUpcomingMeeting = memo(
   function SidebarTimelineChromeWithUpcomingMeeting({
     currentSessionId,
     noteFilter,
-    onAsk,
     onNewNote,
     onNoteFilterChange,
     onSearch,
@@ -28,7 +26,6 @@ export const SidebarTimelineChromeWithUpcomingMeeting = memo(
   }: {
     currentSessionId?: string;
     noteFilter: SidebarNoteFilter;
-    onAsk: () => void;
     onNewNote: () => void;
     onNoteFilterChange: (filter: SidebarNoteFilter) => void;
     onSearch: () => void;
@@ -49,7 +46,6 @@ export const SidebarTimelineChromeWithUpcomingMeeting = memo(
       <SidebarTimelineChrome
         hasUpcomingMeeting={hasUpcomingMeeting}
         noteFilter={noteFilter}
-        onAsk={onAsk}
         onNewNote={onNewNote}
         onNoteFilterChange={onNoteFilterChange}
         onSearch={onSearch}
@@ -64,7 +60,6 @@ export const SidebarTimelineChromeWithUpcomingMeeting = memo(
 function SidebarTimelineChrome({
   hasUpcomingMeeting,
   noteFilter,
-  onAsk,
   onNewNote,
   onNoteFilterChange,
   onSearch,
@@ -74,7 +69,6 @@ function SidebarTimelineChrome({
 }: {
   hasUpcomingMeeting: boolean;
   noteFilter: SidebarNoteFilter;
-  onAsk: () => void;
   onNewNote: () => void;
   onNoteFilterChange: (filter: SidebarNoteFilter) => void;
   onSearch: () => void;
@@ -118,25 +112,12 @@ function SidebarTimelineChrome({
             <LeftSurfaceChromeButton ariaLabel="New note" onClick={onNewNote}>
               <NotePencil size={15} />
             </LeftSurfaceChromeButton>
-            <LeftSurfaceChromeButton
-              ariaLabel="Ask across meetings"
-              onClick={onAsk}
-            >
-              <Sparkle size={15} />
-            </LeftSurfaceChromeButton>
             <SidebarNoteFilterMenu
               value={noteFilter}
               onValueChange={onNoteFilterChange}
             />
           </>
-        ) : (
-          <LeftSurfaceChromeButton
-            ariaLabel="Ask across meetings"
-            onClick={onAsk}
-          >
-            <Sparkle size={15} />
-          </LeftSurfaceChromeButton>
-        )}
+        ) : null}
       </div>
     </div>
   );

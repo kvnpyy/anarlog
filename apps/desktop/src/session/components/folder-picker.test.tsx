@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FolderPicker } from "./folder-picker";
@@ -7,12 +13,14 @@ const mocks = vi.hoisted(() => ({
   folderId: "",
   folderPaths: [] as string[],
   updateSession: vi.fn(() => Promise.resolve()),
+  fileUnfiledSeriesSiblings: vi.fn(() => Promise.resolve(0)),
 }));
 
 vi.mock("~/session/queries", () => ({
   useFolderPaths: () => mocks.folderPaths,
   useSession: () => ({ folder_id: mocks.folderId }),
   useUpdateSession: () => mocks.updateSession,
+  fileUnfiledSeriesSiblings: mocks.fileUnfiledSeriesSiblings,
 }));
 
 describe("FolderPicker", () => {
@@ -20,6 +28,7 @@ describe("FolderPicker", () => {
     mocks.folderId = "";
     mocks.folderPaths = ["personal", "work"];
     mocks.updateSession.mockClear();
+    mocks.fileUnfiledSeriesSiblings.mockClear();
     globalThis.ResizeObserver = class {
       observe() {}
       unobserve() {}
@@ -79,6 +88,12 @@ describe("FolderPicker", () => {
     expect(mocks.updateSession).toHaveBeenCalledWith({
       folder_id: "work",
     });
+    await waitFor(() => {
+      expect(mocks.fileUnfiledSeriesSiblings).toHaveBeenCalledWith(
+        "session-1",
+        "work",
+      );
+    });
   });
 
   it("creates a folder from the search query and assigns the note", async () => {
@@ -94,6 +109,12 @@ describe("FolderPicker", () => {
 
     expect(mocks.updateSession).toHaveBeenCalledWith({
       folder_id: "clients",
+    });
+    await waitFor(() => {
+      expect(mocks.fileUnfiledSeriesSiblings).toHaveBeenCalledWith(
+        "session-1",
+        "clients",
+      );
     });
   });
 
@@ -120,9 +141,10 @@ describe("FolderPicker", () => {
     fireEvent.click(screen.getByRole("option", { name: "No folder" }));
 
     expect(mocks.updateSession).toHaveBeenCalledWith({ folder_id: "" });
+    expect(mocks.fileUnfiledSeriesSiblings).not.toHaveBeenCalled();
   });
 
-  it("flattens a nested stored path when the top-level folder is selected", () => {
+  it("flattens a nested stored path when the top-level folder is selected", async () => {
     mocks.folderId = "work/meetings";
     mocks.folderPaths = ["work"];
 
@@ -132,5 +154,11 @@ describe("FolderPicker", () => {
     fireEvent.click(screen.getByRole("option", { name: "work" }));
 
     expect(mocks.updateSession).toHaveBeenCalledWith({ folder_id: "work" });
+    await waitFor(() => {
+      expect(mocks.fileUnfiledSeriesSiblings).toHaveBeenCalledWith(
+        "session-1",
+        "work",
+      );
+    });
   });
 });

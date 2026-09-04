@@ -196,6 +196,25 @@ pub(crate) fn is_recoverable_webview_url(url: &url::Url) -> bool {
     matches!(url.scheme(), "http" | "https" | "tauri") && url.host_str().is_some()
 }
 
+pub(crate) fn frontend_url(app: &tauri::AppHandle<tauri::Wry>) -> Option<url::Url> {
+    app.config()
+        .build
+        .dev_url
+        .clone()
+        .or_else(|| url::Url::parse("https://tauri.localhost/").ok())
+}
+
+pub(crate) fn recovery_navigation_url(
+    current: &url::Url,
+    fallback: Option<url::Url>,
+) -> Option<url::Url> {
+    if is_recoverable_webview_url(current) {
+        return Some(current.clone());
+    }
+
+    fallback.filter(is_recoverable_webview_url)
+}
+
 impl WindowReadyState {
     pub fn register(&self, label: String) -> (u64, oneshot::Receiver<()>) {
         let (tx, rx) = oneshot::channel();
@@ -450,6 +469,27 @@ mod test {
         assert!(!is_recoverable_webview_url(
             &url::Url::parse("about:blank").unwrap()
         ));
+    }
+
+    #[test]
+    fn blank_webviews_recover_to_the_frontend_url() {
+        let fallback = url::Url::parse("http://localhost:1422/").unwrap();
+
+        assert_eq!(
+            recovery_navigation_url(
+                &url::Url::parse("about:blank").unwrap(),
+                Some(fallback.clone()),
+            ),
+            Some(fallback.clone())
+        );
+        assert_eq!(
+            recovery_navigation_url(&fallback, Some(fallback.clone())),
+            Some(fallback)
+        );
+        assert_eq!(
+            recovery_navigation_url(&url::Url::parse("about:blank").unwrap(), None),
+            None
+        );
     }
 
     #[test]

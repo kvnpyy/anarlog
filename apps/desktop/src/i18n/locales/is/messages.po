@@ -25,6 +25,11 @@ msgstr ""
 msgid "(Unavailable — using current default)"
 msgstr ""
 
+#. placeholder {0}: suggestion.sessionIds.length
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "{0, plural, one {# meeting} other {# meetings}}"
+msgstr ""
+
 #. placeholder {0}: group.sessionIds.length
 #: src/sidebar/toast/undo-delete-toast.tsx
 msgid "{0} {noteLabel} deleted"
@@ -439,6 +444,10 @@ msgstr ""
 msgid "All events"
 msgstr ""
 
+#: src/sidebar/folders.tsx
+msgid "All notes"
+msgstr ""
+
 #: src/shared/open-note-dialog.tsx
 msgid "All Notes"
 msgstr ""
@@ -449,6 +458,14 @@ msgstr ""
 
 #: src/settings/team/index.tsx
 msgid "Allow public indexing"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Also filed {siblingCount} other meetings in this series"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Also filed 1 other meeting in this series"
 msgstr ""
 
 #: src/shared/control.tsx
@@ -546,6 +563,10 @@ msgstr ""
 msgid "Ask across meetings"
 msgstr ""
 
+#: src/chat/components/body/empty.tsx
+msgid "Ask across meetings in {folderName}."
+msgstr ""
+
 #: src/chat/components/content.tsx
 #: src/shared/chat-cta.tsx
 msgid "Ask across your meetings"
@@ -556,6 +577,12 @@ msgstr ""
 msgid "Ask anything"
 msgstr ""
 
+#: src/chat/components/content.tsx
+#: src/chat/components/toolbar-controls.tsx
+msgid "Ask this folder"
+msgstr ""
+
+#: src/chat/components/chat-panel.tsx
 #: src/chat/components/toolbar-controls.tsx
 msgid "Ask this meeting"
 msgstr ""
@@ -748,6 +775,7 @@ msgstr ""
 #: src/settings/general/storage/legacy-cleanup.tsx
 #: src/settings/todo/github.tsx
 #: src/shared/ui/destructive-confirmation-dialog.tsx
+#: src/sidebar/organize-folders-dialog.tsx
 #: src/templates/auto-format-examples-dialog.tsx
 msgid "Cancel"
 msgstr ""
@@ -1386,6 +1414,10 @@ msgstr ""
 msgid "Could not email the meeting notes."
 msgstr ""
 
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Could not file meetings into folders"
+msgstr ""
+
 #: src/session/insights/past-notes.ts
 msgid "Could not generate meeting insights. Try again."
 msgstr ""
@@ -1769,11 +1801,11 @@ msgid "Draft"
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
+msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 msgstr ""
 
 #: src/chat/components/body/empty.tsx
-msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences."
+msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
@@ -2005,6 +2037,23 @@ msgstr ""
 msgid "File format"
 msgstr ""
 
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "File selected"
+msgstr ""
+
+#. placeholder {0}: selectedSuggestions.length
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "File selected ({0})"
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Filed {filed} meetings into folders"
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Filed 1 meeting"
+msgstr ""
+
 #: src/sidebar/note-filter-menu.tsx
 msgid "Filter notes"
 msgstr ""
@@ -2047,6 +2096,10 @@ msgstr ""
 
 #: src/session/components/folder-picker.tsx
 msgid "Folder: {currentPath}"
+msgstr ""
+
+#: src/sidebar/folders.tsx
+msgid "Folders"
 msgstr ""
 
 #: src/templates/template-icon-picker.tsx
@@ -2145,6 +2198,10 @@ msgstr ""
 #: src/billing/trial-started-dialog.tsx
 #: src/settings/ai/stt/select.tsx
 msgid "Got it"
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Group recurring meetings, same titles, and people you meet often into folders."
 msgstr ""
 
 #: src/settings/developers/index.tsx
@@ -3039,6 +3096,10 @@ msgstr ""
 msgid "Nothing new was imported. {0} meetings need review and {1} could not be imported."
 msgstr ""
 
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Nothing to group yet. Recurring meetings and repeat guests will show up here."
+msgstr ""
+
 #: src/settings/general/index.tsx
 #: src/sidebar/settings.tsx
 msgid "Notifications"
@@ -3193,6 +3254,18 @@ msgstr ""
 
 #: src/contacts/organization-details.tsx
 msgid "Organization name"
+msgstr ""
+
+#: src/sidebar/folders.tsx
+msgid "Organize"
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Organize meetings"
+msgstr ""
+
+#: src/sidebar/folders.tsx
+msgid "Organize meetings into folders"
 msgstr ""
 
 #: src/settings/general/permissions.tsx
@@ -3485,6 +3558,10 @@ msgstr ""
 msgid "Recording not found. It may have been deleted."
 msgstr ""
 
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Recurring series"
+msgstr ""
+
 #: src/main/windows-title-bar.tsx
 msgid "Redo"
 msgstr ""
@@ -3719,6 +3796,14 @@ msgstr ""
 
 #: src/automations/starters.tsx
 msgid "Runs once the AI summary for the meeting is ready."
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Same people"
+msgstr ""
+
+#: src/sidebar/organize-folders-dialog.tsx
+msgid "Same title"
 msgstr ""
 
 #: src/templates/auto-form.tsx
@@ -5148,10 +5233,6 @@ msgstr ""
 
 #: src/onboarding/index.tsx
 msgid "Where your notes and recordings are stored"
-msgstr ""
-
-#: src/task/tab-content.tsx
-msgid "Work on this task"
 msgstr ""
 
 #: src/settings/automations/workflow-builder.tsx

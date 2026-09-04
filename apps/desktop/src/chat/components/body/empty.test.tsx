@@ -57,7 +57,7 @@ describe("ChatBodyEmpty", () => {
         },
       ],
       undefined,
-      expect.stringContaining("in my voice"),
+      expect.stringContaining("under 150 words"),
     );
 
     fireEvent.click(decisions);

@@ -427,8 +427,8 @@ describe("ClassicMainBody", () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
     expect(
-      screen.getByRole("button", { name: "Ask across meetings" }),
-    ).toBeTruthy();
+      screen.queryByRole("button", { name: "Ask across meetings" }),
+    ).toBeNull();
     expect(newNoteButton.compareDocumentPosition(filterButton)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );

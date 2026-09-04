@@ -16,6 +16,7 @@ import {
 
 import { ChatPanelFrame, ChatSessionHost } from "~/chat/components/chat-panel";
 import { PersistentChatPanel } from "~/chat/components/persistent-chat";
+import { shouldShowPersistentChatOverlay } from "~/chat/page-integrated";
 import { useShell } from "~/contexts/shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
@@ -126,10 +127,12 @@ export function MainChatPanels({
             ) : null}
           </ResizablePanelGroup>
 
-          {isAutomationsTab || showInlineAsk ? null : (
+          {showInlineAsk ||
+          !shouldShowPersistentChatOverlay(currentTab) ? null : (
             <PersistentChatPanel
               floatingContainerRef={bodyPanelContainerRef}
               sessionProps={sessionProps}
+              tabType={currentTab?.type}
             />
           )}
         </>

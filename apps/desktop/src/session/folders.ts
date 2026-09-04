@@ -37,3 +37,10 @@ export function collectFolderPaths(paths: Iterable<string>): string[] {
 
   return [...collected].sort((left, right) => left.localeCompare(right));
 }
+
+export function folderMatchesPath(
+  stored: string | null | undefined,
+  selected: string,
+): boolean {
+  return Boolean(selected) && folderDisplayName(stored) === selected;
+}

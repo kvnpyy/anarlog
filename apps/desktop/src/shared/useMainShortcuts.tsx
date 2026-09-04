@@ -236,12 +236,8 @@ function isFromSessionSurface(target: EventTarget | null) {
 }
 
 function isPersistentChatInputFocused(
-  mode: ReturnType<typeof useShell>["chat"]["mode"],
+  _mode: ReturnType<typeof useShell>["chat"]["mode"],
 ) {
-  if (mode === "FloatingClosed") {
-    return false;
-  }
-
   if (typeof document === "undefined") {
     return false;
   }

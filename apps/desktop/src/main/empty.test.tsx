@@ -56,7 +56,7 @@ describe("TabContentEmpty", () => {
     mocks.platform.mockReturnValue("macos");
   });
 
-  it("shows the home actions and global chat FAB", () => {
+  it("shows the home actions", () => {
     render(
       <TabContentEmpty
         tab={{
@@ -70,8 +70,8 @@ describe("TabContentEmpty", () => {
 
     expect(screen.getByRole("button", { name: /New Note/ })).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Ask Acorn anything" }),
-    ).toBeTruthy();
+      screen.queryByRole("button", { name: "Ask Acorn anything" }),
+    ).toBeNull();
   });
 
   it("shows Windows shortcut modifiers", () => {

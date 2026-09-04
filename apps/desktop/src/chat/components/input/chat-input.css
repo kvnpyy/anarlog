@@ -4,7 +4,9 @@
 }
 
 [data-chat-input-surface="floating"] .chat-input-editor.prosemirror-editor,
-[data-chat-input-surface="floating"] .chat-input-editor.prosemirror-editor p {
+[data-chat-input-surface="floating"] .chat-input-editor.prosemirror-editor p,
+[data-chat-input-surface="page"] .chat-input-editor.prosemirror-editor,
+[data-chat-input-surface="page"] .chat-input-editor.prosemirror-editor p {
   caret-color: hsl(var(--card-foreground));
   color: hsl(var(--card-foreground)) !important;
   line-height: 20px;
@@ -13,17 +15,22 @@
   padding: 0 !important;
 }
 
-[data-chat-input-surface="floating"] .chat-input-editor.prosemirror-editor {
+[data-chat-input-surface="floating"] .chat-input-editor.prosemirror-editor,
+[data-chat-input-surface="page"] .chat-input-editor.prosemirror-editor {
   padding-right: 42px !important;
   scrollbar-color: hsl(var(--muted-foreground) / 0.22) transparent;
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.chat-input-editor-two-actions.prosemirror-editor,
+[data-chat-input-surface="page"]
   .chat-input-editor.chat-input-editor-two-actions.prosemirror-editor {
   padding-right: 74px !important;
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.chat-input-editor-voice-active.prosemirror-editor,
+[data-chat-input-surface="page"]
   .chat-input-editor.chat-input-editor-voice-active.prosemirror-editor {
   padding-right: 0 !important;
 }
@@ -44,23 +51,31 @@
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.prosemirror-editor::-webkit-scrollbar,
+[data-chat-input-surface="page"]
   .chat-input-editor.prosemirror-editor::-webkit-scrollbar {
   width: 6px;
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.prosemirror-editor::-webkit-scrollbar-track,
+[data-chat-input-surface="page"]
   .chat-input-editor.prosemirror-editor::-webkit-scrollbar-track {
   background: transparent;
   margin-bottom: 36px;
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.prosemirror-editor::-webkit-scrollbar-thumb,
+[data-chat-input-surface="page"]
   .chat-input-editor.prosemirror-editor::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.22);
   border-radius: 999px;
 }
 
 [data-chat-input-surface="floating"]
+  .chat-input-editor.prosemirror-editor::-webkit-scrollbar-thumb:hover,
+[data-chat-input-surface="page"]
   .chat-input-editor.prosemirror-editor::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.32);
 }
@@ -69,6 +84,12 @@
   .chat-input-editor.prosemirror-editor
   .is-editor-empty:first-child::before,
 [data-chat-input-surface="floating"]
+  .chat-input-editor.prosemirror-editor
+  .is-empty::before,
+[data-chat-input-surface="page"]
+  .chat-input-editor.prosemirror-editor
+  .is-editor-empty:first-child::before,
+[data-chat-input-surface="page"]
   .chat-input-editor.prosemirror-editor
   .is-empty::before {
   color: hsl(var(--muted-foreground)) !important;

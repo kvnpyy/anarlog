@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   appendAiKnowledgeWindowGuidance,
+  appendFolderAskToolGuidance,
   appendGlobalAskToolGuidance,
   appendLiveAskToolGuidance,
   appendMeetingContextToolGuidance,
@@ -37,8 +38,9 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain(
       "Do not return the rewrite only as a fenced markdown block",
     );
-    expect(prompt).toContain("write plain text only");
+    expect(prompt).toContain("Keep email drafts under 150 words");
     expect(prompt).toContain("copy-paste into Gmail");
+    expect(prompt).toContain("Light markdown is OK");
     expect(prompt).toContain("Write in the user's voice");
     expect(prompt).toContain("Avoid obvious AI writing");
     expect(prompt).not.toContain("grep_notes");
@@ -58,6 +60,17 @@ describe("chat transport prompt guidance", () => {
       "Search across meetings in the AI knowledge window",
     );
     expect(prompt).toContain("Prefer search_meetings");
+  });
+
+  it("tells folder Ask to stay inside the selected folder", () => {
+    const prompt = appendFolderAskToolGuidance(
+      appendGlobalAskToolGuidance("Base prompt"),
+      "Standups",
+    );
+
+    expect(prompt).toContain("Base prompt");
+    expect(prompt).toContain('selected the "Standups" folder');
+    expect(prompt).toContain("Synthesize across those meetings");
   });
 
   it("tells live Ask to answer in the rail instead of opening editors", () => {

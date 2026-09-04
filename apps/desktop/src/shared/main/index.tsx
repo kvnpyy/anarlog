@@ -66,8 +66,14 @@ function MainPanel({
           !noBorder && "border-border border",
         ])}
       >
-        {children}
-        {floatingButton}
+        <div
+          data-chat-page-content
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          {children}
+          {floatingButton}
+        </div>
+        <div data-chat-page-slot className="shrink-0" />
       </div>
     </div>
   );

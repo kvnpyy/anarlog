@@ -14,6 +14,7 @@ import { cn } from "@anlg/utils";
 import type { ContextRef } from "~/chat/context/entities";
 import { useChatAppearance } from "~/chat/hooks/use-chat-appearance";
 import { PRODUCT_NAME } from "~/shared/product";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 import { useTabs } from "~/store/zustand/tabs";
 
 export function ChatBodyEmpty({
@@ -34,6 +35,7 @@ export function ChatBodyEmpty({
 }) {
   const { isDarkAppearance } = useChatAppearance();
   const openNew = useTabs((state) => state.openNew);
+  const folderName = useFolderFilter((state) => state.activeFolderPath);
   const suggestions = hasContext
     ? [
         {
@@ -44,7 +46,7 @@ export function ChatBodyEmpty({
         {
           label: t`Draft follow-up email.`,
           icon: Envelope,
-          prompt: t`Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Write plain text that can be pasted into Gmail: a Subject line, then a blank line, then the body. Do not use markdown, asterisks, or code fences.`,
+          prompt: t`Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences.`,
         },
         {
           label: t`Find key decisions.`,
@@ -142,7 +144,9 @@ export function ChatBodyEmpty({
                     : "text-muted-foreground",
                 ])}
               >
-                {t`Ask across all your meetings.`}
+                {folderName
+                  ? t`Ask across meetings in ${folderName}.`
+                  : t`Ask across all your meetings.`}
               </p>
             ) : null}
             {suggestions.map(({ label, icon: Icon, prompt }) => (

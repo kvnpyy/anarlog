@@ -10,13 +10,13 @@ import {
   NotFoundRouteComponent,
   useNavigate,
 } from "@tanstack/react-router";
-import { relaunch } from "@tauri-apps/plugin-process";
 import { motion } from "motion/react";
 
 import { Button } from "@anlg/ui/components/ui/button";
 
 import { captureOperationalError } from "~/error-reporting";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
+import { reloadOrRelaunch } from "~/shared/relaunch";
 
 const routeErrorKeys = new WeakMap<object, number>();
 let nextRouteErrorKey = 0;
@@ -45,7 +45,7 @@ const ReportedErrorComponent = ({ error }: { error: Error }) => {
 
   const handleRestart = async () => {
     try {
-      await relaunch();
+      await reloadOrRelaunch();
     } catch (err) {
       captureOperationalError(err, {
         operation: "app_restart",

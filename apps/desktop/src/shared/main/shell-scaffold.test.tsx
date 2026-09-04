@@ -2,7 +2,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  currentTab: { type: "empty" } as { type: string } | null,
   platform: "macos" as "linux" | "macos" | "windows",
 }));
 
@@ -20,19 +19,23 @@ vi.mock("~/stt/use-learn-dictionary", () => ({
   useLearnDictionaryFromContacts: () => undefined,
 }));
 
-vi.mock("~/store/zustand/tabs", () => ({
-  useTabs: (
-    selector: (state: { currentTab: typeof mocks.currentTab }) => unknown,
-  ) => selector({ currentTab: mocks.currentTab }),
-}));
-
 import { MainShellScaffold } from "./shell-scaffold";
 
 describe("MainShellScaffold", () => {
   afterEach(() => {
     cleanup();
-    mocks.currentTab = { type: "empty" };
     mocks.platform = "macos";
+  });
+
+  it("keeps calendar sync available off the calendar tab", () => {
+    render(
+      <MainShellScaffold>
+        <div data-testid="main-surface" />
+      </MainShellScaffold>,
+    );
+
+    expect(screen.getByTestId("sync-provider")).toBeTruthy();
+    expect(screen.getByTestId("main-surface")).toBeTruthy();
   });
 
   it("keeps the top border for regular top chrome", () => {

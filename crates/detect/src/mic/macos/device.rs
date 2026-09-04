@@ -112,7 +112,7 @@ pub(super) extern "C-unwind" fn system_listener(
                 .err()
         });
         if let Some(error) = previous_removal_error {
-            tracing::error!(
+            tracing::warn!(
                 ?error,
                 tags.error.code = error.status().0,
                 "removing_previous_device_listener_failed"

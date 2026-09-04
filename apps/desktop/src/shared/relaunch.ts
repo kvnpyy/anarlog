@@ -18,11 +18,25 @@ async function saveApplicationState(): Promise<void> {
   if (failure) throw failure.reason;
 }
 
-async function relaunch(): Promise<void> {
+export function shouldReloadInsteadOfRelaunch({
+  isDev = import.meta.env.DEV,
+  isTest = Boolean(import.meta.env.VITEST),
+}: {
+  isDev?: boolean;
+  isTest?: boolean;
+} = {}): boolean {
+  return isDev && !isTest;
+}
+
+export async function reloadOrRelaunch(): Promise<void> {
   try {
     await saveApplicationState();
   } catch (error) {
     console.error("Failed to flush application data before relaunch", error);
+  }
+  if (shouldReloadInsteadOfRelaunch()) {
+    window.location.reload();
+    return;
   }
   await tauriRelaunch();
 }
@@ -53,7 +67,7 @@ export async function scheduleAutomaticRelaunch(
 
   automaticRelaunchTimeout = setTimeout(() => {
     automaticRelaunchTimeout = null;
-    void relaunch().catch(console.error);
+    void reloadOrRelaunch().catch(console.error);
   }, delayMs);
 
   return "scheduled";
@@ -72,7 +86,7 @@ export async function flushAutomaticRelaunch(): Promise<boolean> {
   }
 
   try {
-    await relaunch();
+    await reloadOrRelaunch();
     return true;
   } catch (error) {
     pendingAutomaticRelaunch = true;

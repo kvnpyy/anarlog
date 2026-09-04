@@ -22,6 +22,7 @@ import {
   shouldShowChatThinking,
 } from "~/chat/waiting";
 import { id } from "~/shared/utils";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 
 type QueuedChatMessage = {
   id: string;
@@ -35,6 +36,8 @@ const EMPTY_QUEUED_MESSAGES: readonly QueuedChatMessage[] = Object.freeze([]);
 
 export function ChatContent({
   layout = "floating",
+  pageIntegrated = false,
+  collapseThread = false,
   sessionId,
   messages,
   sendMessage,
@@ -57,6 +60,8 @@ export function ChatContent({
   children,
 }: {
   layout?: "floating" | "right-panel" | "inline";
+  pageIntegrated?: boolean;
+  collapseThread?: boolean;
   sessionId: string;
   messages: AnlgUIMessage[];
   sendMessage: ChatMessageSender;
@@ -89,13 +94,18 @@ export function ChatContent({
   const isInline = layout === "inline";
   const disabled = !isSystemPromptReady;
   const isBusy = status === "submitted" || status === "streaming";
-  const hideEmptyLiveBody = isInline && messages.length === 0 && !isBusy;
+  const hideEmptyLiveBody =
+    (isInline || pageIntegrated) && messages.length === 0 && !isBusy;
+  const hideThread = hideEmptyLiveBody || collapseThread;
   const [awaitingReply, setAwaitingReply] = useState(false);
   const showThinking = shouldShowChatThinking(status, messages, awaitingReply);
+  const folderName = useFolderFilter((state) => state.activeFolderPath);
   const inputPlaceholder =
     placeholder ??
     (!isRecording && contextEntities.length === 0
-      ? t`Ask across your meetings`
+      ? folderName
+        ? t`Ask this folder`
+        : t`Ask across your meetings`
       : undefined);
   const [queueState, setQueueState] = useState<{
     sessionId: string;
@@ -274,7 +284,7 @@ export function ChatContent({
       onDrop={handleDrop}
     >
       {children ??
-        (hideEmptyLiveBody ? null : (
+        (hideThread ? null : (
           <ChatBody
             messages={messages}
             status={status}
@@ -300,14 +310,17 @@ export function ChatContent({
             entities={contextEntities}
             onRemoveEntity={onRemoveContextEntity}
           />
-          <ChatQueue
-            messages={queuedMessages}
-            onRemoveMessage={removeQueuedMessage}
-          />
-          {showThinking ? <ChatThinkingStatus /> : null}
+          {collapseThread ? null : (
+            <ChatQueue
+              messages={queuedMessages}
+              onRemoveMessage={removeQueuedMessage}
+            />
+          )}
+          {showThinking && !collapseThread ? <ChatThinkingStatus /> : null}
           <ChatMessageInput
             draftKey={sessionId}
             layout={layout}
+            pageIntegrated={pageIntegrated}
             disabled={disabled}
             onSendMessage={submitOrQueueMessage}
             onDraftContentChange={onDraftContentChange}

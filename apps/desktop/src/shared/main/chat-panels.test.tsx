@@ -133,11 +133,13 @@ vi.mock("~/chat/components/persistent-chat", () => ({
   PersistentChatPanel: ({
     floatingContainerRef,
     sessionProps,
+    tabType,
   }: {
     floatingContainerRef: { current: HTMLDivElement | null };
     sessionProps: unknown;
+    tabType?: string;
   }) => {
-    mocks.persistentChatPanel(floatingContainerRef, sessionProps);
+    mocks.persistentChatPanel(floatingContainerRef, sessionProps, tabType);
     return <div data-testid="persistent-chat-panel" />;
   },
 }));
@@ -238,6 +240,32 @@ describe("MainChatPanels", () => {
     );
     expect(screen.getByTestId("chat-view").dataset.layout).toBe("inline");
     expect(screen.getByTestId("main-content")).toBeTruthy();
+  });
+
+  it("hides the persistent Ask overlay on settings and other app pages", () => {
+    mocks.currentTab = { type: "settings" };
+
+    render(
+      <MainChatPanels>
+        <div data-testid="main-content" />
+      </MainChatPanels>,
+    );
+
+    expect(screen.queryByTestId("persistent-chat-panel")).toBeNull();
+    expect(mocks.persistentChatPanel).not.toHaveBeenCalled();
+  });
+
+  it("keeps the persistent Ask overlay on notes", () => {
+    mocks.currentTab = { type: "sessions", id: "session-1" };
+
+    render(
+      <MainChatPanels>
+        <div data-testid="main-content" />
+      </MainChatPanels>,
+    );
+
+    expect(screen.getByTestId("persistent-chat-panel")).toBeTruthy();
+    expect(mocks.persistentChatPanel.mock.calls[0]?.[2]).toBe("sessions");
   });
 
   it("keeps Automations chat docked without a floating chat host", () => {

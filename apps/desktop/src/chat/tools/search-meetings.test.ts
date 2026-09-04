@@ -89,4 +89,40 @@ describe("search meetings chat tool", () => {
     expect(result.results).toEqual([]);
     expect(result.notice).toContain("last 30 days");
   });
+
+  it("keeps search results inside the selected folder", async () => {
+    const search = vi.fn().mockResolvedValue([
+      {
+        score: 0.9,
+        document: {
+          id: "in-folder",
+          type: "session",
+          title: "Standup",
+          content: "shipped the recap",
+          created_at: 200,
+        },
+      },
+      {
+        score: 0.8,
+        document: {
+          id: "other-folder",
+          type: "session",
+          title: "Other",
+          content: "shipped the recap",
+          created_at: 180,
+        },
+      },
+    ]);
+    const tool = buildSearchMeetingsTool({
+      search,
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+      getFolderSessionIds: async () => new Set(["in-folder"]),
+    } as any);
+
+    const result = await (tool as any).execute({ query: "recap" });
+
+    expect(result.results).toEqual([
+      expect.objectContaining({ id: "in-folder", title: "Standup" }),
+    ]);
+  });
 });

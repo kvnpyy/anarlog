@@ -8,6 +8,7 @@ use security_framework::passwords::{
 };
 
 const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+const ERR_SEC_MISSING_ENTITLEMENT: i32 = -34018;
 
 static SECRETS_FILE_LOCK: Mutex<()> = Mutex::new(());
 
@@ -18,12 +19,20 @@ fn protected_options(service: &str, account: &str) -> PasswordOptions {
     options
 }
 
+fn standard_options(service: &str, account: &str) -> PasswordOptions {
+    PasswordOptions::new_generic_password(service, account)
+}
+
 fn allow_file_secret_fallback() -> bool {
     cfg!(debug_assertions)
 }
 
 fn is_not_found(error: &security_framework::base::Error) -> bool {
     error.code() == ERR_SEC_ITEM_NOT_FOUND
+}
+
+fn is_missing_entitlement(error: &security_framework::base::Error) -> bool {
+    error.code() == ERR_SEC_MISSING_ENTITLEMENT
 }
 
 fn bytes_to_secret(bytes: Vec<u8>) -> Result<String, String> {
@@ -77,25 +86,31 @@ fn file_delete(path: &Path, service: &str, account: &str) -> Result<(), String> 
     write_file_store(path, &store)
 }
 
-fn protected_get(service: &str, account: &str) -> Result<Option<String>, String> {
-    match generic_password(protected_options(service, account)) {
-        Ok(bytes) => bytes_to_secret(bytes).map(Some),
-        Err(error) if is_not_found(&error) => Ok(None),
-        Err(error) => Err(error.to_string()),
+fn keychain_get(options: PasswordOptions) -> Option<String> {
+    match generic_password(options) {
+        Ok(bytes) => bytes_to_secret(bytes).ok(),
+        Err(_) => None,
     }
 }
 
-fn protected_set(service: &str, account: &str, secret: &str) -> Result<(), String> {
-    set_generic_password_options(secret.as_bytes(), protected_options(service, account))
-        .map_err(|error| error.to_string())
+fn keychain_set(
+    options: PasswordOptions,
+    secret: &str,
+) -> Result<(), security_framework::base::Error> {
+    set_generic_password_options(secret.as_bytes(), options)
 }
 
-fn protected_delete(service: &str, account: &str) -> Result<(), String> {
-    match delete_generic_password_options(protected_options(service, account)) {
+fn keychain_delete(options: PasswordOptions) -> Result<(), String> {
+    match delete_generic_password_options(options) {
         Ok(()) => Ok(()),
         Err(error) if is_not_found(&error) => Ok(()),
         Err(error) => Err(error.to_string()),
     }
+}
+
+fn read_from_keychains(service: &str, account: &str) -> Option<String> {
+    keychain_get(protected_options(service, account))
+        .or_else(|| keychain_get(standard_options(service, account)))
 }
 
 fn persist_without_prompt(
@@ -104,10 +119,19 @@ fn persist_without_prompt(
     secret: &str,
     file_path: &Path,
 ) -> Result<(), String> {
-    match protected_set(service, account, secret) {
-        Ok(()) => Ok(()),
-        Err(_) if allow_file_secret_fallback() => file_set(file_path, service, account, secret),
-        Err(error) => Err(error),
+    match keychain_set(protected_options(service, account), secret) {
+        Ok(()) => return Ok(()),
+        Err(protected_error) => {
+            if keychain_set(standard_options(service, account), secret).is_ok() {
+                return Ok(());
+            }
+
+            if allow_file_secret_fallback() || is_missing_entitlement(&protected_error) {
+                return file_set(file_path, service, account, secret);
+            }
+
+            Err(protected_error.to_string())
+        }
     }
 }
 
@@ -116,12 +140,10 @@ pub(crate) fn get_password(
     locations: &[(String, String)],
     file_path: &Path,
 ) -> Result<Option<String>, String> {
-    if let Ok(Some(secret)) = protected_get(&current.0, &current.1) {
+    if let Some(secret) = read_from_keychains(&current.0, &current.1) {
         return Ok(Some(secret));
     }
-    if allow_file_secret_fallback()
-        && let Some(secret) = file_get(file_path, &current.0, &current.1)?
-    {
+    if let Some(secret) = file_get(file_path, &current.0, &current.1)? {
         return Ok(Some(secret));
     }
 
@@ -129,13 +151,11 @@ pub(crate) fn get_password(
         if (service, account) == (&current.0, &current.1) {
             continue;
         }
-        if let Ok(Some(secret)) = protected_get(service, account) {
+        if let Some(secret) = read_from_keychains(service, account) {
             let _ = persist_without_prompt(&current.0, &current.1, &secret, file_path);
             return Ok(Some(secret));
         }
-        if allow_file_secret_fallback()
-            && let Some(secret) = file_get(file_path, service, account)?
-        {
+        if let Some(secret) = file_get(file_path, service, account)? {
             let _ = persist_without_prompt(&current.0, &current.1, &secret, file_path);
             return Ok(Some(secret));
         }
@@ -169,18 +189,17 @@ pub(crate) fn delete_password(
 }
 
 fn delete_password_location(service: &str, account: &str, file_path: &Path) -> Result<(), String> {
-    let _ = protected_delete(service, account);
-    if allow_file_secret_fallback() {
-        file_delete(file_path, service, account)?;
-    }
+    let _ = keychain_delete(protected_options(service, account));
+    let _ = keychain_delete(standard_options(service, account));
+    file_delete(file_path, service, account)?;
     Ok(())
 }
 
 pub(crate) fn probe_protected_keychain() -> Result<(), String> {
     const SERVICE: &str = "com.anarlog.keychain-probe";
     const ACCOUNT: &str = "keychain-probe";
-    protected_set(SERVICE, ACCOUNT, "ok")?;
-    protected_delete(SERVICE, ACCOUNT)
+    keychain_set(protected_options(SERVICE, ACCOUNT), "ok").map_err(|error| error.to_string())?;
+    keychain_delete(protected_options(SERVICE, ACCOUNT))
 }
 
 #[cfg(test)]
@@ -215,5 +234,36 @@ mod tests {
     #[test]
     fn file_secret_fallback_is_debug_only() {
         assert_eq!(allow_file_secret_fallback(), cfg!(debug_assertions));
+    }
+
+    #[test]
+    fn missing_entitlement_matches_err_sec_missing_entitlement() {
+        let error = security_framework::base::Error::from_code(ERR_SEC_MISSING_ENTITLEMENT);
+        assert!(is_missing_entitlement(&error));
+        assert_eq!(error.to_string(), "A required entitlement isn't present.");
+    }
+
+    #[test]
+    fn persist_falls_back_to_file_when_protected_keychain_lacks_entitlement() {
+        let directory = std::env::temp_dir().join(format!(
+            "anarlog-secure-store-entitlement-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("secure-store.secrets.json");
+        let missing = security_framework::base::Error::from_code(ERR_SEC_MISSING_ENTITLEMENT);
+
+        assert!(is_missing_entitlement(&missing));
+        file_set(&path, "svc", "acct", "oauth-token").unwrap();
+        assert_eq!(
+            file_get(&path, "svc", "acct").unwrap().as_deref(),
+            Some("oauth-token")
+        );
+
+        let _ = std::fs::remove_dir_all(directory);
     }
 }

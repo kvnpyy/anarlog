@@ -10,6 +10,7 @@ import {
   TZDate,
 } from "@anlg/utils";
 
+import { folderMatchesPath } from "~/session/folders";
 import { getSessionEvent } from "~/session/utils";
 
 function toTZ(date: Date, timezone?: string): Date {
@@ -73,6 +74,36 @@ export type TimelineWindowData = {
   timelineSessionsTable: TimelineSessionsTable;
   hasMoreFutureItems: boolean;
 };
+
+export function filterTimelineTablesByFolder({
+  timelineEventsTable,
+  timelineSessionsTable,
+  folderPath,
+}: {
+  timelineEventsTable: TimelineEventsTable;
+  timelineSessionsTable: TimelineSessionsTable;
+  folderPath: string | null;
+}): {
+  timelineEventsTable: TimelineEventsTable;
+  timelineSessionsTable: TimelineSessionsTable;
+} {
+  if (!folderPath) {
+    return { timelineEventsTable, timelineSessionsTable };
+  }
+
+  const filteredSessionsTable = timelineSessionsTable
+    ? Object.fromEntries(
+        Object.entries(timelineSessionsTable).filter(([, row]) =>
+          folderMatchesPath(row.folder_id, folderPath),
+        ),
+      )
+    : timelineSessionsTable;
+
+  return {
+    timelineEventsTable: timelineEventsTable ? {} : timelineEventsTable,
+    timelineSessionsTable: filteredSessionsTable,
+  };
+}
 
 export type TimelineIndicatorPlacement =
   | { type: "inside"; index: number; progress: number }

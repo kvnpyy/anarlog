@@ -419,4 +419,85 @@ describe("ChatContent", () => {
     expect(thinking).toBeTruthy();
     expect(thinking?.textContent).toContain("Thinking...");
   });
+
+  it("hides empty chat suggestions while the composer sits on the notepad", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        pageIntegrated
+      />,
+    );
+
+    expect(screen.queryByTestId("chat-body")).toBeNull();
+    expect(screen.getByTestId("chat-input")).toBeTruthy();
+  });
+
+  it("shows a note conversation above the composer until it is collapsed", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[
+          {
+            id: "user-1",
+            role: "user",
+            parts: [{ type: "text", text: "What did we decide?" }],
+          },
+        ]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        pageIntegrated
+      />,
+    );
+
+    expect(screen.getByTestId("chat-body")).toBeTruthy();
+    expect(screen.getByTestId("chat-input")).toBeTruthy();
+  });
+
+  it("collapses a note conversation back to the composer", () => {
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[
+          {
+            id: "user-1",
+            role: "user",
+            parts: [{ type: "text", text: "What did we decide?" }],
+          },
+        ]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        pageIntegrated
+        collapseThread
+      />,
+    );
+
+    expect(screen.queryByTestId("chat-body")).toBeNull();
+    expect(screen.queryByTestId("chat-thinking-status")).toBeNull();
+    expect(screen.getByTestId("chat-input")).toBeTruthy();
+    expect(screen.getByTestId("context-bar")).toBeTruthy();
+  });
 });

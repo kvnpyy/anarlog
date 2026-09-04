@@ -16,6 +16,15 @@ export {
   createSession,
   getOrCreateSessionForEventId,
 } from "./queries/creation";
+export {
+  assignSessionsToFolder,
+  fileUnfiledSeriesSiblings,
+  findFolderPathForSeries,
+  listSessionIdsInFolder,
+  useFolderSummaries,
+  useSmartFolderSuggestions,
+} from "./queries/folder-assignments";
+export type { FolderSummary } from "./queries/folder-assignments";
 export { useFolderPaths } from "./queries/folders";
 export {
   addSessionParticipant,

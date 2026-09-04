@@ -31,7 +31,8 @@ describe("LiveAskRail", () => {
     expect(onSendMessage.mock.calls[1]?.[3]).toContain("sound smart");
     expect(onSendMessage.mock.calls[2]?.[0]).toBe("Draft email");
     expect(onSendMessage.mock.calls[2]?.[3]).toContain("follow-up email");
-    expect(onSendMessage.mock.calls[2]?.[3]).toContain("plain text");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("under 150 words");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("bullet points");
     expect(onSendMessage.mock.calls[2]?.[3]).toContain("in my voice");
   });
 

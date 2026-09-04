@@ -43,6 +43,10 @@ vi.mock("~/sidebar/timeline", () => ({
   ),
 }));
 
+vi.mock("./folders", () => ({
+  SidebarFolders: () => <div data-testid="sidebar-folders" />,
+}));
+
 vi.mock("~/sidebar/calendar", () => ({
   CalendarNav: () => <div data-testid="calendar-nav" />,
 }));
@@ -103,6 +107,9 @@ describe("LeftSidebar", () => {
     expect(footer).toBeTruthy();
     expect(overflow?.className).toContain("overflow-hidden");
     expect(overflow?.contains(screen.getByTestId("timeline-view"))).toBe(true);
+    expect(overflow?.contains(screen.getByTestId("sidebar-folders"))).toBe(
+      true,
+    );
     expect(footer && overflow?.contains(footer)).toBe(false);
   });
 

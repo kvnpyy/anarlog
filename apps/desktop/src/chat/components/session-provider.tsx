@@ -15,6 +15,7 @@ import {
   type DisplayEntity,
   useChatContextPipeline,
 } from "~/chat/context/use-chat-context-pipeline";
+import { useChatContext } from "~/chat/state/chat-context";
 import {
   createChatCloudsyncActivityController,
   guardChatTransport,
@@ -49,6 +50,7 @@ import { flushDatabaseWritesByPrefix } from "~/db/write-queue";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
 import { useOwnerUserId } from "~/shared/owner-user";
 import { id } from "~/shared/utils";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 
 export type ChatSessionRenderProps = {
   sessionId: string;
@@ -122,6 +124,11 @@ function ChatSessionLifecycle({
   const { t } = useLingui();
   const ownerUserId = useOwnerUserId();
   const persistedMessages = usePersistedChatMessages(chatGroupId);
+  const workspaceAsk = useChatContext((state) => state.workspaceAsk);
+  const activeFolderPath = useFolderFilter((state) => state.activeFolderPath);
+  const isWorkspaceAsk = !isLiveAsk && (workspaceAsk || !currentSessionId);
+  const folderAskName =
+    isWorkspaceAsk && activeFolderPath ? activeFolderPath : null;
 
   const [pendingManualRefs, setPendingManualRefs] = useState<ContextRef[]>([]);
   const [pendingDraftRefs, setPendingDraftRefs] = useState<ContextRef[]>([]);
@@ -204,7 +211,8 @@ function ChatSessionLifecycle({
     systemPromptOverride,
     ownerUserId || undefined,
     isLiveAsk,
-    !isLiveAsk && !currentSessionId,
+    isWorkspaceAsk,
+    folderAskName,
   );
 
   const persistedVisibleMessages = useMemo(

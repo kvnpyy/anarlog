@@ -136,7 +136,13 @@ Returns relevant meetings with matching content excerpts.
       }
 
       const hits = await deps.search(query, { created_at: clamped });
-      const meetingHits = hits.filter((hit) => hit.document.type === "session");
+      const folderSessionIds = (await deps.getFolderSessionIds?.()) ?? null;
+      const meetingHits = hits.filter((hit) => {
+        if (hit.document.type !== "session") {
+          return false;
+        }
+        return !folderSessionIds || folderSessionIds.has(hit.document.id);
+      });
       const limit = params.limit ?? 5;
       const results = meetingHits.slice(0, limit).map((hit) => ({
         id: hit.document.id,

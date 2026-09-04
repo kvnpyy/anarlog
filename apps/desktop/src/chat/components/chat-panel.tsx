@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { type ReactNode, useCallback } from "react";
 
 import { cn } from "@anlg/utils";
@@ -9,8 +10,12 @@ import { useSessionTab } from "./use-session-tab";
 
 import { useLanguageModel } from "~/ai/hooks";
 import { useChatAppearance } from "~/chat/hooks/use-chat-appearance";
+import { isPageChatThreadCollapsed } from "~/chat/page-integrated";
 import { useChatActions } from "~/chat/store/use-chat-actions";
-import { chatFloatingPanelClassNames } from "~/chat/surface";
+import {
+  chatFloatingPanelClassNames,
+  chatPageIntegratedPanelClassNames,
+} from "~/chat/surface";
 import { useShell } from "~/contexts/shell";
 import { useSessionHasTranscript } from "~/session/queries";
 import { useOwnerUserId } from "~/shared/owner-user";
@@ -101,12 +106,14 @@ export function ChatSessionHost({
 
 export function ChatPanelFrame({
   layout = "floating",
+  pageIntegrated = false,
   onDraftContentChange,
   onOpenFloating,
   onOpenRightPanel,
   sessionProps,
 }: {
   layout?: "floating" | "right-panel" | "inline";
+  pageIntegrated?: boolean;
   onDraftContentChange?: (hasDraftContent: boolean) => void;
   onOpenFloating?: () => void;
   onOpenRightPanel?: () => void;
@@ -141,6 +148,22 @@ export function ChatPanelFrame({
     onGroupCreateFailed: handleGroupCreateFailed,
   });
 
+  const handleSendMessageWithActivate = useCallback(
+    (
+      content: Parameters<typeof handleSendMessage>[0],
+      parts: Parameters<typeof handleSendMessage>[1],
+      sendMessage: Parameters<typeof handleSendMessage>[2],
+      contextRefs?: Parameters<typeof handleSendMessage>[3],
+      modelPrompt?: Parameters<typeof handleSendMessage>[4],
+    ) => {
+      if (layout === "floating" && chat.mode === "FloatingClosed") {
+        chat.sendEvent({ type: "OPEN" });
+      }
+      handleSendMessage(content, parts, sendMessage, contextRefs, modelPrompt);
+    },
+    [chat, handleSendMessage, layout],
+  );
+
   return (
     <div
       className={cn([
@@ -151,13 +174,15 @@ export function ChatPanelFrame({
             ? "max-h-full"
             : "h-full",
         isFloating
-          ? chatFloatingPanelClassNames()
+          ? pageIntegrated
+            ? chatPageIntegratedPanelClassNames()
+            : chatFloatingPanelClassNames()
           : isInline
             ? null
             : panelClassName,
       ])}
     >
-      {chat.scope === "automations" || isInline ? null : (
+      {chat.scope === "automations" || isInline || pageIntegrated ? null : (
         <div
           data-tauri-drag-region={!isFloating || undefined}
           className={cn([
@@ -194,11 +219,21 @@ export function ChatPanelFrame({
         <ChatContent
           {...sessionProps}
           layout={layout}
+          pageIntegrated={pageIntegrated}
+          collapseThread={isPageChatThreadCollapsed({
+            pageIntegrated,
+            mode: chat.mode,
+          })}
           onDraftContentChange={onDraftContentChange}
           model={model}
-          handleSendMessage={handleSendMessage}
+          handleSendMessage={handleSendMessageWithActivate}
           isRecording={chat.isRecording}
           isBatchOnly={chat.isBatchOnly}
+          placeholder={
+            currentSessionId && !chat.workspaceAsk
+              ? t`Ask this meeting`
+              : undefined
+          }
         />
       )}
     </div>

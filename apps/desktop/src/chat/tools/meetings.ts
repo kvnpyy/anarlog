@@ -69,6 +69,7 @@ function meetingInWindow(meeting: MeetingListItem, cutoffMs: number): boolean {
 async function listMeetingsInWindow(
   input: ListMeetingsInput,
   window: AiKnowledgeWindow,
+  folderSessionIds: ReadonlySet<string> | null = null,
 ): Promise<MeetingPage & { notice?: string }> {
   const limit = input.limit ?? 20;
   const collected: MeetingListItem[] = [];
@@ -92,8 +93,11 @@ async function listMeetingsInWindow(
         exhausted = true;
         break;
       }
-      collected.push(meeting);
       dbOffset += 1;
+      if (folderSessionIds && !folderSessionIds.has(meeting.id)) {
+        continue;
+      }
+      collected.push(meeting);
       if (collected.length >= limit) {
         break;
       }
@@ -139,8 +143,12 @@ export const buildListMeetingsTool = (deps?: ToolDependencies) =>
       limit: listLimitSchema,
       offset: offsetSchema,
     }),
-    execute: (input: ListMeetingsInput) =>
-      listMeetingsInWindow(input, resolveWindow(deps)),
+    execute: async (input: ListMeetingsInput) =>
+      listMeetingsInWindow(
+        input,
+        resolveWindow(deps),
+        (await deps?.getFolderSessionIds?.()) ?? null,
+      ),
   });
 
 export const buildGetMeetingTool = (deps?: ToolDependencies) =>

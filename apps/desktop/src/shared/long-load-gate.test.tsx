@@ -10,8 +10,8 @@ vi.mock("@anlg/plugin-db", () => ({
   waitUntilReady,
 }));
 
-vi.mock("@tauri-apps/plugin-process", () => ({
-  relaunch: vi.fn(),
+vi.mock("~/shared/relaunch", () => ({
+  reloadOrRelaunch: vi.fn(),
 }));
 
 import { LONG_LOAD_SPLASH_DELAY_MS, LongLoadGate } from "./long-load-gate";

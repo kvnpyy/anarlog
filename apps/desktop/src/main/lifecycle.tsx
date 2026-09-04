@@ -7,6 +7,7 @@ import { useAuth } from "~/auth";
 import { CloudsyncKeychainRepairToast } from "~/auth/cloudsync-keychain-repair";
 import { searchCalendarEvents } from "~/calendar/queries";
 import { useSessionTab } from "~/chat/components/use-session-tab";
+import { useChatContext } from "~/chat/state/chat-context";
 import { buildChatTools } from "~/chat/tools";
 import { CloudApiBackfillLifecycle } from "~/cloud-api/lifecycle";
 import { searchContacts } from "~/contacts/queries";
@@ -15,12 +16,14 @@ import { takePendingWelcomeSession } from "~/onboarding/welcome-note";
 import { useSearchEngine } from "~/search/contexts/engine";
 import { initEnhancerService } from "~/services/enhancer";
 import { OwnedSharedNotePublisher } from "~/session-sharing/sync";
+import { listSessionIdsInFolder } from "~/session/queries";
 import { SharedAttachmentCacheLifecycle } from "~/shared-notes/attachment-cache-lifecycle";
 import { SharedNotePreviewAuthLifecycle } from "~/shared-notes/preview";
 import { DurableSharedNoteCacheSync } from "~/shared-notes/sync";
 import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue } from "~/shared/config";
 import { useDesktopTabLifecycle } from "~/shared/desktop-tab-lifecycle";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 import { useTabs } from "~/store/zustand/tabs";
 import { LiveCaptureRecovery } from "~/stt/live-capture-recovery";
 import { ScheduledMeetingAutoStart } from "~/stt/scheduled-auto-start";
@@ -80,6 +83,19 @@ function ToolRegistration() {
     () => getAiKnowledgeWindow(acornPro),
     [acornPro],
   );
+  const getFolderSessionIds = useCallback(async () => {
+    const folderPath = useFolderFilter.getState().activeFolderPath;
+    if (!folderPath) {
+      return null;
+    }
+
+    const sessionId = getSessionId();
+    if (sessionId && !useChatContext.getState().workspaceAsk) {
+      return null;
+    }
+
+    return new Set(await listSessionIdsInFolder(folderPath));
+  }, [getSessionId]);
   const getAuthHeaders = useCallback(() => auth?.getHeaders(), [auth]);
   const openEditTab = useCallback((requestId: string) => {
     useTabs.getState().openNew({ type: "edit", requestId });
@@ -97,6 +113,7 @@ function ToolRegistration() {
         openEditTab,
         getAuthHeaders,
         getAiKnowledgeWindow: getAiKnowledgeWindowForTools,
+        getFolderSessionIds,
       }),
     [
       search,
@@ -107,6 +124,7 @@ function ToolRegistration() {
       openEditTab,
       getAuthHeaders,
       getAiKnowledgeWindowForTools,
+      getFolderSessionIds,
     ],
   );
 

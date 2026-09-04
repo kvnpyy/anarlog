@@ -1,11 +1,34 @@
 import { useEffect, useState } from "react";
-// @ts-ignore virtual module provided by ./vite.ts
-import { latestContent, latestVersion } from "virtual:changelog";
+import {
+  changelogByVersion,
+  latestContent,
+  latestVersion,
+} from "virtual:changelog";
 
 import { processContent } from "@anlg/changelog";
 
 export function getLatestVersion(): string | null {
   return latestVersion;
+}
+
+export function fallbackChangelogMarkdown(): string {
+  return `---
+date: "2026-09-04"
+summary: "Smaller, quieter improvements so Acorn stays out of the way."
+---
+
+Acorn just got a little smoother.
+
+We polished the everyday experience — small fixes, calmer details, and the kind of refinements you feel more than you notice. Your notes stay yours. Everything else just works a bit better.
+`;
+}
+
+export function resolveChangelogRaw(version: string): string {
+  return (
+    changelogByVersion?.[version] ??
+    (version === latestVersion && latestContent ? latestContent : null) ??
+    fallbackChangelogMarkdown()
+  );
 }
 
 async function fetchChangelogFromGitHub(
@@ -23,6 +46,18 @@ async function fetchChangelogFromGitHub(
   }
 }
 
+function parseChangelog(raw: string): {
+  content: string;
+  date: string | null;
+} {
+  const parsed = processContent(raw);
+  if (parsed.content.trim()) {
+    return parsed;
+  }
+
+  return processContent(fallbackChangelogMarkdown());
+}
+
 export function useChangelogContent(version: string) {
   const [content, setContent] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -32,30 +67,38 @@ export function useChangelogContent(version: string) {
     let cancelled = false;
 
     async function loadChangelog() {
+      const embedded = changelogByVersion?.[version];
+      if (embedded) {
+        const parsed = parseChangelog(embedded);
+        if (!cancelled) {
+          setContent(parsed.content);
+          setDate(parsed.date);
+          setLoading(false);
+        }
+        return;
+      }
+
       if (version === latestVersion && latestContent) {
-        const { content: parsed, date: parsedDate } =
-          processContent(latestContent);
-        setContent(parsed);
-        setDate(parsedDate);
-        setLoading(false);
+        const parsed = parseChangelog(latestContent);
+        if (!cancelled) {
+          setContent(parsed.content);
+          setDate(parsed.date);
+          setLoading(false);
+        }
         return;
       }
 
       const raw = await fetchChangelogFromGitHub(version);
       if (cancelled) return;
 
-      if (raw) {
-        const { content: parsed, date: parsedDate } = processContent(raw);
-        setContent(parsed);
-        setDate(parsedDate);
-      } else {
-        setContent(null);
-        setDate(null);
-      }
+      const parsed = parseChangelog(raw ?? fallbackChangelogMarkdown());
+      setContent(parsed.content);
+      setDate(parsed.date);
       setLoading(false);
     }
 
-    loadChangelog();
+    setLoading(true);
+    void loadChangelog();
 
     return () => {
       cancelled = true;

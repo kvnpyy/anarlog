@@ -24,6 +24,7 @@ vi.mock("@anlg/plugin-fs-sync", () => ({
 vi.mock("~/db", () => ({
   executeTransaction: mocks.executeTransaction,
   liveQueryClient: { execute: mocks.execute },
+  useLiveQuery: vi.fn(),
 }));
 
 import {
@@ -31,6 +32,8 @@ import {
   buildSessionTombstoneStatements,
   createSession,
   deleteEnhancedNote,
+  assignSessionsToFolder,
+  fileUnfiledSeriesSiblings,
   getOrCreateSessionForEventId,
   isSessionEmpty,
   loadSessionEvent,
@@ -269,6 +272,7 @@ describe("session SQLite operations", () => {
       .mockResolvedValueOnce([event])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: "session-created" }]);
     mocks.executeTransaction.mockResolvedValueOnce([1]);
 
@@ -280,6 +284,8 @@ describe("session SQLite operations", () => {
       sql: string;
       params: unknown[];
     }>;
+    expect(statements[0].sql).toContain("folder_path");
+    expect(statements[0].params).toContain("");
     expect(statements[0].sql).toContain("WHERE NOT EXISTS");
     expect(statements[0].params).toContain("external-event-1");
     expect(
@@ -290,6 +296,70 @@ describe("session SQLite operations", () => {
         statement.sql.includes("session_participants"),
       ),
     ).toBe(true);
+  });
+
+  it("files a new recurring meeting into the series folder", async () => {
+    mocks.execute
+      .mockResolvedValueOnce([event])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ folder_path: "Standups" }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "session-created" }]);
+    mocks.executeTransaction.mockResolvedValueOnce([1]);
+
+    await expect(getOrCreateSessionForEventId("event-1")).resolves.toBe(
+      "session-created",
+    );
+
+    const statements = mocks.executeTransaction.mock.calls[0][0] as Array<{
+      sql: string;
+      params: unknown[];
+    }>;
+    expect(statements[0].params).toContain("Standups");
+  });
+
+  it("assigns several meetings to one folder", async () => {
+    mocks.executeTransaction.mockResolvedValueOnce([3]);
+
+    await expect(
+      assignSessionsToFolder(["a", "b", "a"], "Clients"),
+    ).resolves.toBe(3);
+
+    const statements = mocks.executeTransaction.mock.calls[0][0] as Array<{
+      sql: string;
+      params: unknown[];
+    }>;
+    expect(statements[0].sql).toContain("folder_path = ?");
+    expect(statements[0].params).toEqual([
+      "Clients",
+      expect.any(String),
+      "a",
+      "b",
+    ]);
+  });
+
+  it("files unfiled siblings in the same recurring series", async () => {
+    mocks.execute.mockResolvedValueOnce([
+      { series_id: "series-1", event_json: "" },
+    ]);
+    mocks.executeTransaction.mockResolvedValueOnce([2]);
+
+    await expect(
+      fileUnfiledSeriesSiblings("session-1", "Standups"),
+    ).resolves.toBe(2);
+
+    const statements = mocks.executeTransaction.mock.calls[0][0] as Array<{
+      sql: string;
+      params: unknown[];
+    }>;
+    expect(statements[0].sql).toContain("folder_path = ''");
+    expect(statements[0].params).toEqual([
+      "Standups",
+      expect.any(String),
+      "session-1",
+      "series-1",
+      "series-1",
+    ]);
   });
 
   it("ignores malformed calendar participants when creating an event note", async () => {
@@ -303,6 +373,7 @@ describe("session SQLite operations", () => {
           ]),
         },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: "session-created" }]);
     mocks.executeTransaction.mockResolvedValueOnce([1]);
@@ -330,6 +401,7 @@ describe("session SQLite operations", () => {
     );
     mocks.execute
       .mockResolvedValueOnce([event])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: "session-created" }]);

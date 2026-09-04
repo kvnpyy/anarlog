@@ -33,6 +33,7 @@ import {
   useUpcomingMeetingStatus,
   useUpcomingMeetingLabelFormatter,
 } from "./upcoming-meeting";
+import { filterTimelineTablesByFolder } from "./utils";
 
 import { useAuth } from "~/auth";
 import { useIgnoredEvents } from "~/calendar/ignored-events";
@@ -44,6 +45,7 @@ import { scrollElementByWheel } from "~/shared/dom/scroll-wheel";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 import { useTabs } from "~/store/zustand/tabs";
 import { useTimelineSelection } from "~/store/zustand/timeline-selection";
 import { useListener } from "~/stt/contexts";
@@ -66,6 +68,16 @@ export const TimelineView = memo(function TimelineView({
   const { session } = useAuth();
   const managedSharedSessionIds = useActivatedSessionShareIds(session?.user.id);
   const { timelineEventsTable, timelineSessionsTable } = useTimelineTables();
+  const activeFolderPath = useFolderFilter((state) => state.activeFolderPath);
+  const folderFilteredTables = useMemo(
+    () =>
+      filterTimelineTablesByFolder({
+        folderPath: activeFolderPath,
+        timelineEventsTable,
+        timelineSessionsTable,
+      }),
+    [activeFolderPath, timelineEventsTable, timelineSessionsTable],
+  );
   const [uncontrolledShowIgnored, setUncontrolledShowIgnored] = useState(false);
   const showIgnored = showIgnoredEvents ?? uncontrolledShowIgnored;
   const [isScrolledToTop, setIsScrolledToTop] = useState(true);
@@ -75,8 +87,8 @@ export const TimelineView = memo(function TimelineView({
   const { buckets, hasMoreFutureItems } = useTimelineData({
     isEventIgnored: isIgnored,
     showIgnored,
-    timelineEventsTable,
-    timelineSessionsTable,
+    timelineEventsTable: folderFilteredTables.timelineEventsTable,
+    timelineSessionsTable: folderFilteredTables.timelineSessionsTable,
     timezone,
   });
   const openNew = useTabs((state) => state.openNew);

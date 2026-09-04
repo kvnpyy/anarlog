@@ -29,6 +29,22 @@ vi.mock("~/types/tauri.gen", () => ({
   },
 }));
 
+describe("reload vs process relaunch", () => {
+  test("reloads the webview during desktop dev instead of killing Vite", async () => {
+    const { shouldReloadInsteadOfRelaunch } = await import("./relaunch");
+
+    expect(shouldReloadInsteadOfRelaunch({ isDev: true, isTest: false })).toBe(
+      true,
+    );
+    expect(shouldReloadInsteadOfRelaunch({ isDev: false, isTest: false })).toBe(
+      false,
+    );
+    expect(shouldReloadInsteadOfRelaunch({ isDev: true, isTest: true })).toBe(
+      false,
+    );
+  });
+});
+
 describe("automatic relaunch", () => {
   beforeEach(() => {
     vi.useFakeTimers();

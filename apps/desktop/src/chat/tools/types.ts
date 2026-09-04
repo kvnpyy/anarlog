@@ -56,5 +56,6 @@ export interface ToolDependencies {
   openEditTab: (requestId: string) => void;
   getAuthHeaders: () => Record<string, string> | null | undefined;
   getAiKnowledgeWindow?: () => AiKnowledgeWindow;
+  getFolderSessionIds?: () => Promise<ReadonlySet<string> | null>;
   fetch?: typeof fetch;
 }

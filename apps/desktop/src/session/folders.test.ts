@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectFolderPaths,
   folderDisplayName,
+  folderMatchesPath,
   normalizeFolderPath,
 } from "./folders";
 
@@ -38,5 +39,10 @@ describe("folder paths", () => {
     expect(folderDisplayName("work/meetings")).toBe("work");
     expect(folderDisplayName("")).toBe("");
     expect(folderDisplayName(null)).toBe("");
+  });
+
+  it("matches a selected folder against stored paths", () => {
+    expect(folderMatchesPath("work/meetings", "work")).toBe(true);
+    expect(folderMatchesPath("personal", "work")).toBe(false);
   });
 });

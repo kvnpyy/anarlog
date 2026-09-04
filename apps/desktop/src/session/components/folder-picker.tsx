@@ -17,10 +17,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
+import { sonnerToast } from "@anlg/ui/components/ui/toast";
 import { cn } from "@anlg/utils";
 
 import { folderDisplayName, normalizeFolderPath } from "~/session/folders";
 import {
+  fileUnfiledSeriesSiblings,
   useFolderPaths,
   useSession,
   useUpdateSession,
@@ -78,11 +80,29 @@ export function FolderPicker({
         return;
       }
 
-      void updateSession({ folder_id: normalized }).catch((error) => {
-        console.error("[folder-picker] failed to update folder", error);
-      });
+      void updateSession({ folder_id: normalized })
+        .then(async () => {
+          if (!normalized) {
+            return;
+          }
+
+          const siblingCount = await fileUnfiledSeriesSiblings(
+            sessionId,
+            normalized,
+          );
+          if (siblingCount === 1) {
+            sonnerToast.success(t`Also filed 1 other meeting in this series`);
+          } else if (siblingCount > 1) {
+            sonnerToast.success(
+              t`Also filed ${siblingCount} other meetings in this series`,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("[folder-picker] failed to update folder", error);
+        });
     },
-    [folderId, updateSession],
+    [folderId, sessionId, t, updateSession],
   );
 
   return (

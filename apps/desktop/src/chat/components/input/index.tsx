@@ -31,6 +31,7 @@ import { useMentionConfig } from "~/editor-bridge/mention-config";
 export function ChatMessageInput({
   draftKey,
   layout = "floating",
+  pageIntegrated = false,
   onSendMessage,
   disabled: disabledProp,
   isStreaming,
@@ -41,6 +42,7 @@ export function ChatMessageInput({
 }: {
   draftKey: string;
   layout?: "floating" | "right-panel" | "inline";
+  pageIntegrated?: boolean;
   onSendMessage: (
     content: string,
     parts: Array<{ type: "text"; text: string }>,
@@ -102,6 +104,7 @@ export function ChatMessageInput({
       elevatedSurfaceClassName={elevatedSurfaceClassName}
       isFloating={isFloating}
       isRightPanel={isRightPanel}
+      pageIntegrated={pageIntegrated}
       hasVoiceStatus={hasVoiceStatus}
       indicator={
         history.position !== null && (
@@ -239,6 +242,7 @@ function Container({
   elevatedSurfaceClassName,
   isFloating,
   isRightPanel,
+  pageIntegrated,
   hasVoiceStatus,
   indicator,
 }: {
@@ -246,6 +250,7 @@ function Container({
   elevatedSurfaceClassName: string;
   isFloating: boolean;
   isRightPanel: boolean;
+  pageIntegrated: boolean;
   hasVoiceStatus: boolean;
   indicator?: React.ReactNode;
 }) {
@@ -258,15 +263,27 @@ function Container({
     >
       {indicator}
       <div
-        data-chat-input-surface={isFloating ? "floating" : "elevated"}
+        data-chat-input-surface={
+          pageIntegrated ? "page" : isFloating ? "floating" : "elevated"
+        }
         className={cn([
           "flex max-h-full border",
           isFloating
-            ? [
-                "border-border/70 text-card-foreground max-h-40 min-h-[38px] flex-row overflow-hidden rounded-[19px] bg-white pr-[6px] pl-4 text-sm shadow-none",
-                "dark:bg-card dark:text-card-foreground",
-                hasVoiceStatus ? "items-stretch py-2" : "items-center py-[3px]",
-              ]
+            ? pageIntegrated
+              ? [
+                  "border-border/70 text-card-foreground max-h-40 min-h-[38px] flex-row overflow-hidden rounded-[18px] bg-white pr-[6px] pl-4 text-sm shadow-none",
+                  "dark:bg-card dark:text-card-foreground",
+                  hasVoiceStatus
+                    ? "items-stretch py-2"
+                    : "items-center py-[3px]",
+                ]
+              : [
+                  "border-border/70 text-card-foreground max-h-40 min-h-[38px] flex-row overflow-hidden rounded-[19px] bg-white pr-[6px] pl-4 text-sm shadow-none",
+                  "dark:bg-card dark:text-card-foreground",
+                  hasVoiceStatus
+                    ? "items-stretch py-2"
+                    : "items-center py-[3px]",
+                ]
             : [elevatedSurfaceClassName, "flex-col rounded-xl"],
         ])}
       >

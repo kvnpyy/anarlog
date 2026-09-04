@@ -9,32 +9,37 @@ const changelogDir = resolve(__dirname, "../../../packages/changelog/content");
 const VIRTUAL_ID = "virtual:changelog";
 const RESOLVED_ID = "\0" + VIRTUAL_ID;
 
-function getLatestVersion(): string | null {
+function getChangelogEntries(): { version: string; content: string }[] {
   try {
-    const files = readdirSync(changelogDir).filter(
-      (f) => f.endsWith(".md") && /^\d/.test(f),
-    );
-    const versions = files.map((f) => f.replace(".md", ""));
-    versions.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-    return versions[0] || null;
+    return readdirSync(changelogDir)
+      .filter((file) => file.endsWith(".md") && /^\d/.test(file))
+      .map((file) => {
+        const version = file.replace(/\.md$/, "");
+        return {
+          version,
+          content: readFileSync(resolve(changelogDir, file), "utf-8"),
+        };
+      });
   } catch {
-    return null;
+    return [];
   }
 }
 
 function buildModule(): string {
-  const latest = getLatestVersion();
-  let content: string | null = null;
-
-  if (latest) {
-    try {
-      content = readFileSync(resolve(changelogDir, `${latest}.md`), "utf-8");
-    } catch {}
-  }
+  const entries = getChangelogEntries();
+  const versions = entries.map((entry) => entry.version);
+  versions.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+  const latest = versions[0] ?? null;
+  const latestContent =
+    entries.find((entry) => entry.version === latest)?.content ?? null;
+  const changelogByVersion = Object.fromEntries(
+    entries.map((entry) => [entry.version, entry.content]),
+  );
 
   return [
     `export const latestVersion = ${JSON.stringify(latest)};`,
-    `export const latestContent = ${JSON.stringify(content)};`,
+    `export const latestContent = ${JSON.stringify(latestContent)};`,
+    `export const changelogByVersion = ${JSON.stringify(changelogByVersion)};`,
   ].join("\n");
 }
 

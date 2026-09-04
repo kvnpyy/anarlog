@@ -73,6 +73,8 @@ describe("StandardContentWrapper", () => {
     expect(
       document.querySelector("[data-chat-floating-anchor]")?.className,
     ).toContain("rounded-xl");
+    expect(document.querySelector("[data-chat-page-content]")).toBeTruthy();
+    expect(document.querySelector("[data-chat-page-slot]")).toBeTruthy();
   });
 
   it.each(["windows", "linux"] as const)(

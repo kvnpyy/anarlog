@@ -26,6 +26,7 @@ import {
   useRecentChatGroups,
 } from "~/chat/store/queries";
 import type { ChatScope } from "~/chat/types";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 
 export function ChatToolbarControls({
   chatScope,
@@ -61,6 +62,7 @@ export function ChatToolbarControls({
   surface?: "light" | "dark";
 }) {
   const { t } = useLingui();
+  const folderName = useFolderFilter((state) => state.activeFolderPath);
   const isDark = surface === "dark";
   const isRightPanel = layout === "right-panel";
   const actionButtonClassName = cn([
@@ -84,7 +86,7 @@ export function ChatToolbarControls({
           showWorkspaceAskSwitch ? (
             <ChatScopeSwitch
               icon={<Sparkle size={14} />}
-              label={t`Ask across meetings`}
+              label={folderName ? t`Ask this folder` : t`Ask across meetings`}
               layout={layout}
               onClick={onOpenWorkspaceAsk ?? (() => {})}
               surface={surface}

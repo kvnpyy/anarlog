@@ -52,21 +52,17 @@ impl AppWindow {
             return;
         }
 
-        let Ok(url) = window.url() else {
+        let current_url = current_webview_url(window);
+        let Some(url) =
+            crate::recovery_navigation_url(&current_url, crate::frontend_url(window.app_handle()))
+        else {
             tracing::warn!(
                 request_id,
-                "main webview missed health check; current url unavailable"
+                current_url = %current_url,
+                "main webview missed health check; no frontend url to recover"
             );
             return;
         };
-        if !crate::is_recoverable_webview_url(&url) {
-            tracing::warn!(
-                request_id,
-                %url,
-                "main webview missed health check; skipping reload for non-app url"
-            );
-            return;
-        }
 
         state.begin_recovery(label);
 
@@ -294,7 +290,7 @@ impl AppWindow {
         path: impl AsRef<str>,
     ) -> Result<(), crate::Error> {
         if let Some(window) = self.get(app) {
-            let mut url = window.url().unwrap();
+            let mut url = navigable_webview_url(&window, app);
 
             let path_str = path.as_ref();
             if let Some(query_index) = path_str.find('?') {
@@ -397,6 +393,7 @@ impl AppWindow {
             self.ensure_visible(app, &window);
             window.show()?;
             window.set_focus()?;
+            ensure_frontend_attached(&window);
             self.request_webview_health_check(app, &window);
             return Ok(Some(window));
         }
@@ -452,6 +449,7 @@ impl AppWindow {
             let window = self.build_window(app)?;
             std::thread::sleep(std::time::Duration::from_millis(100));
             self.finalize_show(app, &window)?;
+            ensure_frontend_attached(&window);
             window
         };
 
@@ -513,6 +511,7 @@ impl AppWindow {
             }
 
             self.finalize_show(app, &window)?;
+            ensure_frontend_attached(&window);
             window
         };
 
@@ -524,6 +523,75 @@ impl AppWindow {
 
         Ok(window)
     }
+}
+
+fn blank_url() -> url::Url {
+    url::Url::parse("about:blank").expect("about:blank")
+}
+
+fn current_webview_url(window: &WebviewWindow) -> url::Url {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| window.url())) {
+        Ok(Ok(url)) => url,
+        Ok(Err(_)) | Err(_) => blank_url(),
+    }
+}
+
+fn navigable_webview_url(window: &WebviewWindow, app: &AppHandle<tauri::Wry>) -> url::Url {
+    let current_url = current_webview_url(window);
+    if crate::is_recoverable_webview_url(&current_url) {
+        return current_url;
+    }
+
+    crate::frontend_url(app).unwrap_or(current_url)
+}
+
+fn ensure_frontend_attached(window: &WebviewWindow) {
+    attach_frontend_if_blank(window);
+
+    #[cfg(debug_assertions)]
+    schedule_frontend_reattach(window);
+}
+
+fn attach_frontend_if_blank(window: &WebviewWindow) {
+    let current_url = current_webview_url(window);
+    if crate::is_recoverable_webview_url(&current_url) {
+        return;
+    }
+
+    let Some(url) =
+        crate::recovery_navigation_url(&current_url, crate::frontend_url(window.app_handle()))
+    else {
+        return;
+    };
+
+    if let Err(error) = window.navigate(url) {
+        tracing::warn!(%error, "failed to attach frontend to blank webview");
+    }
+}
+
+#[cfg(debug_assertions)]
+fn schedule_frontend_reattach(window: &WebviewWindow) {
+    let window = window.clone();
+    tauri::async_runtime::spawn(async move {
+        let Some(expected) = crate::frontend_url(window.app_handle()) else {
+            return;
+        };
+        let Some(host) = expected.host_str().map(str::to_string) else {
+            return;
+        };
+        let port = expected.port_or_known_default().unwrap_or(80);
+
+        for _ in 0..40 {
+            if tokio::net::TcpStream::connect((host.as_str(), port))
+                .await
+                .is_ok()
+            {
+                attach_frontend_if_blank(&window);
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+    });
 }
 
 #[cfg(target_os = "macos")]

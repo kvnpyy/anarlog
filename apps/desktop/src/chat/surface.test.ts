@@ -6,6 +6,8 @@ import {
   chatFloatingControlClassNames,
   chatFloatingPanelShellClassNames,
   chatInputEditorClassNames,
+  chatPageIntegratedPanelClassNames,
+  chatPageIntegratedShellClassNames,
   chatPanelBorderClassNames,
   chatPanelClassNames,
   chatSendButtonDisabledClassNames,
@@ -67,6 +69,13 @@ describe("chat surface tokens", () => {
     expect(chatFloatingPanelClassNames()).toContain("text-card-foreground");
     expect(chatFloatingPanelClassNames()).toContain("dark:bg-[#202020]");
     expect(chatFloatingPanelClassNames()).not.toContain("bg-card");
+  });
+
+  it("uses a transparent shell while the composer sits on the notepad", () => {
+    expect(chatPageIntegratedShellClassNames()).toContain("bg-transparent");
+    expect(chatPageIntegratedPanelClassNames()).toContain("bg-transparent");
+    expect(chatPageIntegratedShellClassNames()).not.toContain("rounded-[24px]");
+    expect(chatPageIntegratedPanelClassNames()).not.toContain("bg-[#f4f4f5]");
   });
 
   it("styles disabled send controls on the elevated input surface", () => {

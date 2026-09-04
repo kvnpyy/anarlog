@@ -16,6 +16,15 @@ import type { Part } from "./types";
 
 import { hasRenderableContent } from "~/chat/components/shared";
 import { toCopyableChatText } from "~/chat/copy-text";
+import {
+  GMAIL_LINE_HEIGHT,
+  GMAIL_TEXT_FONT,
+  GMAIL_TEXT_SIZE,
+  isEmailDraft,
+  splitEmailDraft,
+  toGmailCopyHtml,
+  toGmailCopyPlainText,
+} from "~/chat/gmail-draft";
 import type { AnlgUIMessage } from "~/chat/types";
 
 function getMessageText(message: AnlgUIMessage): string {
@@ -50,7 +59,11 @@ export function NormalMessage({
   const handleCopy = useCallback(async () => {
     const text = toCopyableChatText(getMessageText(message));
     try {
-      await navigator.clipboard.writeText(text);
+      if (isEmailDraft(text)) {
+        await copyGmailDraft(text);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
       if (copiedResetTimeoutRef.current !== null) {
         window.clearTimeout(copiedResetTimeoutRef.current);
       }
@@ -215,6 +228,10 @@ const chatComponents = {
 function Text({ part }: { part: Extract<Part, { type: "text" }> }) {
   const isAnimating = part.state !== "done";
 
+  if (isEmailDraft(part.text)) {
+    return <EmailDraftBody isAnimating={isAnimating} text={part.text} />;
+  }
+
   return (
     <Streamdown
       components={chatComponents}
@@ -226,4 +243,120 @@ function Text({ part }: { part: Extract<Part, { type: "text" }> }) {
       {part.text}
     </Streamdown>
   );
+}
+
+function EmailDraftBody({
+  isAnimating,
+  text,
+}: {
+  isAnimating: boolean;
+  text: string;
+}) {
+  const { subject, body } = splitEmailDraft(text);
+
+  return (
+    <div data-email-draft className="max-w-full overflow-hidden">
+      {subject ? (
+        <div className="text-muted-foreground mb-2 text-xs">
+          Subject:{" "}
+          <span className="text-foreground font-medium">{subject}</span>
+        </div>
+      ) : null}
+      <div
+        data-gmail-body
+        className="max-w-full overflow-hidden px-0.5 py-0.5 [overflow-wrap:anywhere] break-words text-[#222222] dark:text-neutral-200"
+        style={{
+          fontFamily: GMAIL_TEXT_FONT,
+          fontSize: GMAIL_TEXT_SIZE,
+          lineHeight: GMAIL_LINE_HEIGHT,
+        }}
+      >
+        <Streamdown
+          components={gmailComponents}
+          className="max-w-full overflow-hidden [overflow-wrap:anywhere] break-words"
+          caret="block"
+          isAnimating={isAnimating}
+          linkSafety={{ enabled: false }}
+        >
+          {body}
+        </Streamdown>
+      </div>
+    </div>
+  );
+}
+
+const gmailComponents = {
+  ...chatComponents,
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => {
+    return (
+      <p
+        className="mb-3 last:mb-0"
+        style={{
+          fontFamily: GMAIL_TEXT_FONT,
+          fontSize: GMAIL_TEXT_SIZE,
+          lineHeight: GMAIL_LINE_HEIGHT,
+        }}
+      >
+        {props.children as React.ReactNode}
+      </p>
+    );
+  },
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => {
+    return (
+      <ul
+        className="mb-3 list-disc pl-6 last:mb-0"
+        style={{
+          fontFamily: GMAIL_TEXT_FONT,
+          fontSize: GMAIL_TEXT_SIZE,
+          lineHeight: GMAIL_LINE_HEIGHT,
+        }}
+      >
+        {props.children as React.ReactNode}
+      </ul>
+    );
+  },
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => {
+    return (
+      <ol
+        className="mb-3 list-decimal pl-6 last:mb-0"
+        style={{
+          fontFamily: GMAIL_TEXT_FONT,
+          fontSize: GMAIL_TEXT_SIZE,
+          lineHeight: GMAIL_LINE_HEIGHT,
+        }}
+      >
+        {props.children as React.ReactNode}
+      </ol>
+    );
+  },
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => {
+    return (
+      <li
+        className="mb-1"
+        style={{
+          fontFamily: GMAIL_TEXT_FONT,
+          fontSize: GMAIL_TEXT_SIZE,
+          lineHeight: GMAIL_LINE_HEIGHT,
+        }}
+      >
+        {props.children as React.ReactNode}
+      </li>
+    );
+  },
+} as const;
+
+async function copyGmailDraft(text: string) {
+  const plain = toGmailCopyPlainText(text);
+  const html = toGmailCopyHtml(text);
+
+  try {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([plain], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      }),
+    ]);
+  } catch {
+    await navigator.clipboard.writeText(plain);
+  }
 }

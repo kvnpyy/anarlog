@@ -5,6 +5,7 @@ import {
   type SessionEvent,
 } from "@anlg/store";
 
+import { findFolderPathForSeries } from "./folder-assignments";
 import type { SessionChanges } from "./types";
 
 import { executeTransaction, liveQueryClient } from "~/db";
@@ -138,6 +139,9 @@ export async function getOrCreateSessionForEventId(
   const sessionId = id();
   const now = new Date().toISOString();
   const sessionEvent = toSessionEvent(event);
+  const inheritedFolderPath = await findFolderPathForSeries(
+    event.recurrence_series_id,
+  );
   const participants = parseEventParticipants(event.participants_json);
   const humansByEmail = await findHumansByEmail(participants);
   const statements = [
@@ -146,7 +150,7 @@ export async function getOrCreateSessionForEventId(
         INSERT INTO sessions (
           id, workspace_id, owner_user_id, title, created_at, updated_at,
           started_at, ended_at, event_id, external_event_id, external_provider,
-          series_id, event_json, deleted_at
+          series_id, folder_path, event_json, deleted_at
         )
         SELECT ?, NULLIF((
           SELECT json_extract(value_json, '$.workspace_id')
@@ -159,7 +163,7 @@ export async function getOrCreateSessionForEventId(
             FROM app_settings
             WHERE id = 'cloudsync_workspace_binding'
           ), '')
-        ), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL
+        ), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL
         WHERE NOT EXISTS (
           SELECT 1
           FROM sessions
@@ -179,6 +183,7 @@ export async function getOrCreateSessionForEventId(
         event.tracking_id_event,
         event.provider,
         event.recurrence_series_id,
+        inheritedFolderPath,
         JSON.stringify(sessionEvent),
         event.id,
         event.tracking_id_event,

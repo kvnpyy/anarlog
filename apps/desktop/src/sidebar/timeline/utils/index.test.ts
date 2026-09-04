@@ -4,6 +4,7 @@ import {
   buildTimelineBuckets,
   calculateTodayIndicatorPlacement,
   deriveTimelineWindowData,
+  filterTimelineTablesByFolder,
   filterTimelineTablesUpToTomorrow,
   getBucketInfo,
   hasTimelineItemsAfterTomorrow,
@@ -636,5 +637,35 @@ describe("timeline utils", () => {
       "in 4 weeks",
       "in 2 weeks",
     ]);
+  });
+
+  test("filterTimelineTablesByFolder keeps only sessions in the selected folder", () => {
+    const filtered = filterTimelineTablesByFolder({
+      folderPath: "work",
+      timelineEventsTable: {
+        "event-1": {
+          title: "Unfiled event",
+          started_at: "2024-01-15T09:00:00.000Z",
+          has_recurrence_rules: false,
+        },
+      },
+      timelineSessionsTable: {
+        "session-work": {
+          title: "Work note",
+          folder_id: "work",
+          created_at: "2024-01-15T09:00:00.000Z",
+        },
+        "session-personal": {
+          title: "Personal note",
+          folder_id: "personal",
+          created_at: "2024-01-15T10:00:00.000Z",
+        },
+      },
+    });
+
+    expect(Object.keys(filtered.timelineSessionsTable ?? {})).toEqual([
+      "session-work",
+    ]);
+    expect(filtered.timelineEventsTable).toEqual({});
   });
 });

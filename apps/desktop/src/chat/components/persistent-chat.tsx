@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -8,7 +8,15 @@ import { cn } from "@anlg/utils";
 import { ChatPanelFrame } from "./chat-panel";
 
 import type { ChatSessionRenderProps } from "~/chat/components/session-provider";
-import { chatFloatingPanelShellClassNames } from "~/chat/surface";
+import {
+  isPageIntegratedChat,
+  shouldCollapsePageChatOnNoteClick,
+  shouldExpandPageChatOnComposerClick,
+} from "~/chat/page-integrated";
+import {
+  chatFloatingPanelShellClassNames,
+  chatPageIntegratedShellClassNames,
+} from "~/chat/surface";
 import { useShell } from "~/contexts/shell";
 
 const FLOATING_CHAT_INPUT_MAX_WIDTH = 640;
@@ -18,6 +26,7 @@ const FLOATING_PANEL_DEFAULT_MAX_WIDTH =
   FLOATING_CHAT_INPUT_MAX_WIDTH + FLOATING_CHAT_SHELL_INSET * 2;
 const FLOATING_PANEL_TOP_CLEARANCE = 46;
 const FLOATING_PANEL_EASE = [0.22, 1, 0.36, 1] as const;
+const PAGE_COMPOSER_MAX_HEIGHT = "22rem";
 
 type FloatingContainerRect = {
   top: number;
@@ -29,15 +38,35 @@ type FloatingContainerRect = {
 export function PersistentChatPanel({
   floatingContainerRef,
   sessionProps,
+  tabType,
 }: {
   floatingContainerRef: React.RefObject<HTMLDivElement | null>;
   sessionProps: ChatSessionRenderProps | null;
+  tabType?: string;
 }) {
   const { chat } = useShell();
-  const isVisible = chat.mode === "FloatingOpen";
+  const isVisible = chat.mode !== "RightPanelOpen";
+  const messageCount = sessionProps?.messages.length ?? 0;
+  const pageIntegrated = isPageIntegratedChat({
+    mode: chat.mode,
+    messageCount,
+    status: sessionProps?.status,
+    tabType,
+  });
+  const collapseOnNoteClick = shouldCollapsePageChatOnNoteClick({
+    pageIntegrated,
+    mode: chat.mode,
+    messageCount,
+    status: sessionProps?.status,
+  });
+  const expandOnComposerClick = shouldExpandPageChatOnComposerClick({
+    pageIntegrated,
+    mode: chat.mode,
+  });
 
   const [containerRect, setContainerRect] =
     useState<FloatingContainerRect | null>(null);
+  const [pageSlot, setPageSlot] = useState<HTMLElement | null>(null);
   const [draftHasContent, setDraftHasContent] = useState(false);
 
   const getActiveContainer = () => {
@@ -45,6 +74,14 @@ export function PersistentChatPanel({
       floatingContainerRef.current?.querySelector<HTMLDivElement>(
         "[data-chat-floating-anchor]",
       ) ?? floatingContainerRef.current
+    );
+  };
+
+  const getPageSlot = () => {
+    return (
+      floatingContainerRef.current?.querySelector<HTMLElement>(
+        "[data-chat-page-slot]",
+      ) ?? null
     );
   };
 
@@ -62,19 +99,78 @@ export function PersistentChatPanel({
     "esc",
     () => chat.sendEvent({ type: "CLOSE" }),
     {
-      enabled: isVisible,
+      enabled: isVisible && (!pageIntegrated || collapseOnNoteClick),
       preventDefault: true,
       enableOnFormTags: true,
       enableOnContentEditable: true,
     },
-    [chat, isVisible],
+    [chat, isVisible, pageIntegrated, collapseOnNoteClick],
   );
+
+  useEffect(() => {
+    if (!collapseOnNoteClick) {
+      return;
+    }
+
+    const noteSurface = floatingContainerRef.current?.querySelector(
+      "[data-chat-page-content]",
+    );
+    if (!noteSurface) {
+      return;
+    }
+
+    const handleNotePointerDown = () => {
+      chat.sendEvent({ type: "CLOSE" });
+    };
+
+    noteSurface.addEventListener("pointerdown", handleNotePointerDown);
+    return () => {
+      noteSurface.removeEventListener("pointerdown", handleNotePointerDown);
+    };
+  }, [chat, collapseOnNoteClick, floatingContainerRef, pageSlot]);
+
+  useLayoutEffect(() => {
+    if (!isVisible || !pageIntegrated) {
+      setPageSlot(null);
+      return;
+    }
+
+    const syncSlot = () => {
+      const nextSlot = getPageSlot();
+      setPageSlot((currentSlot) =>
+        currentSlot === nextSlot ? currentSlot : nextSlot,
+      );
+      return nextSlot;
+    };
+
+    if (syncSlot()) {
+      const root = floatingContainerRef.current;
+      if (!root) {
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        syncSlot();
+      });
+      observer.observe(root, { childList: true, subtree: true });
+      return () => {
+        observer.disconnect();
+      };
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      syncSlot();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isVisible, pageIntegrated, floatingContainerRef, pageSlot]);
 
   useLayoutEffect(() => {
     const root = floatingContainerRef.current;
     const container = getActiveContainer();
 
-    if (!isVisible || !root || !container) {
+    if (!isVisible || pageIntegrated || !root || !container) {
       return;
     }
 
@@ -101,7 +197,7 @@ export function PersistentChatPanel({
       window.removeEventListener("resize", updateRect);
       window.removeEventListener("scroll", updateRect, true);
     };
-  }, [isVisible, floatingContainerRef]);
+  }, [isVisible, pageIntegrated, floatingContainerRef]);
 
   const panelMotion = {
     initial: { y: 10, scale: 0.985 },
@@ -120,6 +216,49 @@ export function PersistentChatPanel({
 
   if (typeof document === "undefined") {
     return null;
+  }
+
+  if (pageIntegrated) {
+    if (!isVisible || !pageSlot) {
+      return null;
+    }
+
+    return createPortal(
+      <div
+        data-chat-page-composer
+        data-chat-page-integrated="true"
+        data-chat-page-thread={collapseOnNoteClick ? "expanded" : "collapsed"}
+        className="pointer-events-auto mx-auto w-full max-w-[648px] px-3 pt-1 pb-2"
+        onPointerDown={() => {
+          if (!expandOnComposerClick) {
+            return;
+          }
+          chat.sendEvent({ type: "OPEN" });
+        }}
+      >
+        <div
+          data-chat-panel
+          data-chat-panel-reveal="page"
+          data-chat-size="floating"
+          className={cn([
+            "relative flex min-h-0 flex-col overflow-hidden",
+            chatPageIntegratedShellClassNames(),
+          ])}
+          style={{ maxHeight: PAGE_COMPOSER_MAX_HEIGHT }}
+        >
+          <ChatPanelFrame
+            layout="floating"
+            pageIntegrated
+            onDraftContentChange={setDraftHasContent}
+            onOpenRightPanel={() =>
+              chat.sendEvent({ type: "OPEN_RIGHT_PANEL" })
+            }
+            sessionProps={sessionProps}
+          />
+        </div>
+      </div>,
+      pageSlot,
+    );
   }
 
   return createPortal(
@@ -146,20 +285,21 @@ export function PersistentChatPanel({
           <div
             data-chat-floating-frame
             className={cn([
-              "pointer-events-auto relative flex h-full min-h-0",
-              "items-end justify-center px-3 pb-2",
+              "relative flex h-full min-h-0",
+              "pointer-events-auto items-end justify-center px-3 pb-2",
             ])}
             style={{
               paddingTop: FLOATING_PANEL_TOP_CLEARANCE,
             }}
             onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                if (draftHasContent) {
-                  return;
-                }
-
-                chat.sendEvent({ type: "CLOSE" });
+              if (event.target !== event.currentTarget) {
+                return;
               }
+              if (draftHasContent) {
+                return;
+              }
+
+              chat.sendEvent({ type: "CLOSE" });
             }}
           >
             <motion.div
@@ -167,7 +307,7 @@ export function PersistentChatPanel({
               data-chat-panel-reveal="lift"
               data-chat-size="floating"
               className={cn([
-                "relative flex min-h-0 flex-col overflow-hidden",
+                "pointer-events-auto relative flex min-h-0 flex-col overflow-hidden",
                 chatFloatingPanelShellClassNames(),
               ])}
               style={panelStyle}
@@ -178,6 +318,7 @@ export function PersistentChatPanel({
             >
               <ChatPanelFrame
                 layout="floating"
+                pageIntegrated={false}
                 onDraftContentChange={setDraftHasContent}
                 onOpenRightPanel={() =>
                   chat.sendEvent({ type: "OPEN_RIGHT_PANEL" })

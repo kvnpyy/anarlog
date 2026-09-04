@@ -1,6 +1,5 @@
 import { ArrowClockwise } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { relaunch } from "@tauri-apps/plugin-process";
 import { useEffect, useState, type ReactNode } from "react";
 
 import {
@@ -14,6 +13,7 @@ import { cn } from "@anlg/utils";
 import { BrandLoadingView } from "./brand-loading-view";
 
 import { captureOperationalError } from "~/error-reporting";
+import { reloadOrRelaunch } from "~/shared/relaunch";
 
 export const LONG_LOAD_SPLASH_DELAY_MS = 400;
 const STARTUP_STATUS_REFETCH_INTERVAL_MS = 250;
@@ -110,7 +110,7 @@ function StartupErrorView({ error }: { error: Error }) {
 
   const handleRestart = async () => {
     try {
-      await relaunch();
+      await reloadOrRelaunch();
     } catch (cause) {
       captureOperationalError(cause, {
         operation: "app_restart",

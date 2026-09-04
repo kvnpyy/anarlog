@@ -37,9 +37,10 @@ Context and local meeting tool guidance:
 - Do not assume meeting contents from chat history when a typed tool can read the current source of truth.
 
 Copy-ready draft guidance:
-- When drafting an email, Slack message, text, or anything the user will paste elsewhere, write plain text only.
-- Do not use markdown: no asterisks, underscores, headings, backticks, or fenced code blocks.
+- When drafting an email, Slack message, text, or anything the user will paste elsewhere, write copy-ready text.
+- Keep email drafts under 150 words.
 - For emails, start with "Subject:" on its own line, then a blank line, then the body.
+- Use short paragraphs and bullet or numbered lists when they make the email easier to scan. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or fenced code blocks.
 - The whole draft should copy-paste into Gmail or Slack without cleanup.
 - Write in the user's voice: match how they talk in the transcript and what their profile says about them.
 - Avoid obvious AI writing: no "I hope this finds you well", "delve", "furthermore", "leverage", "I'd be happy to", or stiff corporate filler.
@@ -115,6 +116,27 @@ export function appendGlobalAskToolGuidance(
   return `${prompt.trim()}\n\n${GLOBAL_ASK_TOOL_GUIDANCE}`;
 }
 
+export function appendFolderAskToolGuidance(
+  prompt: string | undefined,
+  folderName: string | null | undefined,
+): string | undefined {
+  if (!folderName || prompt === undefined) {
+    return prompt;
+  }
+
+  const guidance = `
+Folder Ask guidance:
+- The user selected the "${folderName}" folder. Search and list meetings in that folder unless they explicitly ask about meetings outside it.
+- Synthesize across those meetings: recurring themes, open action items, follow-ups, and history.
+`.trim();
+
+  if (!prompt.trim()) {
+    return guidance;
+  }
+
+  return `${prompt.trim()}\n\n${guidance}`;
+}
+
 export function omitLiveAskTools<T extends Record<string, unknown>>(
   tools: T,
 ): T {
@@ -185,6 +207,7 @@ export function useTransport(
   userId?: string,
   isLiveAsk = false,
   isWorkspaceAsk = false,
+  folderAskName?: string | null,
 ) {
   const registry = useToolRegistry();
   const configuredModel = useLanguageModel("chat");
@@ -245,11 +268,15 @@ export function useTransport(
     ),
     knowledgeWindow,
   );
-  const effectiveSystemPrompt = isLiveAsk
+  const scopedSystemPrompt = isLiveAsk
     ? appendLiveAskToolGuidance(meetingSystemPrompt)
     : isWorkspaceAsk
       ? appendGlobalAskToolGuidance(meetingSystemPrompt)
       : meetingSystemPrompt;
+  const effectiveSystemPrompt = appendFolderAskToolGuidance(
+    scopedSystemPrompt,
+    folderAskName,
+  );
   const isSystemPromptReady =
     typeof systemPromptOverride === "string" || systemPrompt !== undefined;
 

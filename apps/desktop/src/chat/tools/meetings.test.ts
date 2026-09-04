@@ -110,6 +110,38 @@ describe("canonical meeting chat tools", () => {
     expect(result.notice).toContain("last 30 days");
   });
 
+  it("keeps listed meetings inside the selected folder", async () => {
+    mocks.listMeetings.mockResolvedValue({
+      meetings: [
+        {
+          id: "in-folder",
+          title: "Standup",
+          started_at: "2026-08-28T10:00:00.000Z",
+          created_at: "2026-08-28T10:00:00.000Z",
+        },
+        {
+          id: "other-folder",
+          title: "Other",
+          started_at: "2026-08-27T10:00:00.000Z",
+          created_at: "2026-08-27T10:00:00.000Z",
+        },
+      ],
+      pagination: { next_offset: null, returned: 2, limit: 20, offset: 0 },
+    });
+
+    const result = await (
+      buildListMeetingsTool({
+        getAiKnowledgeWindow: () =>
+          getAiKnowledgeWindow(false, new Date("2026-08-28T12:00:00Z")),
+        getFolderSessionIds: async () => new Set(["in-folder"]),
+      } as any) as any
+    ).execute({ limit: 20 });
+
+    expect(
+      result.meetings.map((meeting: { id: string }) => meeting.id),
+    ).toEqual(["in-folder"]);
+  });
+
   it("matches the canonical MCP tool names, descriptions, and input schemas", async () => {
     const repositoryRoot = existsSync(
       resolve(process.cwd(), "../cli/Cargo.toml"),

@@ -1,22 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { FloatingActionButton } from "./index";
 
 import type { Tab } from "~/store/zustand/tabs";
 import type { EditorView } from "~/store/zustand/tabs/schema";
-
-const hoisted = vi.hoisted(() => ({
-  sendEvent: vi.fn(),
-}));
-
-vi.mock("~/shared/chat-cta", () => ({
-  ChatCTA: () => (
-    <button type="button" onClick={() => hoisted.sendEvent({ type: "OPEN" })}>
-      Ask Acorn anything
-    </button>
-  ),
-}));
 
 describe("FloatingActionButton", () => {
   const tab = {
@@ -39,51 +27,22 @@ describe("FloatingActionButton", () => {
       />,
     );
 
-  beforeEach(() => {
-    hoisted.sendEvent.mockClear();
-  });
-
   afterEach(() => {
     cleanup();
   });
 
-  it("always renders the chat FAB", () => {
+  it("reserves space for the static chat composer instead of a pill", () => {
     renderFloatingActionButton();
 
     expect(
-      screen.getByRole("button", { name: "Ask Acorn anything" }),
-    ).not.toBeNull();
+      screen.queryByRole("button", { name: "Ask Acorn anything" }),
+    ).toBeNull();
+    expect(
+      document.querySelector("[data-session-chat-input-spacer]"),
+    ).toBeTruthy();
   });
 
-  it("keeps chat for states that used to show other FAB actions", () => {
-    const cases: Array<
-      Partial<React.ComponentProps<typeof FloatingActionButton>>
-    > = [
-      { allowListening: false },
-      { audioExists: true, currentView: { type: "transcript" } },
-      { currentView: { type: "enhanced", id: "note-1" } },
-      { skipReason: "Not enough words recorded (3/5 minimum)" },
-    ];
-
-    for (const props of cases) {
-      const view = renderFloatingActionButton(props);
-
-      expect(
-        screen.getByRole("button", { name: "Ask Acorn anything" }),
-      ).not.toBeNull();
-      expect(
-        screen.queryByRole("button", { name: "Start listening" }),
-      ).toBeNull();
-      expect(
-        screen.queryByRole("button", { name: "Generate summary" }),
-      ).toBeNull();
-      expect(screen.queryByRole("status")).toBeNull();
-
-      view.unmount();
-    }
-  });
-
-  it("keeps a selection slot stacked above the chat FAB", () => {
+  it("keeps a selection slot stacked above the static composer", () => {
     renderFloatingActionButton();
 
     const slot = document.querySelector("[data-session-fab-selection]");
@@ -92,18 +51,6 @@ describe("FloatingActionButton", () => {
     expect(stack?.className).toContain("flex-col-reverse");
     expect(stack?.className).toContain("bottom-3");
     expect(slot?.className).toContain("mb-2");
-    expect(slot?.className).toContain("translate-y-8");
-    expect(slot?.className).toContain("peer-hover/session-fab:translate-y-0");
-    expect(slot?.className).toContain(
-      "peer-focus-within/session-fab:translate-y-0",
-    );
-  });
-
-  it("opens chat from the FAB", () => {
-    renderFloatingActionButton();
-
-    fireEvent.click(screen.getByRole("button", { name: "Ask Acorn anything" }));
-
-    expect(hoisted.sendEvent).toHaveBeenCalledWith({ type: "OPEN" });
+    expect(slot?.className).not.toContain("translate-y-8");
   });
 });
