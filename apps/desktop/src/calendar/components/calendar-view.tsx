@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { ArrowsClockwise, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,6 +14,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@anlg/ui/components/ui/button";
@@ -28,6 +30,7 @@ import {
 } from "@anlg/ui/components/ui/tooltip";
 import { cn } from "@anlg/utils";
 
+import { shouldShowCalendarFirstFill } from "./calendar-view-state";
 import { useSync } from "./context";
 import { DayCell } from "./day-cell";
 import { getCalendarConnectionKey } from "./shared";
@@ -80,7 +83,7 @@ function useVisibleCols(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function CalendarView() {
-  const { scheduleSync } = useSync();
+  const { scheduleSync, status } = useSync();
   const { data: connections } = useConnections(true);
   const connectionKey = useMemo(
     () => getCalendarConnectionKey(connections),
@@ -175,6 +178,19 @@ export function CalendarView() {
         .join(","),
     [enabledCalendars],
   );
+  const eventCount = useMemo(
+    () =>
+      Object.values(calendarData.eventIdsByDate).reduce(
+        (count, ids) => count + ids.length,
+        0,
+      ),
+    [calendarData.eventIdsByDate],
+  );
+  const showFirstFill = shouldShowCalendarFirstFill({
+    enabledCalendarCount: enabledCalendars.length,
+    eventCount,
+    status,
+  });
 
   useVisibleRangeSync(visibleRange, enabledCalendarKey);
 
@@ -280,87 +296,90 @@ export function CalendarView() {
         </ButtonGroup>
       </div>
 
-      {isMonthView ? (
-        <>
-          <div
-            className="border-border grid border-b"
-            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-          >
-            {visibleHeaders.map((day, i) => (
-              <div
-                key={`${day}-${i}`}
-                className={cn([
-                  "text-center text-xs font-medium",
-                  "py-2",
-                  i < visibleHeaders.length - 1 && "border-r-border border-r",
-                  day === "Sat" || day === "Sun"
-                    ? "text-muted-foreground"
-                    : "text-foreground",
-                ])}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="grid flex-1 auto-rows-fr overflow-hidden"
-            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-          >
-            {days.map((day) => (
-              <DayCell
-                key={day.toISOString()}
-                day={day}
-                isCurrentMonth={isSameMonth(day, currentMonth)}
-                calendarData={calendarData}
-              />
-            ))}
-          </div>
-        </>
-      ) : (
-        <div
-          ref={compactScrollRef}
-          className={cn([
-            "scrollbar-hide min-h-0 flex-1 overflow-x-auto overflow-y-hidden",
-            "snap-x snap-mandatory overscroll-x-contain",
-          ])}
-          onScroll={handleCompactScroll}
-        >
-          <div
-            className="grid h-full min-w-full grid-rows-[auto_minmax(0,1fr)]"
-            style={{
-              width: compactContentWidth,
-              gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
-            }}
-          >
-            {days.map((day) => {
-              const label = format(day, "EEE");
-              return (
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {isMonthView ? (
+          <>
+            <div
+              className="border-border grid border-b"
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+            >
+              {visibleHeaders.map((day, i) => (
                 <div
-                  key={`header-${day.toISOString()}`}
+                  key={`${day}-${i}`}
                   className={cn([
-                    "border-r-border border-b-border snap-start border-r border-b",
-                    "py-2 text-center text-xs font-medium",
-                    label === "Sat" || label === "Sun"
+                    "text-center text-xs font-medium",
+                    "py-2",
+                    i < visibleHeaders.length - 1 && "border-r-border border-r",
+                    day === "Sat" || day === "Sun"
                       ? "text-muted-foreground"
                       : "text-foreground",
                   ])}
                 >
-                  {label}
+                  {day}
                 </div>
-              );
-            })}
-            {days.map((day) => (
-              <DayCell
-                key={day.toISOString()}
-                day={day}
-                isCurrentMonth={true}
-                calendarData={calendarData}
-              />
-            ))}
+              ))}
+            </div>
+
+            <div
+              className="grid flex-1 auto-rows-fr overflow-hidden"
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+            >
+              {days.map((day) => (
+                <DayCell
+                  key={day.toISOString()}
+                  day={day}
+                  isCurrentMonth={isSameMonth(day, currentMonth)}
+                  calendarData={calendarData}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div
+            ref={compactScrollRef}
+            className={cn([
+              "scrollbar-hide min-h-0 flex-1 overflow-x-auto overflow-y-hidden",
+              "snap-x snap-mandatory overscroll-x-contain",
+            ])}
+            onScroll={handleCompactScroll}
+          >
+            <div
+              className="grid h-full min-w-full grid-rows-[auto_minmax(0,1fr)]"
+              style={{
+                width: compactContentWidth,
+                gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {days.map((day) => {
+                const label = format(day, "EEE");
+                return (
+                  <div
+                    key={`header-${day.toISOString()}`}
+                    className={cn([
+                      "border-r-border border-b-border snap-start border-r border-b",
+                      "py-2 text-center text-xs font-medium",
+                      label === "Sat" || label === "Sun"
+                        ? "text-muted-foreground"
+                        : "text-foreground",
+                    ])}
+                  >
+                    {label}
+                  </div>
+                );
+              })}
+              {days.map((day) => (
+                <DayCell
+                  key={day.toISOString()}
+                  day={day}
+                  isCurrentMonth={true}
+                  calendarData={calendarData}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        <CalendarFirstFillOverlay visible={showFirstFill} />
+      </div>
     </div>
   );
 }
@@ -386,6 +405,39 @@ function useVisibleRangeSync(
     gcTime: 10 * VISIBLE_RANGE_SYNC_STALE_MS,
     retry: false,
   });
+}
+
+function CalendarFirstFillOverlay({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div
+            className={cn([
+              "bg-background/80 flex flex-col items-center gap-3 rounded-2xl px-5 py-4",
+              "border-border border backdrop-blur-sm",
+            ])}
+          >
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="bg-muted h-2 w-24 animate-pulse rounded-full" />
+              <span className="bg-muted h-2 w-16 animate-pulse rounded-full delay-75" />
+              <span className="bg-muted h-2 w-20 animate-pulse rounded-full delay-150" />
+            </div>
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <Spinner size={12} />
+              <Trans>Pulling in your events…</Trans>
+            </div>
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
 }
 
 function CalendarSyncHeaderControls() {
@@ -424,9 +476,9 @@ function CalendarSyncHeaderControls() {
   const showSyncIndicator = showManualRefreshFeedback || status !== "idle";
   const statusText =
     status === "scheduled"
-      ? "Sync scheduled"
+      ? "Events are on the way"
       : showSyncIndicator
-        ? "Syncing"
+        ? "Pulling in your events"
         : null;
 
   return (

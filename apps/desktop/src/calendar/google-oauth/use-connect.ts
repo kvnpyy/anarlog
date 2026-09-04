@@ -12,6 +12,7 @@ import {
   allowReconnectedCalendarConnections,
   removeDisconnectedCalendarConnection,
   syncCalendarEvents,
+  trackDirectSync,
 } from "~/services/calendar";
 
 export function useGoogleCalendarConnect() {
@@ -43,7 +44,7 @@ export function useGoogleCalendarConnect() {
       });
       await queryClient.invalidateQueries({ queryKey: ["integration-status"] });
       try {
-        await syncCalendarEvents();
+        await trackDirectSync(() => syncCalendarEvents());
       } catch (error) {
         captureOperationalError(error, {
           operation: "google_calendar_sync",

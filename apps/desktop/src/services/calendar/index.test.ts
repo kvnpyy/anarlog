@@ -39,6 +39,9 @@ vi.mock("./fetch", () => ({
 vi.mock("./process", () => processMocks);
 vi.mock("./storage", () => storageMocks);
 vi.mock("~/db/write-queue", () => writeQueueMocks);
+vi.mock("~/stt/dictionary-learn", () => ({
+  rememberLearnedContactTerms: vi.fn(async () => []),
+}));
 
 import {
   allowReconnectedCalendarConnections,
@@ -430,6 +433,40 @@ describe("syncCalendarEventsForRange", () => {
     expect(fetchMocks.fetchIncomingEvents).toHaveBeenCalledTimes(1);
     expect(fetchMocks.fetchExistingEvents).not.toHaveBeenCalled();
     expect(storageMocks.applyConnectionSync).not.toHaveBeenCalled();
+  });
+
+  test("does not diff events for calendars that failed to fetch", async () => {
+    const incoming = [
+      {
+        tracking_id_event: "event-1",
+        tracking_id_calendar: "primary",
+        has_recurrence_rules: false,
+        is_all_day: false,
+      },
+    ];
+    fetchMocks.fetchIncomingEvents.mockResolvedValue({
+      events: incoming,
+      participants: new Map([["event-1", []]]),
+      failedTrackingIds: ["holiday"],
+    });
+    ctxMocks.createCtx.mockResolvedValue({
+      ...ctx,
+      calendarIds: new Set(["cal-1", "cal-2"]),
+      calendarTrackingIdToId: new Map([
+        ["primary", "cal-1"],
+        ["holiday", "cal-2"],
+      ]),
+    });
+
+    await syncCalendarEventsForRange({ from: ctx.from, to: ctx.to });
+
+    const syncCtx = fetchMocks.fetchExistingEvents.mock.calls[0][0] as {
+      calendarIds: Set<string>;
+      calendarTrackingIdToId: Map<string, string>;
+    };
+    expect([...syncCtx.calendarIds]).toEqual(["cal-1"]);
+    expect([...syncCtx.calendarTrackingIdToId.keys()]).toEqual(["primary"]);
+    expect(storageMocks.applyConnectionSync).toHaveBeenCalled();
   });
 
   test("commits one connection snapshot after all diffs are built", async () => {

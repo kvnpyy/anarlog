@@ -16,6 +16,10 @@ vi.mock("~/calendar/components/context", () => ({
   ),
 }));
 
+vi.mock("~/stt/use-learn-dictionary", () => ({
+  useLearnDictionaryFromContacts: () => undefined,
+}));
+
 vi.mock("~/store/zustand/tabs", () => ({
   useTabs: (
     selector: (state: { currentTab: typeof mocks.currentTab }) => unknown,

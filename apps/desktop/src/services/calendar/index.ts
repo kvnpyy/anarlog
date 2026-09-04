@@ -2,6 +2,7 @@ import type { CalendarProviderType } from "@anlg/plugin-calendar";
 
 import {
   type CalendarSyncRange,
+  type Ctx,
   createCtx,
   getProviderConnections,
   syncCalendars,
@@ -11,6 +12,7 @@ import {
   fetchExistingEvents,
   fetchIncomingEvents,
 } from "./fetch";
+import type { IncomingParticipants } from "./fetch/types";
 import {
   syncEvents,
   syncSessionEmbeddedEvents,
@@ -25,9 +27,15 @@ import {
 
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import type { TaskScheduler } from "~/services/task-scheduler";
+import { rememberLearnedContactTerms } from "~/stt/dictionary-learn";
 
 export const CALENDAR_SYNC_TASK_ID = "calendarSync";
 export type { CalendarSyncRange };
+export {
+  getDirectSyncCount,
+  subscribeDirectSync,
+  trackDirectSync,
+} from "./direct-sync";
 
 type CalendarSyncOptions = {
   signal?: AbortSignal;
@@ -154,7 +162,7 @@ async function runForConnection(
   generation = calendarSyncGeneration,
 ) {
   const shouldStop = () => isStopped(options.signal, generation);
-  const ctx = await createCtx(provider, connectionId, range);
+  let ctx = await createCtx(provider, connectionId, range);
   if (shouldStop()) return;
 
   let incoming;
@@ -164,6 +172,14 @@ async function runForConnection(
     const result = await fetchIncomingEvents(ctx);
     incoming = result.events;
     incomingParticipants = result.participants;
+    if (result.failedTrackingIds?.length) {
+      ctx = {
+        ...ctx,
+        calendarIds: new Set(ctx.calendarIds),
+        calendarTrackingIdToId: new Map(ctx.calendarTrackingIdToId),
+      };
+      excludeFailedCalendars(ctx, result.failedTrackingIds);
+    }
   } catch (error) {
     if (error instanceof CalendarFetchError) {
       console.error(
@@ -209,6 +225,36 @@ async function runForConnection(
       participants,
     });
   });
+
+  void rememberLearnedContactTerms({
+    emails: emailsFromIncomingParticipants(incomingParticipants),
+  }).catch((error) => {
+    console.warn("[dictionary] failed to learn calendar contact terms", error);
+  });
+}
+
+function emailsFromIncomingParticipants(
+  incomingParticipants: IncomingParticipants,
+) {
+  const emails: string[] = [];
+  for (const participants of incomingParticipants.values()) {
+    for (const participant of participants) {
+      if (participant.email) {
+        emails.push(participant.email);
+      }
+    }
+  }
+  return emails;
+}
+
+function excludeFailedCalendars(ctx: Ctx, failedTrackingIds: string[]) {
+  for (const trackingId of failedTrackingIds) {
+    const calendarId = ctx.calendarTrackingIdToId.get(trackingId);
+    ctx.calendarTrackingIdToId.delete(trackingId);
+    if (calendarId) {
+      ctx.calendarIds.delete(calendarId);
+    }
+  }
 }
 
 function isStopped(signal: AbortSignal | undefined, generation: number) {

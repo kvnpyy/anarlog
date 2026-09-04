@@ -132,6 +132,105 @@ describe("calendar SQLite storage", () => {
     expect(statement.params).toContain("Work restored");
   });
 
+  test("enables the primary calendar on first insert and leaves others off", async () => {
+    mocks.execute.mockResolvedValue([]);
+
+    await applyCalendarInventory({
+      provider: "google",
+      requestedConnectionIds: ["conn-work"],
+      successfulConnections: [
+        {
+          connectionId: "conn-work",
+          calendars: [
+            {
+              provider: "google",
+              id: "holiday",
+              title: "Holidays",
+              source: "holiday@group.v.calendar.google.com",
+              color: null,
+              is_primary: false,
+              can_edit: false,
+              raw: "{}",
+            },
+            {
+              provider: "google",
+              id: "primary",
+              title: "Work",
+              source: "work@example.com",
+              color: null,
+              is_primary: true,
+              can_edit: true,
+              raw: "{}",
+            },
+          ],
+        },
+      ],
+    });
+
+    const statements = mocks.executeTransaction.mock.calls[0][0] as Array<{
+      sql: string;
+      params: unknown[];
+    }>;
+    const holidayInsert = statements.find(
+      (statement) => statement.params[1] === "holiday",
+    );
+    const primaryInsert = statements.find(
+      (statement) => statement.params[1] === "primary",
+    );
+
+    expect(holidayInsert?.params[3]).toBe(0);
+    expect(primaryInsert?.params[3]).toBe(1);
+  });
+
+  test("does not auto-enable a new calendar when the connection already has one", async () => {
+    mocks.execute.mockResolvedValue([calendar]);
+
+    await applyCalendarInventory({
+      provider: "google",
+      requestedConnectionIds: ["conn-work"],
+      successfulConnections: [
+        {
+          connectionId: "conn-work",
+          calendars: [
+            {
+              provider: "google",
+              id: "primary",
+              title: "Work",
+              source: "work@example.com",
+              color: null,
+              is_primary: true,
+              can_edit: true,
+              raw: "{}",
+            },
+            {
+              provider: "google",
+              id: "sports",
+              title: "Sports",
+              source: "sports@group.v.calendar.google.com",
+              color: null,
+              is_primary: false,
+              can_edit: false,
+              raw: "{}",
+            },
+          ],
+        },
+      ],
+    });
+
+    const statements = mocks.executeTransaction.mock.calls[0][0] as Array<{
+      params: unknown[];
+    }>;
+    const sportsInsert = statements.find(
+      (statement) => statement.params[1] === "sports",
+    );
+    const primaryUpsert = statements.find(
+      (statement) => statement.params[1] === "primary",
+    );
+
+    expect(sportsInsert?.params[3]).toBe(0);
+    expect(primaryUpsert?.params[3]).toBe(0);
+  });
+
   test("loads tombstoned matching events for durable-id resurrection", async () => {
     mocks.execute.mockResolvedValue([
       {

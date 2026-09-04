@@ -5,6 +5,7 @@ import { cn } from "@anlg/utils";
 
 import { SyncProvider } from "~/calendar/components/context";
 import { useTabs } from "~/store/zustand/tabs";
+import { useLearnDictionaryFromContacts } from "~/stt/use-learn-dictionary";
 
 export type MainSurfaceChrome = "default" | "top" | "top-borderless" | "left";
 
@@ -17,6 +18,7 @@ export function MainShellScaffold({
   edgeToEdge?: boolean;
   mainSurfaceChrome?: MainSurfaceChrome;
 }) {
+  useLearnDictionaryFromContacts();
   const currentTab = useTabs((state) => state.currentTab);
   const isCalendarMode = currentTab?.type === "calendar";
   const isMacos = platform() === "macos";

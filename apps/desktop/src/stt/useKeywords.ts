@@ -11,9 +11,11 @@ import { unified } from "unified";
 import type { VFile } from "vfile";
 
 import { useSessionEventParticipants } from "~/calendar/queries";
+import { companyTermsFromEmails } from "~/contacts/company-from-email";
 import { liveQueryClient } from "~/db";
 import { useSession, useSessionParticipants } from "~/session/queries";
 import { useConfigValue } from "~/shared/config";
+import { rememberLearnedContactTerms } from "~/stt/dictionary-learn";
 import { normalizeKeywordList } from "~/stt/keywords";
 
 const MAX_TRANSCRIPTION_HINTS = 50;
@@ -40,6 +42,19 @@ export function useKeywords(sessionId: string) {
             ? [participant.name]
             : [],
         ),
+        sessionParticipantEmails: participants.flatMap((participant) =>
+          participant.source !== "excluded" && participant.email
+            ? [participant.email]
+            : [],
+        ),
+        eventParticipantEmails: eventParticipants.flatMap((participant) =>
+          participant.email ? [participant.email] : [],
+        ),
+        organizationTerms: participants.flatMap((participant) =>
+          participant.source !== "excluded" && participant.organizationName
+            ? [participant.organizationName]
+            : [],
+        ),
         dictionaryTerms,
       }),
     [dictionaryTerms, eventParticipants, participants, session],
@@ -51,6 +66,8 @@ type KeywordSnapshotSqlRow = {
   title: string;
   event_json: string;
   participant_names_json: string;
+  participant_emails_json: string;
+  participant_orgs_json: string;
   event_participants_json: string;
 };
 
@@ -82,6 +99,39 @@ export async function getSessionKeywords({
             ORDER BY name, participant.id
           )
         ), '[]') AS participant_names_json,
+        COALESCE((
+          SELECT json_group_array(email)
+          FROM (
+            SELECT DISTINCT COALESCE(NULLIF(human.email, ''), participant.email) AS email
+            FROM session_participants AS participant
+            LEFT JOIN humans AS human
+              ON human.id = participant.human_id
+              AND human.deleted_at IS NULL
+            WHERE participant.session_id = session.id
+              AND participant.source <> 'excluded'
+              AND participant.deleted_at IS NULL
+              AND COALESCE(NULLIF(human.email, ''), participant.email) <> ''
+            ORDER BY email
+          )
+        ), '[]') AS participant_emails_json,
+        COALESCE((
+          SELECT json_group_array(organization)
+          FROM (
+            SELECT DISTINCT organization.name AS organization
+            FROM session_participants AS participant
+            LEFT JOIN humans AS human
+              ON human.id = participant.human_id
+              AND human.deleted_at IS NULL
+            LEFT JOIN organizations AS organization
+              ON organization.id = human.organization_id
+              AND organization.deleted_at IS NULL
+            WHERE participant.session_id = session.id
+              AND participant.source <> 'excluded'
+              AND participant.deleted_at IS NULL
+              AND organization.name <> ''
+            ORDER BY organization
+          )
+        ), '[]') AS participant_orgs_json,
         COALESCE((
           SELECT event.participants_json
           FROM events AS event
@@ -115,6 +165,20 @@ export async function getSessionKeywords({
     [sessionId],
   );
 
+  const sessionParticipantEmails = parseStringList(
+    snapshot?.participant_emails_json,
+  );
+  const eventParticipantEmails = parseEventParticipantEmails(
+    snapshot?.event_participants_json,
+  );
+  const organizationTerms = parseStringList(snapshot?.participant_orgs_json);
+  void rememberLearnedContactTerms({
+    emails: [...sessionParticipantEmails, ...eventParticipantEmails],
+    organizationNames: organizationTerms,
+  }).catch((error) => {
+    console.warn("[dictionary] failed to learn contact terms", error);
+  });
+
   return buildKeywords({
     rawMd: snapshot?.raw_md,
     title: snapshot?.title,
@@ -123,6 +187,9 @@ export async function getSessionKeywords({
     eventParticipantTerms: parseEventParticipantNames(
       snapshot?.event_participants_json,
     ),
+    sessionParticipantEmails,
+    eventParticipantEmails,
+    organizationTerms,
     dictionaryTerms,
   });
 }
@@ -133,6 +200,9 @@ export function buildKeywords({
   eventJson,
   sessionParticipantTerms = [],
   eventParticipantTerms = [],
+  sessionParticipantEmails = [],
+  eventParticipantEmails = [],
+  organizationTerms = [],
   dictionaryTerms,
 }: {
   rawMd: unknown;
@@ -140,6 +210,9 @@ export function buildKeywords({
   eventJson: unknown;
   sessionParticipantTerms?: string[];
   eventParticipantTerms?: string[];
+  sessionParticipantEmails?: string[];
+  eventParticipantEmails?: string[];
+  organizationTerms?: string[];
   dictionaryTerms: string[];
 }) {
   const sourceText = buildKeywordSourceText({
@@ -151,10 +224,16 @@ export function buildKeywords({
     sourceText.length > 0
       ? extractKeywordsFromMarkdown(sourceText)
       : { keywords: [], keyphrases: [] };
+  const companyTerms = companyTermsFromEmails([
+    ...sessionParticipantEmails,
+    ...eventParticipantEmails,
+  ]);
 
   return normalizeKeywordList([
     ...sessionParticipantTerms,
     ...eventParticipantTerms,
+    ...organizationTerms,
+    ...companyTerms,
     ...dictionaryTerms,
     ...keywords,
     ...keyphrases,
@@ -282,6 +361,26 @@ const parseStringList = (value: unknown): string[] => {
     return Array.isArray(parsed)
       ? parsed.filter((entry): entry is string => typeof entry === "string")
       : [];
+  } catch {
+    return [];
+  }
+};
+
+const parseEventParticipantEmails = (participantsJson: unknown): string[] => {
+  if (typeof participantsJson !== "string" || !participantsJson) {
+    return [];
+  }
+
+  try {
+    const participants = JSON.parse(participantsJson);
+    if (!Array.isArray(participants)) {
+      return [];
+    }
+
+    return participants.flatMap((participant) => {
+      const email = stringValue(participant?.email);
+      return email ? [email] : [];
+    });
   } catch {
     return [];
   }

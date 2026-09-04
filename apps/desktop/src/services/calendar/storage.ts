@@ -111,6 +111,21 @@ export async function loadEnabledCalendars(
   return rows.map(normalizeCalendar);
 }
 
+function enabledOnFirstInsert(
+  calendar: CalendarListItem,
+  incoming: CalendarListItem[],
+  hasLiveCalendarForConnection: boolean,
+): 0 | 1 {
+  if (hasLiveCalendarForConnection) {
+    return 0;
+  }
+  const primary = incoming.find((item) => item.is_primary);
+  if (primary) {
+    return calendar.id === primary.id ? 1 : 0;
+  }
+  return calendar.id === incoming[0]?.id ? 1 : 0;
+}
+
 export async function applyCalendarInventory({
   provider,
   requestedConnectionIds,
@@ -209,6 +224,10 @@ export async function applyCalendarInventory({
 
   const seenIncomingKeys = new Set<string>();
   for (const { connectionId, calendars } of successfulConnections) {
+    const hasLiveCalendarForConnection = existing.some(
+      (calendar) =>
+        calendar.connection_id === connectionId && !calendar.deleted_at,
+    );
     for (const calendar of calendars) {
       const key = getCalendarTrackingKey({
         provider,
@@ -235,7 +254,7 @@ export async function applyCalendarInventory({
             updated_at,
             deleted_at
           )
-          VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, NULL)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
           ON CONFLICT(id) DO UPDATE SET
             tracking_id_calendar = excluded.tracking_id_calendar,
             name = excluded.name,
@@ -254,6 +273,11 @@ export async function applyCalendarInventory({
           calendarId,
           calendar.id,
           calendar.title,
+          enabledOnFirstInsert(
+            calendar,
+            calendars,
+            hasLiveCalendarForConnection,
+          ),
           provider,
           calendar.source ?? "",
           calendar.color ?? "#888",

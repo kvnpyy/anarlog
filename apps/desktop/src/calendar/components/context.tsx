@@ -4,6 +4,7 @@ import {
   useContext,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 import {
@@ -12,6 +13,10 @@ import {
   scheduleCalendarSync,
   syncCalendarEventsForRange,
 } from "~/services/calendar";
+import {
+  getDirectSyncCount,
+  subscribeDirectSync,
+} from "~/services/calendar/direct-sync";
 import {
   useRunningTaskRunIds,
   useScheduledTaskRunIds,
@@ -43,16 +48,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   );
   const [isDebouncing, setIsDebouncing] = useState(false);
   const [rangeSyncCount, setRangeSyncCount] = useState(0);
+  const directSyncCount = useSyncExternalStore(
+    subscribeDirectSync,
+    getDirectSyncCount,
+    getDirectSyncCount,
+  );
 
   const isCalendarTaskRun = (taskRunId: string) =>
     manager?.getTaskRunInfo(taskRunId)?.taskId === CALENDAR_SYNC_TASK_ID;
   const isScheduled = scheduledTaskRunIds.some(isCalendarTaskRun);
   const isSyncing = runningTaskRunIds.some(isCalendarTaskRun);
   const isRangeSyncing = rangeSyncCount > 0;
+  const isDirectSyncing = directSyncCount > 0;
   const canSync = manager !== null;
 
   const status: SyncStatus =
-    isSyncing || isRangeSyncing
+    isSyncing || isRangeSyncing || isDirectSyncing
       ? "syncing"
       : isDebouncing || isScheduled
         ? "scheduled"

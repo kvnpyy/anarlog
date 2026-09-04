@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const execute = vi.hoisted(() => vi.fn());
+const rememberLearnedContactTerms = vi.hoisted(() => vi.fn(async () => []));
 
 vi.mock("~/db", () => ({
   liveQueryClient: { execute },
   useLiveQuery: vi.fn(() => ({ data: undefined })),
+}));
+
+vi.mock("~/stt/dictionary-learn", () => ({
+  rememberLearnedContactTerms,
 }));
 
 import {
@@ -23,6 +28,8 @@ import {
 beforeEach(() => {
   execute.mockReset();
   execute.mockResolvedValue([]);
+  rememberLearnedContactTerms.mockReset();
+  rememberLearnedContactTerms.mockResolvedValue([]);
 });
 
 describe("extractKeywordsFromMarkdown", () => {
@@ -163,6 +170,8 @@ describe("getSessionKeywords", () => {
           location: "Zoom",
         }),
         participant_names_json: "[]",
+        participant_emails_json: "[]",
+        participant_orgs_json: "[]",
         event_participants_json: "[]",
       },
     ]);
@@ -186,6 +195,8 @@ describe("getSessionKeywords", () => {
           location: "Zoom",
         }),
         participant_names_json: JSON.stringify(["Alice Kim"]),
+        participant_emails_json: JSON.stringify(["alice@example.com"]),
+        participant_orgs_json: "[]",
         event_participants_json: JSON.stringify([
           { name: "Alice Kim", email: "alice@example.com" },
           { name: "Mina Park", email: "mina@example.com" },
@@ -203,9 +214,39 @@ describe("getSessionKeywords", () => {
       dictionaryTerms: ["Anarlog"],
     });
 
-    expect(result.slice(0, 3)).toEqual(["Alice Kim", "Mina Park", "Anarlog"]);
+    expect(result.slice(0, 4)).toEqual([
+      "Alice Kim",
+      "Mina Park",
+      "Example",
+      "Anarlog",
+    ]);
     expect(result).toEqual(expect.arrayContaining(["Launch"]));
     expect(result).not.toContain("John Jeong");
+  });
+
+  it("turns the current user's work email into a transcription hint", async () => {
+    execute.mockResolvedValue([
+      {
+        raw_md: "",
+        title: "",
+        event_json: "",
+        participant_names_json: "[]",
+        participant_emails_json: JSON.stringify(["kevin.payoyo@yotpo.com"]),
+        participant_orgs_json: JSON.stringify(["ListTrak"]),
+        event_participants_json: "[]",
+      },
+    ]);
+
+    await expect(
+      getSessionKeywords({
+        sessionId: "session-1",
+        dictionaryTerms: [],
+      }),
+    ).resolves.toEqual(["ListTrak", "Yotpo"]);
+    expect(rememberLearnedContactTerms).toHaveBeenCalledWith({
+      emails: ["kevin.payoyo@yotpo.com"],
+      organizationNames: ["ListTrak"],
+    });
   });
 });
 

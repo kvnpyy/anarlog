@@ -3388,6 +3388,10 @@ msgstr ""
 msgid "Public on the web"
 msgstr ""
 
+#: src/calendar/components/calendar-view.tsx
+msgid "Pulling in your events…"
+msgstr ""
+
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Re-transcribe"
 msgstr ""

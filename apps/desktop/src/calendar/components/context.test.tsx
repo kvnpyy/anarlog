@@ -4,12 +4,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { SyncProvider, useSync } from "./context";
 
 import { CALENDAR_SYNC_TASK_ID } from "~/services/calendar";
+import { trackDirectSync } from "~/services/calendar/direct-sync";
 import {
   createTaskScheduler,
   TaskSchedulerProvider,
@@ -116,6 +118,40 @@ describe("SyncProvider", () => {
     await act(async () => {
       finishTask();
       await Promise.resolve();
+    });
+    expect(screen.getByRole("button", { name: "idle" })).toBeDefined();
+  });
+
+  test("treats an in-flight connect sync as syncing", async () => {
+    const manager = createTaskScheduler();
+    managers.push(manager);
+    manager.setTask(CALENDAR_SYNC_TASK_ID, async () => undefined);
+
+    render(
+      <TaskSchedulerProvider scheduler={manager}>
+        <SyncProvider>
+          <StatusHarness />
+        </SyncProvider>
+      </TaskSchedulerProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "idle" })).toBeDefined();
+
+    let finish = () => {};
+    const pending = trackDirectSync(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "syncing" })).toBeDefined();
+    });
+
+    await act(async () => {
+      finish();
+      await pending;
     });
     expect(screen.getByRole("button", { name: "idle" })).toBeDefined();
   });

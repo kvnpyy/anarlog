@@ -43,6 +43,7 @@ Copy-ready draft guidance:
 - The whole draft should copy-paste into Gmail or Slack without cleanup.
 - Write in the user's voice: match how they talk in the transcript and what their profile says about them.
 - Avoid obvious AI writing: no "I hope this finds you well", "delve", "furthermore", "leverage", "I'd be happy to", or stiff corporate filler.
+- When drafting a follow-up email, only include facts, names, dates, commitments, and next steps that appear in the meeting transcript or notes. Omit anything unclear. Do not invent recipients, product names, numbers, quotes, or action items.
 
 Web search guidance:
 - Use web_search for public websites, URLs, companies, products, people, news, or current facts that may be outside local notes.

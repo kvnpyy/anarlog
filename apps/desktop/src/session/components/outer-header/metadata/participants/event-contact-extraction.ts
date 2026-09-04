@@ -1,5 +1,10 @@
 import type { EventParticipant, SessionEvent } from "@anlg/store";
 
+import {
+  companyTermFromEmail,
+  normalizeCompanyName,
+} from "~/contacts/company-from-email";
+
 const MAX_EVENT_TEXT_CHARS = 6000;
 const MAX_CONTACTS_TO_EXTRACT = 8;
 
@@ -321,7 +326,7 @@ function normalizeExtractedContacts(
     const matchedEmail = email || matchCandidateEmail(name, candidates);
     const companyName =
       normalizeCompanyName(contact.companyName) ??
-      inferCompanyNameFromEmail(matchedEmail);
+      companyTermFromEmail(matchedEmail);
     const normalizedContact: ExtractedEventContact = {
       name,
     };
@@ -612,25 +617,6 @@ function getStrongCandidateAliases(
   return aliases;
 }
 
-const PERSONAL_EMAIL_DOMAINS = new Set([
-  "gmail.com",
-  "googlemail.com",
-  "yahoo.com",
-  "outlook.com",
-  "hotmail.com",
-  "live.com",
-  "msn.com",
-  "icloud.com",
-  "me.com",
-  "mac.com",
-  "aol.com",
-  "proton.me",
-  "protonmail.com",
-  "pm.me",
-  "hey.com",
-  "fastmail.com",
-]);
-
 function contactFromIdentity(identity: {
   name?: string;
   email?: string;
@@ -650,7 +636,7 @@ function contactFromIdentity(identity: {
   if (email) {
     contact.email = email;
   }
-  const companyName = inferCompanyNameFromEmail(email);
+  const companyName = companyTermFromEmail(email);
   if (companyName) {
     contact.companyName = companyName;
   }
@@ -666,35 +652,6 @@ function nameFromEmailLocalPart(email: string): string {
     .filter((part) => part.length > 0 && !/^\d+$/.test(part))
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
-}
-
-function inferCompanyNameFromEmail(
-  email: string | undefined,
-): string | undefined {
-  const domain = email?.split("@")[1]?.toLowerCase();
-  if (!domain || PERSONAL_EMAIL_DOMAINS.has(domain)) {
-    return undefined;
-  }
-
-  const labels = domain.split(".").filter(Boolean);
-  if (labels.length < 2) {
-    return undefined;
-  }
-
-  const secondLast = labels[labels.length - 2];
-  const companyLabel =
-    labels.length >= 3 &&
-    secondLast &&
-    ["co", "com", "org", "net", "ac"].includes(secondLast)
-      ? labels[labels.length - 3]
-      : secondLast;
-  if (!companyLabel || companyLabel.length < 2) {
-    return undefined;
-  }
-
-  return normalizeCompanyName(
-    companyLabel.charAt(0).toUpperCase() + companyLabel.slice(1),
-  );
 }
 
 function shouldUpdateHumanName(
@@ -727,21 +684,6 @@ function normalizeEmail(value: string | undefined | null): string | undefined {
   }
 
   return email;
-}
-
-function normalizeCompanyName(
-  value: string | undefined | null,
-): string | undefined {
-  const name = value?.trim().replace(/\s+/g, " ");
-  if (!name || name.length < 2 || name.length > 80) {
-    return undefined;
-  }
-
-  if (name.includes("@") || /^https?:\/\//i.test(name)) {
-    return undefined;
-  }
-
-  return name;
 }
 
 function normalizeName(value: string): string {

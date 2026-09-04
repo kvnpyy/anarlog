@@ -25,6 +25,12 @@ export class CalendarFetchError extends Error {
   }
 }
 
+export function isFatalCalendarFetchError(cause: string) {
+  return /401|403|unauthorized|unauthenticated|invalid_grant|invalid.?token|token.?expired/i.test(
+    cause,
+  );
+}
+
 async function listEventsForConnection(ctx: Ctx, trackingId: string) {
   const filter = {
     calendar_tracking_id: trackingId,
@@ -48,22 +54,51 @@ async function listEventsForConnection(ctx: Ctx, trackingId: string) {
 export async function fetchIncomingEvents(ctx: Ctx): Promise<{
   events: IncomingEvent[];
   participants: IncomingParticipants;
+  failedTrackingIds: string[];
 }> {
   const trackingIds = Array.from(ctx.calendarTrackingIdToId.keys());
+  const failedTrackingIds: string[] = [];
+  const calendarEvents: CalendarEvent[] = [];
 
   const results = await Promise.all(
     trackingIds.map(async (trackingId) => {
-      const result = await listEventsForConnection(ctx, trackingId);
-
-      if (result.status === "error") {
-        throw new CalendarFetchError(trackingId, result.error);
+      try {
+        const result = await listEventsForConnection(ctx, trackingId);
+        return { trackingId, result };
+      } catch (error) {
+        const cause = error instanceof Error ? error.message : String(error);
+        return {
+          trackingId,
+          result: { status: "error" as const, error: cause },
+        };
       }
-
-      return result.data;
     }),
   );
 
-  const calendarEvents = results.flat();
+  for (const { trackingId, result } of results) {
+    if (result.status === "error") {
+      if (isFatalCalendarFetchError(result.error)) {
+        throw new CalendarFetchError(trackingId, result.error);
+      }
+      console.warn(
+        `[calendar-sync] Skipping calendar ${trackingId}: ${result.error}`,
+      );
+      failedTrackingIds.push(trackingId);
+      continue;
+    }
+
+    calendarEvents.push(...result.data);
+  }
+
+  if (
+    trackingIds.length > 0 &&
+    failedTrackingIds.length === trackingIds.length
+  ) {
+    throw new CalendarFetchError(
+      failedTrackingIds[0] ?? trackingIds[0] ?? "",
+      "All enabled calendars failed to fetch",
+    );
+  }
   const events: IncomingEvent[] = [];
   const participants: IncomingParticipants = new Map();
 
@@ -81,7 +116,7 @@ export async function fetchIncomingEvents(ctx: Ctx): Promise<{
     participants.set(event.tracking_id_event, eventParticipants);
   }
 
-  return { events, participants };
+  return { events, participants, failedTrackingIds };
 }
 
 // Meeting links are fully resolved on the Rust side during provider

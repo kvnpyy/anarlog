@@ -104,14 +104,27 @@ export function useOAuthCalendarSelection(config: CalendarProvider) {
   }, [calendars, config.displayName]);
 
   const handleToggle = useCallback(
-    (calendar: CalendarItem, enabled: boolean) =>
-      setCalendarEnabled(calendar.id, enabled)
-        .then(scheduleDebouncedSync)
+    (calendar: CalendarItem, enabled: boolean) => {
+      const nextEnabledCount = calendars.filter((cal) =>
+        cal.id === calendar.id ? enabled : cal.enabled,
+      ).length;
+      const isFirstEnable = enabled && nextEnabledCount === 1;
+
+      return setCalendarEnabled(calendar.id, enabled)
+        .then(() => {
+          if (isFirstEnable) {
+            cancelDebouncedSync();
+            scheduleSync();
+            return;
+          }
+          scheduleDebouncedSync();
+        })
         .catch((error: unknown) => {
           console.error("[calendar] failed to update calendar", error);
           throw error;
-        }),
-    [scheduleDebouncedSync],
+        });
+    },
+    [calendars, cancelDebouncedSync, scheduleDebouncedSync, scheduleSync],
   );
 
   const handleRefresh = useCallback(() => {
@@ -127,6 +140,6 @@ export function useOAuthCalendarSelection(config: CalendarProvider) {
     connectionSourceMap,
     handleRefresh,
     handleToggle,
-    isLoading: status === "syncing",
+    isLoading: status !== "idle",
   };
 }
