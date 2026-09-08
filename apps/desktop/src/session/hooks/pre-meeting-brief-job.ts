@@ -135,9 +135,8 @@ export async function runPreMeetingBriefJob({
     }
 
     const markdown = mergeBriefMarkdown(brief, existingMarkdown);
-    if (!applyBriefToEditor(sessionId, markdown, true)) {
-      await persistBrief(sessionId, markdown);
-    }
+    applyBriefToEditor(sessionId, markdown, true);
+    await persistBrief(sessionId, markdown);
   } finally {
     generating.delete(sessionId);
     emit();

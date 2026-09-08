@@ -232,6 +232,12 @@ describe("useCreatePreMeetingBrief", () => {
         content: [{ markdown: "## Brief" }],
       });
       expect(flushPendingChanges).toHaveBeenCalledOnce();
+      expect(mocks.updateSession).toHaveBeenCalledWith("current", {
+        raw_md: JSON.stringify({
+          type: "doc",
+          content: [{ markdown: "## Brief" }],
+        }),
+      });
     });
   });
 

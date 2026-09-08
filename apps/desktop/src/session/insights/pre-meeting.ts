@@ -20,9 +20,11 @@ const MAX_PROMPT_FACTS = 4;
 const MAX_BRIEF_BULLETS = 3;
 const MAX_SUMMARY_LENGTH = 320;
 const BRIEF_GENERATION_TIMEOUT_MS = 45_000;
-const BRIEF_MAX_OUTPUT_TOKENS = 200;
+// Reasoning models spend thinking tokens from this budget before emitting
+// JSON; a tight cap truncates the output and fails every generation.
+const BRIEF_MAX_OUTPUT_TOKENS = 4_096;
 const briefSchema = z.object({
-  opener: z.string(),
+  opener: z.string().optional(),
   bullets: z.array(z.string()).min(1).max(MAX_BRIEF_BULLETS),
 });
 const SECTION_LABEL_REGEX =
@@ -305,25 +307,118 @@ export async function streamPreMeetingBrief({
     past_meetings: getBriefPromptMeetings(sourceNotes),
   });
 
-  const result = streamText({
+  try {
+    return await streamStructuredBrief({
+      model,
+      system,
+      prompt,
+      onText,
+      signal,
+    });
+  } catch {
+    return await streamUnstructuredBrief({
+      model,
+      system,
+      prompt,
+      onText,
+      signal,
+    });
+  }
+}
+
+function briefStreamOptions({
+  model,
+  system,
+  prompt,
+  signal,
+}: {
+  model: LanguageModel;
+  system: string;
+  prompt: string;
+  signal?: AbortSignal;
+}) {
+  return {
     model,
     system,
     prompt,
-    output: Output.object({ schema: briefSchema }),
     abortSignal: signal,
     maxRetries: 2,
     maxOutputTokens: BRIEF_MAX_OUTPUT_TOKENS,
     timeout: { totalMs: BRIEF_GENERATION_TIMEOUT_MS },
-  });
+  };
+}
 
-  for await (const partial of result.partialOutputStream) {
-    const markdown = formatPreMeetingBrief(partial);
+async function streamStructuredBrief({
+  model,
+  system,
+  prompt,
+  onText,
+  signal,
+}: {
+  model: LanguageModel;
+  system: string;
+  prompt: string;
+  onText?: (text: string) => void;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const result = streamText({
+    ...briefStreamOptions({ model, system, prompt, signal }),
+    output: Output.object({ schema: briefSchema }),
+  });
+  let lastMarkdown = "";
+
+  try {
+    for await (const partial of result.partialOutputStream) {
+      const markdown = formatPreMeetingBrief(partial);
+      if (markdown) {
+        lastMarkdown = markdown;
+        onText?.(markdown);
+      }
+    }
+
+    const final = formatPreMeetingBrief((await result.output) ?? {});
+    if (final) {
+      return final;
+    }
+  } catch (error) {
+    if (!lastMarkdown) {
+      throw error;
+    }
+  }
+
+  if (lastMarkdown) {
+    return lastMarkdown;
+  }
+  throw new Error("empty-brief");
+}
+
+async function streamUnstructuredBrief({
+  model,
+  system,
+  prompt,
+  onText,
+  signal,
+}: {
+  model: LanguageModel;
+  system: string;
+  prompt: string;
+  onText?: (text: string) => void;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const result = streamText(
+    briefStreamOptions({ model, system, prompt, signal }),
+  );
+  let text = "";
+
+  for await (const chunk of result.textStream) {
+    text += chunk;
+    const markdown = trimPreMeetingBrief(text);
     if (markdown) {
       onText?.(markdown);
     }
   }
 
-  return formatPreMeetingBrief((await result.output) ?? {});
+  return trimPreMeetingBrief((await result.text) || text);
 }
 
 type TemplateContext = Partial<{ [key: string]: JsonValue }>;

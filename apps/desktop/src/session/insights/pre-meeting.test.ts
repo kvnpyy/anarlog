@@ -344,10 +344,72 @@ describe("streamPreMeetingBrief", () => {
     expect(hoisted.streamText).toHaveBeenCalledWith(
       expect.objectContaining({
         model: { id: "model-1" },
-        maxOutputTokens: 200,
+        maxOutputTokens: 4_096,
         output: expect.objectContaining({}),
       }),
     );
     expect(hoisted.renderCustom).toHaveBeenCalled();
+  });
+
+  it("keeps the last streamed brief when the final JSON fails to validate", async () => {
+    hoisted.streamText.mockReturnValue({
+      partialOutputStream: (async function* () {
+        yield {
+          opener: "Follow up with Ada on launch timing.",
+          bullets: ["Ada owns the prototype."],
+        };
+      })(),
+      output: Promise.reject(new Error("truncated-json")),
+    });
+
+    const text = await streamPreMeetingBrief({
+      model: { id: "model-1" } as never,
+      language: "en",
+      event: { title: "Weekly Product Sync" },
+      notes: [makeNote({ sessionId: "previous" })],
+    });
+
+    expect(text).toBe(
+      "**Follow up with Ada on launch timing.**\n\n- Ada owns the prototype.",
+    );
+    expect(hoisted.streamText).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to plain text when structured output never starts", async () => {
+    hoisted.streamText
+      .mockReturnValueOnce({
+        partialOutputStream: (async function* () {
+          throw new Error("no-object");
+        })(),
+        output: new Promise(() => {}),
+      })
+      .mockReturnValueOnce({
+        textStream: (async function* () {
+          yield "**Follow up with Ada on launch timing.**\n";
+          yield "- Ada owns the prototype.";
+        })(),
+        text: Promise.resolve(
+          "**Follow up with Ada on launch timing.**\n- Ada owns the prototype.",
+        ),
+      });
+
+    const chunks: string[] = [];
+    const text = await streamPreMeetingBrief({
+      model: { id: "model-1" } as never,
+      language: "en",
+      event: { title: "Weekly Product Sync" },
+      notes: [makeNote({ sessionId: "previous" })],
+      onText: (value) => chunks.push(value),
+    });
+
+    expect(text).toBe(
+      "**Follow up with Ada on launch timing.**\n\n- Ada owns the prototype.",
+    );
+    expect(chunks).toEqual([
+      "**Follow up with Ada on launch timing.**",
+      "**Follow up with Ada on launch timing.**\n\n- Ada owns the prototype.",
+    ]);
+    expect(hoisted.streamText).toHaveBeenCalledTimes(2);
+    expect(hoisted.streamText.mock.calls[1]?.[0]).not.toHaveProperty("output");
   });
 });
