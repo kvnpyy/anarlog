@@ -82,6 +82,10 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Reply only in this chat");
     expect(prompt).toContain("Do not call edit_memo");
     expect(prompt).toContain("Keep answers short");
+    expect(prompt).toContain("cannot recap it for you");
+    expect(prompt).toContain("Never ask clarifying questions");
+    expect(prompt).toContain("questions to ask");
+    expect(prompt).toContain("Prefer that over get_meeting_transcript");
   });
 
   it("tells the model about the Free 30-day AI window", () => {

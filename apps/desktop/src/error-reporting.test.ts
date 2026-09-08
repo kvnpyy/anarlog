@@ -140,6 +140,31 @@ describe("normalizeOperationalError", () => {
 });
 
 describe("sanitizeErrorEvent", () => {
+  it("drops Vite Fast Refresh failures from local desktop reloads", () => {
+    expect(
+      sanitizeErrorEvent({
+        type: undefined,
+        exception: {
+          values: [
+            {
+              type: "ReferenceError",
+              value: "useSync is not defined",
+              stacktrace: {
+                frames: [
+                  { filename: "/src/calendar/components/context.tsx" },
+                  {
+                    filename: "/@react-refresh",
+                    function: "performReactRefresh",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    ).toBeNull();
+  });
+
   it("keeps diagnostics while removing user and request data", () => {
     const event = sanitizeErrorEvent({
       type: undefined,

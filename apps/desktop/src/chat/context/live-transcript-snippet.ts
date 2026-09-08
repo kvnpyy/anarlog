@@ -5,6 +5,8 @@ import { listenerStore } from "~/store/zustand/listener/instance";
 import { SegmentKeyUtils, SpeakerLabelManager } from "~/stt/live-segment";
 
 export const LIVE_ASK_TRANSCRIPT_WINDOW_MS = 10 * 60 * 1000;
+export const LIVE_ASK_TRANSCRIPT_MAX_CHARS = 24_000;
+export const LIVE_TRANSCRIPT_CONTEXT_HEADER = "IN-PROGRESS TRANSCRIPT:";
 
 export function formatRecentLiveTranscript({
   liveCaptionText,
@@ -14,7 +16,8 @@ export function formatRecentLiveTranscript({
   seconds,
   sessionId,
   sessionMode,
-  windowMs = LIVE_ASK_TRANSCRIPT_WINDOW_MS,
+  maxChars = LIVE_ASK_TRANSCRIPT_MAX_CHARS,
+  windowMs,
 }: {
   liveCaptionText: string;
   liveSegments: LiveTranscriptSegment[];
@@ -23,6 +26,7 @@ export function formatRecentLiveTranscript({
   seconds: number;
   sessionId: string;
   sessionMode: SessionMode;
+  maxChars?: number;
   windowMs?: number;
 }): string | null {
   if (
@@ -33,21 +37,22 @@ export function formatRecentLiveTranscript({
     return null;
   }
 
-  const windowStartMs = Math.max(0, seconds * 1000 - windowMs);
+  const windowStartMs =
+    windowMs == null ? 0 : Math.max(0, seconds * 1000 - windowMs);
   const recentSegments = liveSegments
     .filter((segment) => segment.end_ms >= windowStartMs && segment.text.trim())
     .sort((left, right) => left.start_ms - right.start_ms);
 
   const body =
     recentSegments.length > 0
-      ? formatLiveSegments(recentSegments)
-      : liveCaptionText.trim();
+      ? trimTranscriptBody(formatLiveSegments(recentSegments), maxChars)
+      : trimTranscriptBody(liveCaptionText.trim(), maxChars);
 
   if (!body) {
     return null;
   }
 
-  return `IN-PROGRESS TRANSCRIPT (last 10 minutes):\n${body}`;
+  return `${LIVE_TRANSCRIPT_CONTEXT_HEADER}\n${body}`;
 }
 
 export function getRecentLiveTranscriptContext(
@@ -77,4 +82,26 @@ function formatLiveSegments(segments: LiveTranscriptSegment[]) {
       return `${speaker}: ${segment.text.trim()}`;
     })
     .join("\n");
+}
+
+function trimTranscriptBody(body: string, maxChars: number): string {
+  if (body.length <= maxChars) {
+    return body;
+  }
+
+  const lines = body.split("\n");
+  const kept: string[] = [];
+  let size = 0;
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index] ?? "";
+    const extra = line.length + (kept.length > 0 ? 1 : 0);
+    if (size + extra > maxChars && kept.length > 0) {
+      break;
+    }
+    kept.unshift(line);
+    size += extra;
+  }
+
+  return kept.join("\n");
 }

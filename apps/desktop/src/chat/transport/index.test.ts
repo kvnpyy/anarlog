@@ -68,7 +68,7 @@ describe("CustomChatTransport", () => {
 
   it("prepends in-progress transcript context to the last user message", async () => {
     mocks.getRecentLiveTranscriptContext.mockReturnValue(
-      "IN-PROGRESS TRANSCRIPT (last 10 minutes):\nYou: Let's ship Friday",
+      "IN-PROGRESS TRANSCRIPT:\nYou: Let's ship Friday",
     );
 
     const transport = new CustomChatTransport({} as never, {});
@@ -104,7 +104,7 @@ describe("CustomChatTransport", () => {
       messages: unknown;
     };
     const serialized = JSON.stringify(streamArgs.messages);
-    expect(serialized).toContain("IN-PROGRESS TRANSCRIPT (last 10 minutes):");
+    expect(serialized).toContain("IN-PROGRESS TRANSCRIPT:");
     expect(serialized).toContain("Let's ship Friday");
     expect(serialized).toContain("Catch me up");
   });

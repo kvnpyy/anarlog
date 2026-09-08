@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { LiveTranscriptSegment } from "@anlg/plugin-transcription";
 
-import { formatRecentLiveTranscript } from "./live-transcript-snippet";
+import {
+  LIVE_ASK_TRANSCRIPT_WINDOW_MS,
+  formatRecentLiveTranscript,
+} from "./live-transcript-snippet";
 
 function segment(
   overrides: Partial<LiveTranscriptSegment> &
@@ -20,7 +23,42 @@ function segment(
 }
 
 describe("formatRecentLiveTranscript", () => {
-  it("returns the last 10 minutes of in-progress live segments", () => {
+  it("includes earlier in-progress live segments, not only the last 10 minutes", () => {
+    const text = formatRecentLiveTranscript({
+      liveCaptionText: "",
+      liveSegments: [
+        segment({
+          id: "old",
+          text: "Kickoff from the start",
+          start_ms: 0,
+          end_ms: 60_000,
+        }),
+        segment({
+          id: "recent",
+          text: "Just said this",
+          start_ms: 11 * 60_000,
+          end_ms: 11 * 60_000 + 2_000,
+          key: {
+            channel: "DirectMic",
+            speaker_index: null,
+            speaker_human_id: null,
+          },
+        }),
+      ],
+      liveSessionId: "session-1",
+      liveTranscriptionActive: true,
+      seconds: 12 * 60,
+      sessionId: "session-1",
+      sessionMode: "active",
+    });
+
+    expect(text).toContain("IN-PROGRESS TRANSCRIPT:");
+    expect(text).not.toContain("last 10 minutes");
+    expect(text).toContain("Kickoff from the start");
+    expect(text).toContain("Just said this");
+  });
+
+  it("can still window to the last 10 minutes when asked", () => {
     const text = formatRecentLiveTranscript({
       liveCaptionText: "",
       liveSegments: [
@@ -47,9 +85,9 @@ describe("formatRecentLiveTranscript", () => {
       seconds: 12 * 60,
       sessionId: "session-1",
       sessionMode: "active",
+      windowMs: LIVE_ASK_TRANSCRIPT_WINDOW_MS,
     });
 
-    expect(text).toContain("IN-PROGRESS TRANSCRIPT (last 10 minutes):");
     expect(text).toContain("Just said this");
     expect(text).not.toContain("Too old");
   });
@@ -65,9 +103,37 @@ describe("formatRecentLiveTranscript", () => {
       sessionMode: "active",
     });
 
-    expect(text).toBe(
-      "IN-PROGRESS TRANSCRIPT (last 10 minutes):\nPartial caption so far",
-    );
+    expect(text).toBe("IN-PROGRESS TRANSCRIPT:\nPartial caption so far");
+  });
+
+  it("keeps the newest speaker lines when the transcript exceeds the char budget", () => {
+    const text = formatRecentLiveTranscript({
+      liveCaptionText: "",
+      liveSegments: [
+        segment({
+          id: "old",
+          text: "aaaaaaaaaa",
+          start_ms: 0,
+          end_ms: 1_000,
+        }),
+        segment({
+          id: "new",
+          text: "bbbbbbbbbb",
+          start_ms: 2_000,
+          end_ms: 3_000,
+        }),
+      ],
+      liveSessionId: "session-1",
+      liveTranscriptionActive: true,
+      seconds: 30,
+      sessionId: "session-1",
+      sessionMode: "active",
+      maxChars: 20,
+    });
+
+    expect(text).toContain("IN-PROGRESS TRANSCRIPT:");
+    expect(text).toContain("bbbbbbbbbb");
+    expect(text).not.toContain("aaaaaaaaaa");
   });
 
   it("returns null when live transcription is not active", () => {

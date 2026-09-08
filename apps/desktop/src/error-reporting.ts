@@ -61,6 +61,18 @@ function isUserErrorEvent(event: ErrorEvent): boolean {
   );
 }
 
+function isHotReloadNoise(event: ErrorEvent): boolean {
+  return (event.exception?.values ?? []).some((exception) =>
+    (exception.stacktrace?.frames ?? []).some((frame) => {
+      const file = `${frame.filename ?? ""} ${frame.abs_path ?? ""}`;
+      const fn = frame.function ?? "";
+      return (
+        file.includes("@react-refresh") || fn.includes("performReactRefresh")
+      );
+    }),
+  );
+}
+
 function safeIdentifier(value: unknown): string | undefined {
   return typeof value === "string" && SAFE_IDENTIFIER_RE.test(value)
     ? value
@@ -139,7 +151,7 @@ function sanitizeUrl(value: string | undefined) {
 }
 
 export function sanitizeErrorEvent(event: ErrorEvent): ErrorEvent | null {
-  if (isUserErrorEvent(event)) return null;
+  if (isHotReloadNoise(event) || isUserErrorEvent(event)) return null;
 
   if (event.user) {
     event.user = event.user.id ? { id: event.user.id } : undefined;
