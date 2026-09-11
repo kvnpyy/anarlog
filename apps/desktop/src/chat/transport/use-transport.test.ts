@@ -44,6 +44,7 @@ describe("chat transport prompt guidance", () => {
     );
     expect(prompt).toContain("copy-paste into Gmail");
     expect(prompt).toContain("Light markdown is OK");
+    expect(prompt).toContain("or HTML tags");
     expect(prompt).toContain("Write in the user's voice");
     expect(prompt).toContain("Avoid obvious AI writing");
     expect(prompt).not.toContain("grep_notes");

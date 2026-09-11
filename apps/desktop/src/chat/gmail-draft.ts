@@ -17,7 +17,7 @@ export function splitEmailDraft(text: string): {
   const value = text.replace(/\r\n/g, "\n").trim();
   const match = value.match(/^subject\s*:\s*(.*)$/im);
   if (!match || match.index === undefined) {
-    return { subject: null, body: value };
+    return { subject: null, body: normalizeEmailDraftMarkup(value) };
   }
 
   const subject = (match[1] ?? "").trim();
@@ -27,7 +27,7 @@ export function splitEmailDraft(text: string): {
 
   return {
     subject: subject || null,
-    body: afterSubject.trim(),
+    body: normalizeEmailDraftMarkup(afterSubject.trim()),
   };
 }
 
@@ -137,7 +137,7 @@ function blockToHtml(block: string): string {
     return `<${tag} style="margin:0 0 12px 0;padding-left:24px">${items}</${tag}>`;
   }
 
-  return `<div style="margin:0 0 12px 0">${inlineToHtml(block.replace(/\n/g, "<br>"))}</div>`;
+  return `<div style="margin:0 0 12px 0">${inlineToHtml(block).replace(/\n/g, "<br>")}</div>`;
 }
 
 function inlineToHtml(text: string): string {
@@ -153,4 +153,8 @@ function escapeHtml(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function normalizeEmailDraftMarkup(text: string): string {
+  return text.replace(/<br\s*\/?>/gi, "\n").replace(/&lt;br\s*\/?&gt;/gi, "\n");
 }

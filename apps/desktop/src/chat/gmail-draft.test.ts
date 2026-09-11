@@ -57,6 +57,24 @@ Kevin`,
     expect(html).not.toContain("Launch recap");
     expect(toGmailCopyPlainText(SAMPLE)).toContain("Hi team,");
     expect(toGmailCopyPlainText(SAMPLE)).not.toContain("Subject:");
+    expect(html).toContain("Best,<br>Kevin");
+    expect(html).not.toContain("&lt;br&gt;");
+  });
+
+  it("turns pasted HTML line breaks into real line breaks instead of visible tags", () => {
+    const draft = `Subject: Launch recap
+
+Hi team,<br>Thanks for today.
+
+Best,<br/>Kevin`;
+
+    expect(toGmailCopyPlainText(draft)).toBe(`Hi team,
+Thanks for today.
+
+Best,
+Kevin`);
+    expect(toGmailCopyHtml(draft)).toContain("Hi team,<br>Thanks for today.");
+    expect(toGmailCopyHtml(draft)).not.toContain("&lt;br");
   });
 
   it("builds a Gmail compose URL with subject and body", () => {
