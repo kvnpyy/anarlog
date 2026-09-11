@@ -11,6 +11,7 @@ import { useSessionTab } from "./use-session-tab";
 import { useLanguageModel } from "~/ai/hooks";
 import { useChatAppearance } from "~/chat/hooks/use-chat-appearance";
 import { isPageChatThreadCollapsed } from "~/chat/page-integrated";
+import { shouldUseLiveAskContext } from "~/chat/state/live-ask-layout";
 import { useChatActions } from "~/chat/store/use-chat-actions";
 import {
   chatFloatingPanelClassNames,
@@ -56,6 +57,14 @@ export function ChatSessionHost({
   const liveSessionId = useListener((state) => state.live.sessionId);
   const isLiveAsk = useListener((state) => {
     if (chat.scope !== "general") {
+      return false;
+    }
+    if (
+      !shouldUseLiveAskContext({
+        liveSessionId: state.live.sessionId,
+        currentSessionId,
+      })
+    ) {
       return false;
     }
     const sessionId = state.live.sessionId ?? currentSessionId;
@@ -195,7 +204,7 @@ export function ChatPanelFrame({
             currentChatGroupId={groupId}
             isolateConversation={chat.isolateConversation}
             layout={layout}
-            pinned={chat.isRecording}
+            pinned={Boolean(sessionProps?.isLiveAsk)}
             showMeetingAskSwitch={
               chat.workspaceAsk &&
               Boolean(currentSessionId) &&
@@ -227,7 +236,7 @@ export function ChatPanelFrame({
           onDraftContentChange={onDraftContentChange}
           model={model}
           handleSendMessage={handleSendMessageWithActivate}
-          isRecording={chat.isRecording}
+          isRecording={sessionProps.isLiveAsk}
           isBatchOnly={chat.isBatchOnly}
           placeholder={
             currentSessionId && !chat.workspaceAsk

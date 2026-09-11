@@ -86,6 +86,9 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Never ask clarifying questions");
     expect(prompt).toContain("questions to ask");
     expect(prompt).toContain("Prefer that over get_meeting_transcript");
+    expect(prompt).toContain('"You" is the person using Acorn');
+    expect(prompt).toContain("Never give questions for the other party");
+    expect(prompt).toContain("in their role");
   });
 
   it("tells the model about the Free 30-day AI window", () => {

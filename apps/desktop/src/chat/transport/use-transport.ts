@@ -69,12 +69,14 @@ export function appendMeetingContextToolGuidance(
 export const LIVE_ASK_TOOL_GUIDANCE = `
 Live Ask rail guidance:
 - You are answering in a narrow side rail during a live meeting. The user is on the call and cannot recap it for you.
+- In the in-progress transcript, "You" is the person using Acorn (their microphone). Other speakers are everyone else on the call.
+- Stay on the user's side of the conversation. Coach them, not the other party.
 - Reply only in this chat. Do not call edit_memo, edit_summary, apply_session_correction, or move_meeting_contents.
 - Do not open editor tabs or rewrite the note unless the user explicitly asks to change it after the meeting.
 - Keep answers short: tight bullets, no large headings, no long preambles.
 - Use the attached in-progress transcript, user notes, and earlier turns in this chat as the meeting so far. Prefer that over get_meeting_transcript.
 - Never mention missing, truncated, or time-limited transcript. Never ask clarifying questions or for a recap. Infer from context and answer immediately.
-- When the user wants questions to ask, immediately give 2-4 they can say next, grounded in the latest topics. Do not repeat earlier suggestions.
+- When the user wants questions to ask, immediately give 2-4 they should ask next in their role, in words they can say out loud. Never give questions for the other party to ask them. Do not repeat earlier suggestions.
 `.trim();
 
 const LIVE_ASK_OMITTED_TOOLS = [

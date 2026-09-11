@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   currentTabType: "sessions" as string,
   isBatchOnly: false,
   isRecording: false,
+  liveSessionId: null as string | null,
   setWorkspaceAsk: vi.fn(),
   transitionChatMode: vi.fn(),
   useHotkeys: vi.fn(),
@@ -20,35 +21,8 @@ vi.mock("react-hotkeys-hook", () => ({
   useHotkeys: mocks.useHotkeys,
 }));
 
-vi.mock("./chat-context", () => ({
-  createMeetingChatSelection: (meetingId: string) => ({
-    groupId: undefined,
-    sessionId: `meeting:${meetingId}`,
-  }),
-  getMeetingChatId: ({
-    scope,
-    isRecording,
-    liveSessionId,
-    currentSessionId,
-    workspaceAsk,
-  }: {
-    scope: ChatScope;
-    isRecording: boolean;
-    liveSessionId: string | null;
-    currentSessionId: string | undefined;
-    workspaceAsk?: boolean;
-  }) => {
-    if (scope !== "general") {
-      return undefined;
-    }
-    if (isRecording) {
-      return liveSessionId ?? currentSessionId ?? undefined;
-    }
-    if (workspaceAsk) {
-      return undefined;
-    }
-    return currentSessionId;
-  },
+vi.mock("./chat-context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./chat-context")>()),
   useChatContext: (
     selector: (state: {
       chatByScope: Record<
@@ -124,9 +98,13 @@ vi.mock("~/stt/contexts", () => ({
     }) => unknown,
   ) =>
     selector({
-      getSessionMode: () => (mocks.isRecording ? "active" : "inactive"),
+      getSessionMode: (sessionId) =>
+        mocks.isRecording && sessionId === (mocks.liveSessionId ?? "session-1")
+          ? "active"
+          : "inactive",
       live: {
-        sessionId: mocks.isRecording ? "session-1" : null,
+        sessionId:
+          mocks.liveSessionId ?? (mocks.isRecording ? "session-1" : null),
         requestedLiveTranscription: mocks.isBatchOnly ? false : true,
         liveTranscriptionActive: mocks.isBatchOnly ? false : true,
         batchTranscriptionPendingBySession: {},
@@ -143,6 +121,7 @@ describe("useChatMode", () => {
     mocks.currentTabType = "sessions";
     mocks.isBatchOnly = false;
     mocks.isRecording = false;
+    mocks.liveSessionId = null;
     mocks.workspaceAsk = false;
     mocks.setWorkspaceAsk.mockClear();
     mocks.transitionChatMode.mockClear();
@@ -249,5 +228,18 @@ describe("useChatMode", () => {
 
     expect(mocks.setWorkspaceAsk).toHaveBeenCalledWith(false);
     expect(mocks.transitionChatMode).toHaveBeenCalledWith({ type: "OPEN" });
+  });
+
+  it("isolates the open note while a different meeting is recording", () => {
+    mocks.isRecording = true;
+    mocks.liveSessionId = "live-1";
+    mocks.currentSessionId = "tab-2";
+    mocks.currentTabType = "sessions";
+
+    const { result } = renderHook(() => useChatMode());
+
+    expect(result.current.inlineAsk).toBe(false);
+    expect(result.current.isolateConversation).toBe(true);
+    expect(result.current.sessionId).toBe("meeting:tab-2");
   });
 });

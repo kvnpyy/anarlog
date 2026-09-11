@@ -2,11 +2,22 @@ import type { LiveTranscriptSegment } from "@anlg/plugin-transcription";
 
 import type { SessionMode } from "~/store/zustand/listener";
 import { listenerStore } from "~/store/zustand/listener/instance";
-import { SegmentKeyUtils, SpeakerLabelManager } from "~/stt/live-segment";
+import {
+  type RenderLabelContext,
+  SegmentKeyUtils,
+  SpeakerLabelManager,
+} from "~/stt/live-segment";
 
 export const LIVE_ASK_TRANSCRIPT_WINDOW_MS = 10 * 60 * 1000;
 export const LIVE_ASK_TRANSCRIPT_MAX_CHARS = 24_000;
 export const LIVE_TRANSCRIPT_CONTEXT_HEADER = "IN-PROGRESS TRANSCRIPT:";
+export const LIVE_TRANSCRIPT_SPEAKER_LEGEND =
+  'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else.';
+
+const LIVE_ASK_SELF_LABEL_CONTEXT: RenderLabelContext = {
+  getSelfHumanId: () => "self",
+  getHumanName: () => undefined,
+};
 
 export function formatRecentLiveTranscript({
   liveCaptionText,
@@ -52,7 +63,7 @@ export function formatRecentLiveTranscript({
     return null;
   }
 
-  return `${LIVE_TRANSCRIPT_CONTEXT_HEADER}\n${body}`;
+  return `${LIVE_TRANSCRIPT_CONTEXT_HEADER}\n${LIVE_TRANSCRIPT_SPEAKER_LEGEND}\n${body}`;
 }
 
 export function getRecentLiveTranscriptContext(
@@ -71,14 +82,20 @@ export function getRecentLiveTranscriptContext(
 }
 
 function formatLiveSegments(segments: LiveTranscriptSegment[]) {
-  const manager = SpeakerLabelManager.fromSegments(segments);
+  const manager = SpeakerLabelManager.fromSegments(
+    segments,
+    LIVE_ASK_SELF_LABEL_CONTEXT,
+  );
   return segments
     .map((segment) => {
-      const speaker = SegmentKeyUtils.renderLabel(
-        segment.key,
-        undefined,
-        manager,
-      );
+      const speaker =
+        segment.key.channel === "DirectMic"
+          ? "You"
+          : SegmentKeyUtils.renderLabel(
+              segment.key,
+              LIVE_ASK_SELF_LABEL_CONTEXT,
+              manager,
+            );
       return `${speaker}: ${segment.text.trim()}`;
     })
     .join("\n");

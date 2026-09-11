@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   sessionProps: {
     contextEntities: [],
     isSystemPromptReady: true,
+    isLiveAsk: false,
     messages: [] as ChatSessionRenderProps["messages"],
     onAddContextEntity: vi.fn(),
     onDraftContextRefsChange: vi.fn(),

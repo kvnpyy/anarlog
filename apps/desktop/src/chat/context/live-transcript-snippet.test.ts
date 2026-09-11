@@ -56,6 +56,9 @@ describe("formatRecentLiveTranscript", () => {
     expect(text).not.toContain("last 10 minutes");
     expect(text).toContain("Kickoff from the start");
     expect(text).toContain("Just said this");
+    expect(text).toContain('Labels: "You" is the person using Acorn');
+    expect(text).toContain("You: Just said this");
+    expect(text).toContain("Speaker 1: Kickoff from the start");
   });
 
   it("can still window to the last 10 minutes when asked", () => {
@@ -103,7 +106,9 @@ describe("formatRecentLiveTranscript", () => {
       sessionMode: "active",
     });
 
-    expect(text).toBe("IN-PROGRESS TRANSCRIPT:\nPartial caption so far");
+    expect(text).toBe(
+      'IN-PROGRESS TRANSCRIPT:\nLabels: "You" is the person using Acorn (microphone). Other speakers are everyone else.\nPartial caption so far',
+    );
   });
 
   it("keeps the newest speaker lines when the transcript exceeds the char budget", () => {
@@ -176,5 +181,39 @@ describe("formatRecentLiveTranscript", () => {
         sessionMode: "inactive",
       }),
     ).toBeNull();
+  });
+
+  it("labels the microphone as You and the other party as a speaker", () => {
+    const text = formatRecentLiveTranscript({
+      liveCaptionText: "",
+      liveSegments: [
+        segment({
+          id: "customer",
+          text: "What does pricing look like?",
+          start_ms: 0,
+          end_ms: 1_000,
+        }),
+        segment({
+          id: "rep",
+          text: "I can walk you through that.",
+          start_ms: 2_000,
+          end_ms: 3_000,
+          key: {
+            channel: "DirectMic",
+            speaker_index: null,
+            speaker_human_id: null,
+          },
+        }),
+      ],
+      liveSessionId: "session-1",
+      liveTranscriptionActive: true,
+      seconds: 30,
+      sessionId: "session-1",
+      sessionMode: "active",
+    });
+
+    expect(text).toContain("You: I can walk you through that.");
+    expect(text).toContain("Speaker 1: What does pricing look like?");
+    expect(text).not.toMatch(/Speaker \d+: I can walk you through that/);
   });
 });

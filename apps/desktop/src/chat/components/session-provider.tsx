@@ -69,6 +69,7 @@ export type ChatSessionRenderProps = {
   onAddContextEntity: (ref: ContextRef) => void;
   onDraftContextRefsChange: (refs: ContextRef[]) => void;
   isSystemPromptReady: boolean;
+  isLiveAsk: boolean;
 };
 
 type ChatTransportPreflight = NonNullable<ChatSendOptions["beforeSend"]>;
@@ -763,6 +764,7 @@ function ChatSessionLifecycle({
     onAddContextEntity,
     onDraftContextRefsChange,
     isSystemPromptReady,
+    isLiveAsk,
   });
 
   if (unstyled) {

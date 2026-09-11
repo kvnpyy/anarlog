@@ -92,13 +92,35 @@ describe("chat context", () => {
 });
 
 describe("getMeetingChatId", () => {
-  test("uses the live meeting while recording", () => {
+  test("uses the live meeting while recording that note", () => {
+    expect(
+      getMeetingChatId({
+        scope: "general",
+        isRecording: true,
+        liveSessionId: "live-1",
+        currentSessionId: "live-1",
+      }),
+    ).toBe("live-1");
+  });
+
+  test("uses the open note while a different meeting is recording", () => {
     expect(
       getMeetingChatId({
         scope: "general",
         isRecording: true,
         liveSessionId: "live-1",
         currentSessionId: "tab-1",
+      }),
+    ).toBe("tab-1");
+  });
+
+  test("falls back to the live meeting from calendar while recording", () => {
+    expect(
+      getMeetingChatId({
+        scope: "general",
+        isRecording: true,
+        liveSessionId: "live-1",
+        currentSessionId: undefined,
       }),
     ).toBe("live-1");
   });
@@ -137,7 +159,7 @@ describe("getMeetingChatId", () => {
     ).toBeUndefined();
   });
 
-  test("still isolates the live meeting while recording", () => {
+  test("keeps the open note even if workspace ask is on during a recording", () => {
     expect(
       getMeetingChatId({
         scope: "general",
@@ -146,6 +168,6 @@ describe("getMeetingChatId", () => {
         currentSessionId: "tab-1",
         workspaceAsk: true,
       }),
-    ).toBe("live-1");
+    ).toBe("tab-1");
   });
 });

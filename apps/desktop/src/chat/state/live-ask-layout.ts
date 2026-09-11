@@ -14,3 +14,17 @@ export function shouldInlineLiveAsk({
     currentTab.id === liveSessionId
   );
 }
+
+export function shouldUseLiveAskContext({
+  liveSessionId,
+  currentSessionId,
+}: {
+  liveSessionId: string | null | undefined;
+  currentSessionId: string | undefined;
+}): boolean {
+  if (!liveSessionId) {
+    return false;
+  }
+
+  return currentSessionId == null || currentSessionId === liveSessionId;
+}

@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   chatSession: vi.fn(),
   hasAvailableTranscript: false,
   sessionMode: "inactive",
+  currentSessionId: "session-1" as string | undefined,
+  liveSessionId: "session-1" as string | null,
   requestedLiveTranscription: null as boolean | null,
   liveTranscriptionActive: null as boolean | null,
   toolbarControls: vi.fn((_props: Record<string, unknown>) => (
@@ -46,7 +48,10 @@ vi.mock("./content", () => ({
 }));
 
 vi.mock("./session-provider", () => ({
-  ChatSession: (props: { children: (props: object) => React.ReactNode }) => {
+  ChatSession: (props: {
+    children: (props: object) => React.ReactNode;
+    isLiveAsk?: boolean;
+  }) => {
     mocks.chatSession(props);
     return props.children({
       messages: [],
@@ -56,6 +61,7 @@ vi.mock("./session-provider", () => ({
       contextEntities: [],
       sendMessage: vi.fn(),
       pendingRefs: [],
+      isLiveAsk: Boolean(props.isLiveAsk),
     });
   },
 }));
@@ -71,7 +77,7 @@ vi.mock("~/chat/store/use-chat-actions", () => ({
 }));
 
 vi.mock("./use-session-tab", () => ({
-  useSessionTab: () => ({ currentSessionId: "session-1" }),
+  useSessionTab: () => ({ currentSessionId: mocks.currentSessionId }),
 }));
 
 vi.mock("~/contexts/shell", () => ({
@@ -88,11 +94,22 @@ vi.mock("~/session/queries", () => ({
 }));
 
 vi.mock("~/stt/contexts", () => ({
-  useListener: (selector: (state: unknown) => unknown) =>
-    selector({
-      getSessionMode: () => mocks.sessionMode,
+  useListener: (
+    selector: (state: {
+      getSessionMode: (sessionId: string) => string;
       live: {
-        sessionId: "session-1",
+        sessionId: string | null;
+        requestedLiveTranscription: boolean | null;
+        liveTranscriptionActive: boolean | null;
+        batchTranscriptionPendingBySession: Record<string, boolean>;
+      };
+    }) => unknown,
+  ) =>
+    selector({
+      getSessionMode: (sessionId) =>
+        sessionId === mocks.liveSessionId ? mocks.sessionMode : "inactive",
+      live: {
+        sessionId: mocks.liveSessionId,
         requestedLiveTranscription: mocks.requestedLiveTranscription,
         liveTranscriptionActive: mocks.liveTranscriptionActive,
         batchTranscriptionPendingBySession: {},
@@ -107,6 +124,8 @@ describe("ChatView", () => {
     cleanup();
     mocks.chatSession.mockClear();
     mocks.chat.scope = "general";
+    mocks.currentSessionId = "session-1";
+    mocks.liveSessionId = "session-1";
     mocks.hasAvailableTranscript = false;
     mocks.sessionMode = "inactive";
     mocks.requestedLiveTranscription = null;
@@ -204,5 +223,20 @@ describe("ChatView", () => {
       root?.firstElementChild?.hasAttribute("data-tauri-drag-region"),
     ).toBe(false);
     expect(screen.getByTestId("chat-toolbar").dataset.surface).toBe("light");
+  });
+
+  it("asks the open note instead of the live meeting when another call is in progress", () => {
+    mocks.sessionMode = "active";
+    mocks.currentSessionId = "previous-session";
+    mocks.liveSessionId = "live-session";
+
+    render(<ChatView />);
+
+    expect(mocks.chatSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentSessionId: "previous-session",
+        isLiveAsk: false,
+      }),
+    );
   });
 });

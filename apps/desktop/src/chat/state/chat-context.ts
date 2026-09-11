@@ -149,7 +149,7 @@ export function getMeetingChatId({
   }
 
   if (isRecording) {
-    return liveSessionId ?? currentSessionId ?? undefined;
+    return currentSessionId ?? liveSessionId ?? undefined;
   }
 
   if (workspaceAsk) {
