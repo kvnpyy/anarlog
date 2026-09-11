@@ -338,6 +338,38 @@ describe("ChatContent", () => {
     expect(screen.getByRole("button", { name: "Draft email" })).toBeTruthy();
   });
 
+  it("shows post-meeting recipes on a past note instead of live-call coaching", () => {
+    render(
+      <ChatContent
+        sessionId="past-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[
+          {
+            kind: "session",
+            key: "past-session",
+            sessionId: "past-session",
+            pending: false,
+          },
+        ]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        pageIntegrated
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Catch me up" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sound smart" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Draft email" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Action items" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Key decisions" })).toBeTruthy();
+  });
+
   it("shows a live STT warning when recording is batch-only", () => {
     render(
       <ChatContent

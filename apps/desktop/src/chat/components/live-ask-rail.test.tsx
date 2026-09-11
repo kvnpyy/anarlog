@@ -53,4 +53,32 @@ describe("LiveAskRail", () => {
     fireEvent.click(screen.getByRole("button", { name: "Catch me up" }));
     expect(onSendMessage).not.toHaveBeenCalled();
   });
+
+  it("offers post-meeting recipes instead of live-call coaching", () => {
+    const onSendMessage = vi.fn();
+
+    render(
+      <LiveAskRail
+        variant="past"
+        isBatchOnly={false}
+        onSendMessage={onSendMessage}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Catch me up" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sound smart" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Draft email" }));
+    fireEvent.click(screen.getByRole("button", { name: "Action items" }));
+    fireEvent.click(screen.getByRole("button", { name: "Key decisions" }));
+
+    expect(onSendMessage).toHaveBeenCalledTimes(3);
+    expect(onSendMessage.mock.calls[0]?.[3]).toContain("follow-up email");
+    expect(onSendMessage.mock.calls[0]?.[3]).toContain("under 250 words");
+    expect(onSendMessage.mock.calls[0]?.[3]).not.toContain("so far");
+    expect(onSendMessage.mock.calls[1]?.[0]).toBe("Action items");
+    expect(onSendMessage.mock.calls[1]?.[3]).toContain("action items");
+    expect(onSendMessage.mock.calls[2]?.[0]).toBe("Key decisions");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("key decisions");
+  });
 });

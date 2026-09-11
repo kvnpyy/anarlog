@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -89,15 +89,40 @@ import { PersistentChatPanel } from "./persistent-chat";
 
 import type { ChatSessionRenderProps } from "~/chat/components/session-provider";
 
-function TestHost() {
+function TestHost({
+  initialSlot = true,
+}: {
+  initialSlot?: boolean;
+} = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hasSlot, setHasSlot] = useState(initialSlot);
+  const [slotGeneration, setSlotGeneration] = useState(0);
 
   return (
     <div ref={containerRef} data-testid="full-panel-container">
       <div data-chat-floating-anchor>
         <div data-chat-page-content data-testid="note-surface" />
-        <div data-chat-page-slot />
+        {hasSlot ? (
+          <div data-chat-page-slot data-slot-generation={slotGeneration} />
+        ) : null}
       </div>
+      <button
+        data-testid="remove-page-slot"
+        type="button"
+        onClick={() => setHasSlot(false)}
+      >
+        Remove slot
+      </button>
+      <button
+        data-testid="restore-page-slot"
+        type="button"
+        onClick={() => {
+          setSlotGeneration((generation) => generation + 1);
+          setHasSlot(true);
+        }}
+      >
+        Restore slot
+      </button>
       <PersistentChatPanel
         floatingContainerRef={containerRef}
         sessionProps={mocks.sessionProps}
@@ -338,6 +363,55 @@ describe("PersistentChatPanel", () => {
     expect(panel).toBeTruthy();
     expect(document.querySelector("[data-chat-resize-frame]")).toBeNull();
     expect(document.querySelector("[data-chat-resize-handle]")).toBeNull();
+  });
+
+  it("docks the composer after the notepad slot appears on a later paint", async () => {
+    mocks.tabType = "sessions";
+    mocks.chatMode.current = "FloatingClosed";
+
+    render(<TestHost initialSlot={false} />);
+
+    expect(document.querySelector("[data-chat-page-composer]")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("restore-page-slot"));
+
+    await waitFor(() => {
+      const pageComposer = document.querySelector("[data-chat-page-composer]");
+      const pageSlot = document.querySelector("[data-chat-page-slot]");
+      expect(pageComposer).toBeTruthy();
+      expect(pageComposer?.parentElement).toBe(pageSlot);
+    });
+  });
+
+  it("reattaches the notepad composer when the page slot remounts after a gap", async () => {
+    mocks.tabType = "sessions";
+    mocks.chatMode.current = "FloatingClosed";
+
+    render(<TestHost />);
+
+    await screen.findByTestId("chat-view");
+    expect(document.querySelector("[data-chat-page-composer]")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("remove-page-slot"));
+
+    await waitFor(() => {
+      expect(document.querySelector("[data-chat-page-composer]")).toBeNull();
+    });
+
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
+
+    fireEvent.click(screen.getByTestId("restore-page-slot"));
+
+    await waitFor(() => {
+      const pageComposer = document.querySelector("[data-chat-page-composer]");
+      const pageSlot = document.querySelector("[data-chat-page-slot]");
+      expect(pageComposer).toBeTruthy();
+      expect(pageComposer?.parentElement).toBe(pageSlot);
+    });
   });
 
   it("hides the floating panel when the chat moves to the right panel", async () => {

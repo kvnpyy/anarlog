@@ -303,6 +303,13 @@ export function ChatContent({
           showRecipes={isModelConfigured}
           onSendMessage={submitOrQueueMessage}
         />
+      ) : (isInline || pageIntegrated) && contextEntities.length > 0 ? (
+        <LiveAskRail
+          variant="past"
+          isBatchOnly={false}
+          showRecipes={isModelConfigured}
+          onSendMessage={submitOrQueueMessage}
+        />
       ) : null}
       {isModelConfigured && (
         <>

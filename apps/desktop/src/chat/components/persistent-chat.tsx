@@ -78,11 +78,11 @@ export function PersistentChatPanel({
   };
 
   const getPageSlot = () => {
-    return (
+    const slot =
       floatingContainerRef.current?.querySelector<HTMLElement>(
         "[data-chat-page-slot]",
-      ) ?? null
-    );
+      ) ?? null;
+    return slot?.isConnected ? slot : null;
   };
 
   const getContainerRect = () => {
@@ -135,36 +135,46 @@ export function PersistentChatPanel({
       return;
     }
 
+    let cancelled = false;
+    let observer: MutationObserver | null = null;
+    let frame = 0;
+
     const syncSlot = () => {
       const nextSlot = getPageSlot();
-      setPageSlot((currentSlot) =>
-        currentSlot === nextSlot ? currentSlot : nextSlot,
-      );
-      return nextSlot;
+      setPageSlot((currentSlot) => {
+        const current = currentSlot?.isConnected ? currentSlot : null;
+        if (current === nextSlot) {
+          return currentSlot;
+        }
+        return nextSlot;
+      });
     };
 
-    if (syncSlot()) {
-      const root = floatingContainerRef.current;
-      if (!root) {
+    const attach = () => {
+      if (cancelled) {
         return;
       }
 
-      const observer = new MutationObserver(() => {
+      const root = floatingContainerRef.current;
+      syncSlot();
+      if (!root) {
+        frame = window.requestAnimationFrame(attach);
+        return;
+      }
+
+      observer = new MutationObserver(() => {
         syncSlot();
       });
       observer.observe(root, { childList: true, subtree: true });
-      return () => {
-        observer.disconnect();
-      };
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      syncSlot();
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
     };
-  }, [isVisible, pageIntegrated, floatingContainerRef, pageSlot]);
+
+    attach();
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [isVisible, pageIntegrated, floatingContainerRef]);
 
   useLayoutEffect(() => {
     const root = floatingContainerRef.current;
@@ -219,7 +229,7 @@ export function PersistentChatPanel({
   }
 
   if (pageIntegrated) {
-    if (!isVisible || !pageSlot) {
+    if (!isVisible || !pageSlot?.isConnected) {
       return null;
     }
 
