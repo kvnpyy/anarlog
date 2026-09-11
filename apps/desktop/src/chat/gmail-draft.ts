@@ -2,6 +2,7 @@ export const GMAIL_TEXT_FONT = "Arial, Helvetica, sans-serif";
 export const GMAIL_TEXT_SIZE = "13px";
 export const GMAIL_TEXT_COLOR = "#222222";
 export const GMAIL_LINE_HEIGHT = "1.5";
+export const GMAIL_COMPOSE_URL_MAX = 1800;
 
 const GMAIL_TEXT_STYLE = `font-family:${GMAIL_TEXT_FONT};font-size:${GMAIL_TEXT_SIZE};color:${GMAIL_TEXT_COLOR};line-height:${GMAIL_LINE_HEIGHT}`;
 
@@ -38,6 +39,35 @@ export function toGmailCopyHtml(text: string): string {
 export function toGmailCopyPlainText(text: string): string {
   const { body } = splitEmailDraft(text);
   return body;
+}
+
+export function toGmailComposeUrl(text: string): {
+  url: string;
+  includesBody: boolean;
+} {
+  const { subject, body } = splitEmailDraft(text);
+  const params = new URLSearchParams();
+  if (subject) {
+    params.set("su", subject);
+  }
+
+  const compose = (query: URLSearchParams) => {
+    const encoded = query.toString();
+    return encoded
+      ? `https://mail.google.com/mail/?view=cm&fs=1&tf=1&${encoded}`
+      : "https://mail.google.com/mail/?view=cm&fs=1&tf=1";
+  };
+
+  if (body) {
+    params.set("body", body);
+    const withBody = compose(params);
+    if (withBody.length <= GMAIL_COMPOSE_URL_MAX) {
+      return { url: withBody, includesBody: true };
+    }
+    params.delete("body");
+  }
+
+  return { url: compose(params), includesBody: false };
 }
 
 function markdownToGmailHtml(markdown: string): string {

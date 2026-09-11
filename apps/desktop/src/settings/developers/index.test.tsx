@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   checkEmbeddedCli: vi.fn(),
   installEmbeddedCli: vi.fn(),
+  installClaudeMcp: vi.fn(),
   listSkillAgents: vi.fn(),
   installAgentSkill: vi.fn(),
   showDevtool: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock("~/types/tauri.gen", () => ({
   commands: {
     checkEmbeddedCli: mocks.checkEmbeddedCli,
     installEmbeddedCli: mocks.installEmbeddedCli,
+    installClaudeMcp: mocks.installClaudeMcp,
     listSkillAgents: mocks.listSkillAgents,
     installAgentSkill: mocks.installAgentSkill,
     showDevtool: mocks.showDevtool,
@@ -171,6 +173,7 @@ describe("SettingsDevelopers", () => {
   beforeEach(() => {
     mocks.checkEmbeddedCli.mockReset();
     mocks.installEmbeddedCli.mockReset();
+    mocks.installClaudeMcp.mockReset();
     mocks.listSkillAgents.mockReset();
     mocks.listSkillAgents.mockResolvedValue({ status: "ok", data: [] });
     mocks.installAgentSkill.mockReset();
@@ -275,6 +278,51 @@ describe("SettingsDevelopers", () => {
     });
   });
 
+  it("writes the installed CLI path into Claude Desktop", async () => {
+    mocks.checkEmbeddedCli.mockResolvedValue({
+      status: "ok",
+      data: {
+        supported: true,
+        commandName: "anarlog",
+        installPath: "/Users/test/.local/bin/anarlog",
+        state: "installed",
+        details: "Installed.",
+      },
+    });
+    mocks.installClaudeMcp.mockResolvedValue({
+      status: "ok",
+      data: {
+        desktop: true,
+        claudeCode: false,
+        desktopPath:
+          "/Users/test/Library/Application Support/Claude/claude_desktop_config.json",
+        claudeCodePath: null,
+      },
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SettingsDevelopers />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Reinstall")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add to Claude" }));
+
+    await waitFor(() => expect(mocks.installClaudeMcp).toHaveBeenCalledOnce());
+    expect(mocks.installClaudeMcp).toHaveBeenCalledWith(
+      "/Users/test/.local/bin/anarlog",
+    );
+    await waitFor(() =>
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(
+        "Added to Claude Desktop. Restart Claude to use it.",
+      ),
+    );
+  });
+
   it("does not expose a nonexistent MCP path when the CLI is unsupported", async () => {
     mocks.checkEmbeddedCli.mockResolvedValue({
       status: "ok",
@@ -300,6 +348,11 @@ describe("SettingsDevelopers", () => {
       name: "Copy config",
     });
     expect(copyButton.hasAttribute("disabled")).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: "Add to Claude" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
     expect(
       screen.queryByText(/\/Users\/test\/\.local\/bin\/anarlog-dev/),
     ).toBeNull();

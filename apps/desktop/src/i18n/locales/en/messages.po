@@ -391,6 +391,10 @@ msgstr "Add spoken language"
 msgid "Add step"
 msgstr "Add step"
 
+#: src/settings/developers/cli.tsx
+msgid "Add to Claude"
+msgstr "Add to Claude"
+
 #: src/settings/developers/webhooks.tsx
 msgid "Add webhook"
 msgstr "Add webhook"
@@ -402,6 +406,14 @@ msgstr "Add your own LLM API key to generate a summary from this transcript."
 #: src/sidebar/settings-link.tsx
 msgid "Add your profile"
 msgstr "Add your profile"
+
+#: src/settings/developers/cli.tsx
+msgid "Added to Claude Desktop and Claude Code. Restart Claude to use it."
+msgstr "Added to Claude Desktop and Claude Code. Restart Claude to use it."
+
+#: src/settings/developers/cli.tsx
+msgid "Added to Claude Desktop. Restart Claude to use it."
+msgstr "Added to Claude Desktop. Restart Claude to use it."
 
 #: src/settings/general/spoken-languages.tsx
 msgid "Additional spoken languages"
@@ -1332,6 +1344,10 @@ msgstr "Continuing without trial"
 msgid "Control listening without reopening Acorn."
 msgstr "Control listening without reopening Acorn."
 
+#: src/chat/components/message/normal.tsx
+msgid "Copied the email. Paste it into Gmail."
+msgstr "Copied the email. Paste it into Gmail."
+
 #: src/main/windows-title-bar.tsx
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 #: src/settings/ai/llm/subscriptions/connect.tsx
@@ -1433,6 +1449,10 @@ msgstr "Could not load Slack channels. Reconnect Slack and try again."
 #: src/settings/sync/index.tsx
 msgid "Could not load your devices."
 msgstr "Could not load your devices."
+
+#: src/chat/components/message/normal.tsx
+msgid "Could not open Gmail."
+msgstr "Could not open Gmail."
 
 #: src/session-sharing/management-panel.tsx
 msgid "Could not open the web copy."
@@ -1801,12 +1821,12 @@ msgid "Draft"
 msgstr "Draft"
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
-msgstr "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgstr "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 
 #: src/chat/components/body/empty.tsx
-msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
-msgstr "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgstr "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 
 #: src/chat/components/live-ask-rail.tsx
 msgid "Draft email"
@@ -2527,6 +2547,10 @@ msgstr "Leaving gives up your access to shared notes here."
 msgid "Let people with access play the recording."
 msgstr "Let people with access play the recording."
 
+#: src/settings/developers/cli.tsx
+msgid "Lets Claude read your Acorn notes and summaries. Restart Claude after adding."
+msgstr "Lets Claude read your Acorn notes and summaries. Restart Claude after adding."
+
 #: src/settings/appearance/theme.tsx
 msgid "Light"
 msgstr "Light"
@@ -3192,6 +3216,10 @@ msgstr "Open calendar account actions"
 #: src/session/components/outer-header/overflow/index.tsx
 msgid "Open floating panel"
 msgstr "Open floating panel"
+
+#: src/chat/components/message/normal.tsx
+msgid "Open in Gmail"
+msgstr "Open in Gmail"
 
 #: src/session/components/outer-header/overflow/index.tsx
 #: src/sidebar/timeline/item.tsx

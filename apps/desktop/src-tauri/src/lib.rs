@@ -3,6 +3,7 @@ mod acorn_pro_invite;
 mod agent_skills;
 mod agents;
 mod appearance;
+mod claude_mcp;
 mod commands;
 mod db;
 mod embedded_cli;
@@ -759,6 +760,7 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::install_embedded_cli::<tauri::Wry>,
             commands::list_skill_agents,
             commands::install_agent_skill,
+            commands::install_claude_mcp,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

@@ -38,7 +38,10 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain(
       "Do not return the rewrite only as a fenced markdown block",
     );
-    expect(prompt).toContain("Keep email drafts under 150 words");
+    expect(prompt).toContain("Default every email to under 250 words");
+    expect(prompt).toContain(
+      "Write a longer email only if they explicitly ask",
+    );
     expect(prompt).toContain("copy-paste into Gmail");
     expect(prompt).toContain("Light markdown is OK");
     expect(prompt).toContain("Write in the user's voice");

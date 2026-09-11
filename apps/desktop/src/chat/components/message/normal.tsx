@@ -1,13 +1,17 @@
+import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import {
   ArrowCounterClockwise,
   Brain,
   Check,
   Copy,
+  EnvelopeSimple,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 
+import { commands as openerCommands } from "@anlg/plugin-opener2";
+import { sonnerToast } from "@anlg/ui/components/ui/toast";
 import { cn } from "@anlg/utils";
 
 import { Disclosure, MessageBubble, MessageContainer } from "./shared";
@@ -22,6 +26,7 @@ import {
   GMAIL_TEXT_SIZE,
   isEmailDraft,
   splitEmailDraft,
+  toGmailComposeUrl,
   toGmailCopyHtml,
   toGmailCopyPlainText,
 } from "~/chat/gmail-draft";
@@ -281,6 +286,16 @@ function EmailDraftBody({
           {body}
         </Streamdown>
       </div>
+      {isAnimating ? null : (
+        <button
+          type="button"
+          onClick={() => void openGmailDraft(text)}
+          className="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1 text-xs transition-colors"
+        >
+          <EnvelopeSimple size={14} />
+          {t`Open in Gmail`}
+        </button>
+      )}
     </div>
   );
 }
@@ -358,5 +373,23 @@ async function copyGmailDraft(text: string) {
     ]);
   } catch {
     await navigator.clipboard.writeText(plain);
+  }
+}
+
+async function openGmailDraft(text: string) {
+  const { url, includesBody } = toGmailComposeUrl(text);
+  try {
+    if (!includesBody) {
+      await copyGmailDraft(text);
+      sonnerToast.message(t`Copied the email. Paste it into Gmail.`);
+    }
+    await openerCommands.openUrl(url, null);
+  } catch {
+    try {
+      await copyGmailDraft(text);
+      sonnerToast.message(t`Copied the email. Paste it into Gmail.`);
+    } catch {
+      sonnerToast.error(t`Could not open Gmail.`);
+    }
   }
 }

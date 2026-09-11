@@ -222,16 +222,50 @@ function CliStatus({
 function McpRow({ status }: { status: EmbeddedCliStatus | undefined }) {
   const isInstalled = status?.state === "installed";
   const commandName = status?.commandName ?? "anarlog";
-  const configuration = buildMcpConfiguration(
-    isInstalled ? status.installPath : commandName,
-  );
+  const command = isInstalled ? status.installPath : commandName;
+  const configuration = buildMcpConfiguration(command);
+  const installClaudeMutation = useMutation({
+    mutationFn: async () => {
+      const result = await commands.installClaudeMcp(command);
+      if (result.status === "error") {
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+    onSuccess: (result) => {
+      sonnerToast.success(
+        result.claudeCode
+          ? t`Added to Claude Desktop and Claude Code. Restart Claude to use it.`
+          : t`Added to Claude Desktop. Restart Claude to use it.`,
+      );
+    },
+    onError: (error) => sonnerToast.error(error.message),
+  });
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <h3 className="text-sm font-medium">{t`MCP server`}</h3>
+        <p className="text-muted-foreground mt-1 text-xs">
+          <Trans>
+            Lets Claude read your Acorn notes and summaries. Restart Claude
+            after adding.
+          </Trans>
+        </p>
       </div>
       <div className="flex shrink-0 gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={!isInstalled || installClaudeMutation.isPending}
+          onClick={() => installClaudeMutation.mutate()}
+        >
+          {installClaudeMutation.isPending ? (
+            <CircleNotch className="size-3.5 animate-spin" />
+          ) : (
+            t`Add to Claude`
+          )}
+        </Button>
         <Button
           type="button"
           variant="outline"

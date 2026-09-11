@@ -164,6 +164,14 @@ async installAgentSkill(agent: SkillAgent) : Promise<Result<SkillAgentStatus, st
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async installClaudeMcp(command: string) : Promise<Result<ClaudeMcpInstallResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("install_claude_mcp", { command }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -178,6 +186,7 @@ async installAgentSkill(agent: SkillAgent) : Promise<Result<SkillAgentStatus, st
 /** user-defined types **/
 
 export type AcornHostedAiStatus = { stt: boolean; llm: boolean }
+export type ClaudeMcpInstallResult = { desktop: boolean; claudeCode: boolean; desktopPath: string; claudeCodePath: string | null }
 export type EmbeddedCliState = "installed" | "missing" | "conflict" | "unsupported" | "resource_missing"
 export type EmbeddedCliStatus = { supported: boolean; commandName: string; installPath: string; state: EmbeddedCliState; details: string | null }
 export type GoogleCalendarTokenResponse = { status: number; body: string }

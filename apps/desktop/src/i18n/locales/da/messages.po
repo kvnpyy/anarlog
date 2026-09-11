@@ -391,6 +391,10 @@ msgstr "Tilføj talesprog"
 msgid "Add step"
 msgstr ""
 
+#: src/settings/developers/cli.tsx
+msgid "Add to Claude"
+msgstr ""
+
 #: src/settings/developers/webhooks.tsx
 msgid "Add webhook"
 msgstr ""
@@ -401,6 +405,14 @@ msgstr ""
 
 #: src/sidebar/settings-link.tsx
 msgid "Add your profile"
+msgstr ""
+
+#: src/settings/developers/cli.tsx
+msgid "Added to Claude Desktop and Claude Code. Restart Claude to use it."
+msgstr ""
+
+#: src/settings/developers/cli.tsx
+msgid "Added to Claude Desktop. Restart Claude to use it."
 msgstr ""
 
 #: src/settings/general/spoken-languages.tsx
@@ -1332,6 +1344,10 @@ msgstr ""
 msgid "Control listening without reopening Acorn."
 msgstr ""
 
+#: src/chat/components/message/normal.tsx
+msgid "Copied the email. Paste it into Gmail."
+msgstr ""
+
 #: src/main/windows-title-bar.tsx
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 #: src/settings/ai/llm/subscriptions/connect.tsx
@@ -1432,6 +1448,10 @@ msgstr ""
 
 #: src/settings/sync/index.tsx
 msgid "Could not load your devices."
+msgstr ""
+
+#: src/chat/components/message/normal.tsx
+msgid "Could not open Gmail."
 msgstr ""
 
 #: src/session-sharing/management-panel.tsx
@@ -1801,11 +1821,11 @@ msgid "Draft"
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgid "Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 msgstr ""
 
 #: src/chat/components/body/empty.tsx
-msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 150 words. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
+msgid "Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences."
 msgstr ""
 
 #: src/chat/components/live-ask-rail.tsx
@@ -2527,6 +2547,10 @@ msgstr ""
 msgid "Let people with access play the recording."
 msgstr ""
 
+#: src/settings/developers/cli.tsx
+msgid "Lets Claude read your Acorn notes and summaries. Restart Claude after adding."
+msgstr ""
+
 #: src/settings/appearance/theme.tsx
 msgid "Light"
 msgstr ""
@@ -3191,6 +3215,10 @@ msgstr ""
 
 #: src/session/components/outer-header/overflow/index.tsx
 msgid "Open floating panel"
+msgstr ""
+
+#: src/chat/components/message/normal.tsx
+msgid "Open in Gmail"
 msgstr ""
 
 #: src/session/components/outer-header/overflow/index.tsx

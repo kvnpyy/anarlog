@@ -1,6 +1,7 @@
 use crate::{
     AppExt,
     agent_skills::{SkillAgent, SkillAgentStatus},
+    claude_mcp::ClaudeMcpInstallResult,
     embedded_cli::EmbeddedCliStatus,
 };
 
@@ -181,6 +182,16 @@ pub async fn install_agent_skill(agent: SkillAgent) -> Result<SkillAgentStatus, 
     }
 
     crate::agent_skills::install(agent)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn install_claude_mcp(command: String) -> Result<ClaudeMcpInstallResult, String> {
+    if cfg!(feature = "app-store") {
+        return Err("Claude MCP setup is unavailable in the Mac App Store build.".into());
+    }
+
+    crate::claude_mcp::install(&command)
 }
 
 #[cfg(test)]
