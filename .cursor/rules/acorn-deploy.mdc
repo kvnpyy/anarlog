@@ -13,6 +13,17 @@ When he says **deploy**, **push update**, or **ship**:
 2. Push the current branch.
 3. Actually ship the Mac app people install — do not stop at opening a PR.
 
+When writing `latest.json`, include the matching Windows NSIS installer:
+
+```bash
+node apps/desktop/src-tauri/scripts/write-acorn-latest-json.mjs \
+  --version <version> --tag v<version> --repo kvnpyy/acorn-releases \
+  --notes "Acorn <version>" \
+  --windows-artifact path/to/Acorn_<version>_x64-setup.exe
+```
+
+The `.exe.sig` must sit next to the installer. Do not bump the feed version without that same-version Windows binary — a Mac-only newer `latest.json` makes Windows clients try to update and fail. Do not pass `--allow-missing-windows` unless he explicitly asks for a Mac-only feed.
+
 Staging/stable in GitHub Actions is leftover Anarlog wiring. For Acorn, ship the production Mac build (the Action input is still `channel: stable` if that workflow is used). Do not explain those channel names unless he asks.
 
 A PR is not a deploy. GitHub check failures are GitHub tests, not his local app.
