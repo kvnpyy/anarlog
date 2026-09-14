@@ -93,6 +93,11 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain('"You" is the person using Acorn');
     expect(prompt).toContain("Never give questions for the other party");
     expect(prompt).toContain("in their role");
+    expect(prompt).toContain(
+      'Never attribute speech, questions, or leadership to "You"',
+    );
+    expect(prompt).toContain("the Acorn user has been silent");
+    expect(prompt).toContain("Do not invent that they spoke");
   });
 
   it("tells the model about the Free 30-day AI window", () => {

@@ -30,6 +30,7 @@ type QueuedChatMessage = {
   parts: AnlgUIMessage["parts"];
   contextRefs: ContextRef[];
   modelPrompt?: string;
+  transcriptWindowMs?: number;
 };
 
 const EMPTY_QUEUED_MESSAGES: readonly QueuedChatMessage[] = Object.freeze([]);
@@ -76,6 +77,7 @@ export function ChatContent({
     sendMessage: ChatMessageSender,
     contextRefs?: ContextRef[],
     modelPrompt?: string,
+    transcriptWindowMs?: number,
   ) => void;
   contextEntities: DisplayEntity[];
   pendingRefs: ContextRef[];
@@ -92,6 +94,10 @@ export function ChatContent({
   const isModelConfigured = !!model;
   const isFloating = layout === "floating";
   const isInline = layout === "inline";
+  const showPastAskRecipes =
+    !isRecording && (isInline || pageIntegrated) && contextEntities.length > 0;
+  const showAskRecipes = isRecording || showPastAskRecipes;
+  const hideContextBar = isRecording || isInline || pageIntegrated;
   const disabled = !isSystemPromptReady;
   const isBusy = status === "submitted" || status === "streaming";
   const hideEmptyLiveBody =
@@ -144,6 +150,7 @@ export function ChatContent({
       parts: AnlgUIMessage["parts"],
       contextRefs?: ContextRef[],
       modelPrompt?: string,
+      transcriptWindowMs?: number,
     ) => {
       const mergedContextRefs = mergeContextRefs(contextRefs);
 
@@ -156,6 +163,7 @@ export function ChatContent({
             parts,
             contextRefs: mergedContextRefs,
             modelPrompt,
+            transcriptWindowMs,
           },
         ]);
         return;
@@ -168,6 +176,7 @@ export function ChatContent({
         sendMessage,
         mergedContextRefs,
         modelPrompt,
+        transcriptWindowMs,
       );
     },
     [
@@ -212,6 +221,7 @@ export function ChatContent({
         sendMessage,
         nextMessage.contextRefs,
         nextMessage.modelPrompt,
+        nextMessage.transcriptWindowMs,
       );
     } finally {
       dequeueInFlightRef.current = false;
@@ -297,26 +307,22 @@ export function ChatContent({
             layout={layout}
           />
         ))}
-      {isRecording ? (
+      {showAskRecipes ? (
         <LiveAskRail
-          isBatchOnly={isBatchOnly}
-          showRecipes={isModelConfigured}
-          onSendMessage={submitOrQueueMessage}
-        />
-      ) : (isInline || pageIntegrated) && contextEntities.length > 0 ? (
-        <LiveAskRail
-          variant="past"
-          isBatchOnly={false}
+          variant={isRecording ? "live" : "past"}
+          isBatchOnly={isRecording ? isBatchOnly : false}
           showRecipes={isModelConfigured}
           onSendMessage={submitOrQueueMessage}
         />
       ) : null}
       {isModelConfigured && (
         <>
-          <ContextBar
-            entities={contextEntities}
-            onRemoveEntity={onRemoveContextEntity}
-          />
+          {hideContextBar ? null : (
+            <ContextBar
+              entities={contextEntities}
+              onRemoveEntity={onRemoveContextEntity}
+            />
+          )}
           {collapseThread ? null : (
             <ChatQueue
               messages={queuedMessages}

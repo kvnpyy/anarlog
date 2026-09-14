@@ -30,6 +30,7 @@ export function ChatBodyEmpty({
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
     modelPrompt?: string,
+    transcriptWindowMs?: number,
   ) => void;
   isRecording?: boolean;
 }) {

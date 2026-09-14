@@ -164,11 +164,19 @@ export function ChatPanelFrame({
       sendMessage: Parameters<typeof handleSendMessage>[2],
       contextRefs?: Parameters<typeof handleSendMessage>[3],
       modelPrompt?: Parameters<typeof handleSendMessage>[4],
+      transcriptWindowMs?: Parameters<typeof handleSendMessage>[5],
     ) => {
       if (layout === "floating" && chat.mode === "FloatingClosed") {
         chat.sendEvent({ type: "OPEN" });
       }
-      handleSendMessage(content, parts, sendMessage, contextRefs, modelPrompt);
+      handleSendMessage(
+        content,
+        parts,
+        sendMessage,
+        contextRefs,
+        modelPrompt,
+        transcriptWindowMs,
+      );
     },
     [chat, handleSendMessage, layout],
   );

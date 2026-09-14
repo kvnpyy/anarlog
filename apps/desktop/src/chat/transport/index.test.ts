@@ -99,6 +99,7 @@ describe("CustomChatTransport", () => {
 
     expect(mocks.getRecentLiveTranscriptContext).toHaveBeenCalledWith(
       "session-1",
+      undefined,
     );
     const streamArgs = mocks.agentStream.mock.calls[0]?.[0] as {
       messages: unknown;
@@ -107,6 +108,46 @@ describe("CustomChatTransport", () => {
     expect(serialized).toContain("IN-PROGRESS TRANSCRIPT:");
     expect(serialized).toContain("Let's ship Friday");
     expect(serialized).toContain("Catch me up");
+  });
+
+  it("windows the live transcript from the last user message", async () => {
+    mocks.getRecentLiveTranscriptContext.mockReturnValue(
+      "IN-PROGRESS TRANSCRIPT:\nSpeaker 1: Pricing next",
+    );
+
+    const transport = new CustomChatTransport({} as never, {});
+
+    await transport.sendMessages({
+      abortSignal: new AbortController().signal,
+      chatId: "chat-1",
+      messageId: undefined,
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "Catch me up" }],
+          metadata: {
+            contextRefs: [
+              {
+                kind: "session",
+                key: "session:auto:session-1",
+                source: "auto-current",
+                sessionId: "session-1",
+              },
+            ],
+            modelPrompt:
+              "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript.",
+            transcriptWindowMs: 5 * 60 * 1000,
+          },
+        },
+      ],
+      trigger: "submit-message",
+    });
+
+    expect(mocks.getRecentLiveTranscriptContext).toHaveBeenCalledWith(
+      "session-1",
+      5 * 60 * 1000,
+    );
   });
 
   it("sends the hidden model prompt while keeping the short label off the model", async () => {

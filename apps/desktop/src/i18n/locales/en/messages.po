@@ -825,8 +825,8 @@ msgid "Catch me up on recent meetings."
 msgstr "Catch me up on recent meetings."
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, give 3-5 short bullets of what just happened, then one sentence on what I should say next."
-msgstr "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, give 3-5 short bullets of what just happened, then one sentence on what I should say next."
+msgid "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, recap what just happened in 3-5 short bullets. Attribute speech only from labels: \"You:\" is the Acorn user's microphone; any other label is someone else. If there is no \"You:\" line, the user has been silent — do not write as if they spoke. End with at most one sentence on what they could say next only if they are in a position to speak; if someone else is presenting or they have been silent, skip that and recap only."
+msgstr "Catch me up on this meeting. Using only the last 5 minutes of the in-progress transcript, recap what just happened in 3-5 short bullets. Attribute speech only from labels: \"You:\" is the Acorn user's microphone; any other label is someone else. If there is no \"You:\" line, the user has been silent — do not write as if they spoke. End with at most one sentence on what they could say next only if they are in a position to speak; if someone else is presenting or they have been silent, skip that and recap only."
 
 #: src/onboarding/folder-location.tsx
 msgid "Change"
@@ -2258,8 +2258,8 @@ msgid "Help me prep."
 msgstr "Help me prep."
 
 #: src/chat/components/live-ask-rail.tsx
-msgid "Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise talking points in my voice that I can say next."
-msgstr "Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise talking points in my voice that I can say next."
+msgid "Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise talking points in my voice that I can say next. Do not claim I already said them."
+msgstr "Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise talking points in my voice that I can say next. Do not claim I already said them."
 
 #: src/settings/dictionary/index.tsx
 msgid "Help transcription recognize names, jargon, and product terms."

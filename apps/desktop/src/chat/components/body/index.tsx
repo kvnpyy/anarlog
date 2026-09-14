@@ -37,6 +37,7 @@ export function ChatBody({
     parts: Array<{ type: "text"; text: string }>,
     contextRefs?: ContextRef[],
     modelPrompt?: string,
+    transcriptWindowMs?: number,
   ) => void;
   isRecording?: boolean;
   layout?: "floating" | "right-panel" | "inline";

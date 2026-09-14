@@ -546,6 +546,14 @@ const getChatModeForNavigation = (
   targetTab: Tab | TabInput,
   chatMode: ChatModeState["chatMode"],
 ): ChatModeState["chatMode"] | null => {
+  const isDifferentSession =
+    targetTab.type === "sessions" &&
+    (currentTab?.type !== "sessions" || currentTab.id !== targetTab.id);
+
+  if (isDifferentSession) {
+    useChatContext.getState().setWorkspaceAsk(false);
+  }
+
   if (chatMode === "FloatingClosed") {
     return null;
   }
@@ -565,13 +573,7 @@ const getChatModeForNavigation = (
     return null;
   }
 
-  if (useChatContext.getState().workspaceAsk) {
-    return null;
-  }
-
-  return currentTab?.type !== "sessions" || currentTab.id !== targetTab.id
-    ? "FloatingClosed"
-    : null;
+  return isDifferentSession ? "FloatingClosed" : null;
 };
 
 const withChatModeForNavigation = <T extends ChatModeState>(

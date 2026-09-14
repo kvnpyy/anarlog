@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { LiveTranscriptSegment } from "@anlg/plugin-transcription";
 
 import {
+  LIVE_ASK_CATCH_UP_WINDOW_MS,
   LIVE_ASK_TRANSCRIPT_WINDOW_MS,
+  LIVE_TRANSCRIPT_SILENT_USER_NOTE,
+  LIVE_TRANSCRIPT_UNLABELED_CAPTION,
   formatRecentLiveTranscript,
 } from "./live-transcript-snippet";
 
@@ -95,6 +98,35 @@ describe("formatRecentLiveTranscript", () => {
     expect(text).not.toContain("Too old");
   });
 
+  it("can window to the last 5 minutes when asked", () => {
+    const text = formatRecentLiveTranscript({
+      liveCaptionText: "",
+      liveSegments: [
+        segment({
+          id: "old",
+          text: "Six minutes ago",
+          start_ms: 6 * 60_000,
+          end_ms: 6 * 60_000 + 2_000,
+        }),
+        segment({
+          id: "recent",
+          text: "Just now",
+          start_ms: 11 * 60_000,
+          end_ms: 11 * 60_000 + 2_000,
+        }),
+      ],
+      liveSessionId: "session-1",
+      liveTranscriptionActive: true,
+      seconds: 12 * 60,
+      sessionId: "session-1",
+      sessionMode: "active",
+      windowMs: LIVE_ASK_CATCH_UP_WINDOW_MS,
+    });
+
+    expect(text).toContain("Just now");
+    expect(text).not.toContain("Six minutes ago");
+  });
+
   it("falls back to live caption text when segments are empty", () => {
     const text = formatRecentLiveTranscript({
       liveCaptionText: "Partial caption so far",
@@ -107,8 +139,14 @@ describe("formatRecentLiveTranscript", () => {
     });
 
     expect(text).toBe(
-      'IN-PROGRESS TRANSCRIPT:\nLabels: "You" is the person using Acorn (microphone). Other speakers are everyone else.\nPartial caption so far',
+      [
+        "IN-PROGRESS TRANSCRIPT:",
+        'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else.',
+        LIVE_TRANSCRIPT_UNLABELED_CAPTION,
+        "Partial caption so far",
+      ].join("\n"),
     );
+    expect(text).not.toContain("You: Partial caption");
   });
 
   it("keeps the newest speaker lines when the transcript exceeds the char budget", () => {
@@ -215,5 +253,36 @@ describe("formatRecentLiveTranscript", () => {
     expect(text).toContain("You: I can walk you through that.");
     expect(text).toContain("Speaker 1: What does pricing look like?");
     expect(text).not.toMatch(/Speaker \d+: I can walk you through that/);
+    expect(text).not.toContain(LIVE_TRANSCRIPT_SILENT_USER_NOTE);
+  });
+
+  it("notes when the Acorn user has not spoken in the window", () => {
+    const text = formatRecentLiveTranscript({
+      liveCaptionText: "",
+      liveSegments: [
+        segment({
+          id: "customer",
+          text: "Let me walk you through the proposal.",
+          start_ms: 0,
+          end_ms: 1_000,
+        }),
+        segment({
+          id: "customer-2",
+          text: "Questions so far?",
+          start_ms: 2_000,
+          end_ms: 3_000,
+        }),
+      ],
+      liveSessionId: "session-1",
+      liveTranscriptionActive: true,
+      seconds: 30,
+      sessionId: "session-1",
+      sessionMode: "active",
+    });
+
+    expect(text).toContain("Speaker 1: Let me walk you through the proposal.");
+    expect(text).toContain(LIVE_TRANSCRIPT_SILENT_USER_NOTE);
+    expect(text).not.toContain("You: Let me walk you through");
+    expect(text).not.toMatch(/^You:/m);
   });
 });

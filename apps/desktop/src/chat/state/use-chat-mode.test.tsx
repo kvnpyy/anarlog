@@ -242,4 +242,16 @@ describe("useChatMode", () => {
     expect(result.current.isolateConversation).toBe(true);
     expect(result.current.sessionId).toBe("meeting:tab-2");
   });
+
+  it("leaves workspace Ask when switching to another note", () => {
+    mocks.workspaceAsk = true;
+    const { rerender } = renderHook(() => useChatMode());
+
+    expect(mocks.setWorkspaceAsk).not.toHaveBeenCalled();
+
+    mocks.currentSessionId = "session-2";
+    rerender();
+
+    expect(mocks.setWorkspaceAsk).toHaveBeenCalledWith(false);
+  });
 });

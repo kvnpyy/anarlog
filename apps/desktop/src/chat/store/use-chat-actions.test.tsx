@@ -341,4 +341,38 @@ describe("useChatActions", () => {
       }),
     );
   });
+
+  it("stores a live-transcript window on recipe sends", async () => {
+    const sendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useChatActions({
+        chatScope: "general",
+        groupId: "group-existing",
+        onGroupCreated: vi.fn(),
+      }),
+    );
+
+    act(() => {
+      result.current.handleSendMessage(
+        "Catch me up",
+        [{ type: "text", text: "Catch me up" }],
+        sendMessage,
+        undefined,
+        "Catch me up on this meeting.",
+        5 * 60 * 1000,
+      );
+    });
+
+    const message = sendMessage.mock.calls[0]?.[0] as AnlgUIMessage;
+    expect(message.metadata?.transcriptWindowMs).toBe(5 * 60 * 1000);
+
+    const options = sendMessage.mock.calls[0]?.[1] as ChatSendOptions;
+    await options.beforeSend?.(vi.fn());
+
+    expect(mocks.upsertChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadataJson: expect.stringContaining('"transcriptWindowMs":300000'),
+      }),
+    );
+  });
 });

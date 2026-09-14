@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 import {
@@ -88,11 +88,22 @@ export function useChatMode() {
   );
   const selectMeetingChat = useChatContext((state) => state.selectMeetingChat);
 
+  const previousSessionIdRef = useRef(currentSessionId);
+
   useEffect(() => {
     if (meetingChatId) {
       ensureMeetingChat(meetingChatId);
     }
   }, [ensureMeetingChat, meetingChatId]);
+
+  useEffect(() => {
+    const previousSessionId = previousSessionIdRef.current;
+    previousSessionIdRef.current = currentSessionId;
+
+    if (currentSessionId && currentSessionId !== previousSessionId) {
+      setWorkspaceAsk(false);
+    }
+  }, [currentSessionId, setWorkspaceAsk]);
 
   const setGroupId = useCallback(
     (groupId: string | undefined) => {

@@ -83,14 +83,14 @@ describe("Chat Mode", () => {
     expect(useTabs.getState().chatMode).toBe("FloatingClosed");
   });
 
-  test("opening a note keeps workspace Ask open", () => {
+  test("opening a note from collapsed Ask still isolates that meeting", () => {
     useChatContext.setState({ workspaceAsk: true });
-    const session = createSessionTab({ id: "from-ask" });
+    const session = createSessionTab({ id: "from-ask-collapsed" });
 
-    useTabs.getState().transitionChatMode({ type: "OPEN" });
     useTabs.getState().openNew(session);
 
-    expect(useTabs.getState().chatMode).toBe("FloatingOpen");
+    expect(useTabs.getState().chatMode).toBe("FloatingClosed");
+    expect(useChatContext.getState().workspaceAsk).toBe(false);
   });
 
   test("opening the current session keeps the floating chat open", () => {

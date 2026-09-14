@@ -8,11 +8,16 @@ import {
   SpeakerLabelManager,
 } from "~/stt/live-segment";
 
+export const LIVE_ASK_CATCH_UP_WINDOW_MS = 5 * 60 * 1000;
 export const LIVE_ASK_TRANSCRIPT_WINDOW_MS = 10 * 60 * 1000;
 export const LIVE_ASK_TRANSCRIPT_MAX_CHARS = 24_000;
 export const LIVE_TRANSCRIPT_CONTEXT_HEADER = "IN-PROGRESS TRANSCRIPT:";
 export const LIVE_TRANSCRIPT_SPEAKER_LEGEND =
   'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else.';
+export const LIVE_TRANSCRIPT_UNLABELED_CAPTION =
+  'Unlabeled live caption (speaker unknown). Do not treat this as "You".';
+export const LIVE_TRANSCRIPT_SILENT_USER_NOTE =
+  'There are no "You:" lines in this window. The Acorn user has been silent. Do not write as if they spoke, asked, presented, or led.';
 
 const LIVE_ASK_SELF_LABEL_CONTEXT: RenderLabelContext = {
   getSelfHumanId: () => "self",
@@ -54,20 +59,41 @@ export function formatRecentLiveTranscript({
     .filter((segment) => segment.end_ms >= windowStartMs && segment.text.trim())
     .sort((left, right) => left.start_ms - right.start_ms);
 
-  const body =
-    recentSegments.length > 0
-      ? trimTranscriptBody(formatLiveSegments(recentSegments), maxChars)
-      : trimTranscriptBody(liveCaptionText.trim(), maxChars);
+  let body: string;
+  let userSpoke = false;
+  if (recentSegments.length > 0) {
+    const formatted = formatLiveSegments(recentSegments);
+    userSpoke = transcriptHasYouLines(formatted);
+    body = trimTranscriptBody(formatted, maxChars);
+  } else {
+    const caption = liveCaptionText.trim();
+    body = caption
+      ? `${LIVE_TRANSCRIPT_UNLABELED_CAPTION}\n${trimTranscriptBody(caption, maxChars)}`
+      : "";
+  }
 
   if (!body) {
     return null;
   }
 
-  return `${LIVE_TRANSCRIPT_CONTEXT_HEADER}\n${LIVE_TRANSCRIPT_SPEAKER_LEGEND}\n${body}`;
+  const silentNote =
+    recentSegments.length > 0 && !userSpoke
+      ? LIVE_TRANSCRIPT_SILENT_USER_NOTE
+      : null;
+
+  return [
+    LIVE_TRANSCRIPT_CONTEXT_HEADER,
+    LIVE_TRANSCRIPT_SPEAKER_LEGEND,
+    body,
+    silentNote,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 }
 
 export function getRecentLiveTranscriptContext(
   sessionId: string,
+  windowMs?: number,
 ): string | null {
   const state = listenerStore.getState();
   return formatRecentLiveTranscript({
@@ -78,7 +104,12 @@ export function getRecentLiveTranscriptContext(
     seconds: state.live.seconds,
     sessionId,
     sessionMode: state.getSessionMode(sessionId),
+    windowMs,
   });
+}
+
+function transcriptHasYouLines(body: string): boolean {
+  return body.split("\n").some((line) => line.startsWith("You: "));
 }
 
 function formatLiveSegments(segments: LiveTranscriptSegment[]) {

@@ -267,6 +267,7 @@ describe("ChatContent", () => {
         sendMessage,
         [{ kind: "session", key: "session:auto", sessionId: "s1" }],
         undefined,
+        undefined,
       );
     });
   });
@@ -336,6 +337,7 @@ describe("ChatContent", () => {
     expect(screen.getByRole("button", { name: "Catch me up" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sound smart" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Draft email" })).toBeTruthy();
+    expect(screen.queryByTestId("context-bar")).toBeNull();
   });
 
   it("shows post-meeting recipes on a past note instead of live-call coaching", () => {
@@ -368,6 +370,7 @@ describe("ChatContent", () => {
     expect(screen.getByRole("button", { name: "Draft email" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Action items" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Key decisions" })).toBeTruthy();
+    expect(screen.queryByTestId("context-bar")).toBeNull();
   });
 
   it("shows a live STT warning when recording is batch-only", () => {
@@ -472,6 +475,34 @@ describe("ChatContent", () => {
 
     expect(screen.queryByTestId("chat-body")).toBeNull();
     expect(screen.getByTestId("chat-input")).toBeTruthy();
+    expect(screen.queryByTestId("context-bar")).toBeNull();
+  });
+
+  it("keeps context chips on workspace Ask", () => {
+    render(
+      <ChatContent
+        sessionId="workspace-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[
+          {
+            kind: "session",
+            key: "session-1",
+            sessionId: "session-1",
+            pending: false,
+          },
+        ]}
+        pendingRefs={[]}
+        isSystemPromptReady
+      />,
+    );
+
+    expect(screen.getByTestId("context-bar")).toBeTruthy();
   });
 
   it("shows a note conversation above the composer until it is collapsed", () => {
@@ -530,6 +561,6 @@ describe("ChatContent", () => {
     expect(screen.queryByTestId("chat-body")).toBeNull();
     expect(screen.queryByTestId("chat-thinking-status")).toBeNull();
     expect(screen.getByTestId("chat-input")).toBeTruthy();
-    expect(screen.getByTestId("context-bar")).toBeTruthy();
+    expect(screen.queryByTestId("context-bar")).toBeNull();
   });
 });

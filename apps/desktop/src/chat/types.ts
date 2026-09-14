@@ -10,6 +10,7 @@ const messageMetadataSchema = z.object({
   chatScope: z.enum(["general", "automations"]).optional(),
   createdAt: z.number().optional(),
   modelPrompt: z.string().optional(),
+  transcriptWindowMs: z.number().positive().optional(),
   contextRefs: z
     .array(
       z.discriminatedUnion("kind", [

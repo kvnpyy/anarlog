@@ -185,12 +185,6 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
       effectiveContextRefs,
       cache,
     );
-    const liveTranscriptBlocks =
-      collectLiveTranscriptBlocks(effectiveContextRefs);
-    const effectiveContextBlock = joinContextBlocks([
-      persistedContextBlock,
-      ...liveTranscriptBlocks,
-    ]);
 
     let lastUserMessageIndex = -1;
     for (let i = options.messages.length - 1; i >= 0; i -= 1) {
@@ -199,6 +193,17 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
         break;
       }
     }
+
+    const liveTranscriptBlocks = collectLiveTranscriptBlocks(
+      effectiveContextRefs,
+      lastUserMessageIndex === -1
+        ? undefined
+        : options.messages[lastUserMessageIndex]?.metadata?.transcriptWindowMs,
+    );
+    const effectiveContextBlock = joinContextBlocks([
+      persistedContextBlock,
+      ...liveTranscriptBlocks,
+    ]);
 
     const agent = new ToolLoopAgent({
       model: this.model,
@@ -298,7 +303,10 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     };
 }
 
-function collectLiveTranscriptBlocks(contextRefs: ContextRef[]): string[] {
+function collectLiveTranscriptBlocks(
+  contextRefs: ContextRef[],
+  windowMs?: number,
+): string[] {
   const seen = new Set<string>();
   const blocks: string[] = [];
 
@@ -308,7 +316,7 @@ function collectLiveTranscriptBlocks(contextRefs: ContextRef[]): string[] {
     }
 
     seen.add(ref.sessionId);
-    const block = getRecentLiveTranscriptContext(ref.sessionId);
+    const block = getRecentLiveTranscriptContext(ref.sessionId, windowMs);
     if (block) {
       blocks.push(block);
     }
