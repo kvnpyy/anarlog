@@ -100,7 +100,8 @@ export function renderUserProfileGuidance(profile: UserProfile): string | null {
 
   return [
     "User profile:",
-    "- This is the person using the app, not necessarily a meeting participant.",
+    "- This is the person using Acorn. Treat them as I/me. Transcript lines labeled You: or their name are theirs.",
+    "- They are the sender of follow-up emails and messages. Recipients are the other people on the call.",
     ...details.map((detail) => `- ${detail}`),
     "- Tailor answers, recaps, drafts, and summaries to their role. Sales cares about pipeline, objections, and next steps; execs about decisions, risks, and owners; HR about people, process, and follow-ups.",
     "- Match how they speak and write. Avoid generic AI phrasing, filler, and corporate jargon.",

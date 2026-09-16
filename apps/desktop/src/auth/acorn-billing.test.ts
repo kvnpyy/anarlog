@@ -18,5 +18,12 @@ describe("deriveLocalAcornBilling", () => {
       plan: "pro",
       subscriptionStatus: "active",
     });
+    expect(
+      deriveLocalAcornBilling(true, "2020-01-01T00:00:00.000Z"),
+    ).toMatchObject({
+      isPro: false,
+      isPaid: false,
+      plan: "free",
+    });
   });
 });

@@ -29,7 +29,9 @@ fn embed_hosted_ai_keys() {
     println!("cargo:rerun-if-env-changed=ACORN_DEFAULT_LLM_BASE_URL");
     println!("cargo:rerun-if-env-changed=VITE_ACORN_DEFAULT_LLM_BASE_URL");
     println!("cargo:rerun-if-env-changed=ACORN_PRO_INVITE_SSH_KEY");
+    println!("cargo:rerun-if-env-changed=ACORN_SHARE_RESEND_API_KEY");
     println!("cargo:rerun-if-changed=../.acorn-pro-invite-deploy-key");
+    println!("cargo:rerun-if-changed=../.acorn-share-resend-key");
     emit_obfuscated_key(
         "ACORN_HOSTED_STT_KEY",
         &std::env::var("ACORN_DEFAULT_STT_API_KEY").unwrap_or_default(),
@@ -58,6 +60,14 @@ fn embed_hosted_ai_keys() {
             .unwrap_or_default()
     });
     emit_obfuscated_key("ACORN_HOSTED_INVITE_SSH_KEY", &invite_ssh_key);
+
+    let share_resend_key = std::env::var("ACORN_SHARE_RESEND_API_KEY").unwrap_or_else(|_| {
+        let manifest_dir = std::path::PathBuf::from(
+            std::env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR is set by Cargo"),
+        );
+        std::fs::read_to_string(manifest_dir.join("../.acorn-share-resend-key")).unwrap_or_default()
+    });
+    emit_obfuscated_key("ACORN_HOSTED_SHARE_RESEND_KEY", &share_resend_key);
 }
 
 fn emit_obfuscated_key(name: &str, value: &str) {

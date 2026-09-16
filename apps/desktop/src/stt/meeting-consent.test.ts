@@ -11,7 +11,7 @@ import {
 } from "./meeting-consent";
 
 const DISCLOSURE =
-  "I'm using Acorn to record and transcribe this meeting. https://acorn.so";
+  "I'm using Acorn to record and transcribe this meeting. https://useacorn.app";
 
 function attempt(
   delivery: DisclosureAttempt["delivery"] = "sent",

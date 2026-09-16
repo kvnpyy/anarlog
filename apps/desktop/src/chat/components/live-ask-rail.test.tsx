@@ -53,6 +53,11 @@ describe("LiveAskRail", () => {
     expect(onSendMessage.mock.calls[2]?.[3]).toContain("under 250 words");
     expect(onSendMessage.mock.calls[2]?.[3]).toContain("bullet points");
     expect(onSendMessage.mock.calls[2]?.[3]).toContain("in my voice");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("I am the sender");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain("third person");
+    expect(onSendMessage.mock.calls[2]?.[3]).toContain(
+      "other company's internal recap",
+    );
     expect(onSendMessage.mock.calls[2]?.[4]).toBeUndefined();
   });
 
@@ -109,6 +114,10 @@ describe("LiveAskRail", () => {
     expect(onSendMessage).toHaveBeenCalledTimes(3);
     expect(onSendMessage.mock.calls[0]?.[3]).toContain("follow-up email");
     expect(onSendMessage.mock.calls[0]?.[3]).toContain("under 250 words");
+    expect(onSendMessage.mock.calls[0]?.[3]).toContain(
+      "from me to the other people",
+    );
+    expect(onSendMessage.mock.calls[0]?.[3]).toContain("I am the sender");
     expect(onSendMessage.mock.calls[0]?.[3]).not.toContain("so far");
     expect(onSendMessage.mock.calls[1]?.[0]).toBe("Action items");
     expect(onSendMessage.mock.calls[1]?.[3]).toContain("action items");

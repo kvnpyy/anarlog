@@ -30,6 +30,34 @@ const GENERIC_DOMAIN_LABELS = new Set([
   "apple",
 ]);
 
+export function normalizeMailbox(
+  email: string | undefined,
+): string | undefined {
+  const trimmed = email?.trim().toLowerCase();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const at = trimmed.lastIndexOf("@");
+  if (at <= 0 || at === trimmed.length - 1) {
+    return undefined;
+  }
+
+  const local = trimmed.slice(0, at).split("+")[0];
+  const domain = trimmed.slice(at + 1);
+  if (!local || !domain.includes(".")) {
+    return undefined;
+  }
+
+  return `${local}@${domain}`;
+}
+
+export function isBusinessEmail(email: string | undefined): boolean {
+  const mailbox = normalizeMailbox(email);
+  const domain = mailbox?.split("@")[1];
+  return Boolean(domain && !PERSONAL_EMAIL_DOMAINS.has(domain));
+}
+
 export function companyTermFromEmail(
   email: string | undefined,
 ): string | undefined {

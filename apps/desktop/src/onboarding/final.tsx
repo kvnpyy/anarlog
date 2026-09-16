@@ -45,7 +45,12 @@ const SOCIAL_ICON_SIZE = 18;
 
 export function FinalDescription() {
   if (LOCAL_ONLY) {
-    return <span>{PRODUCT_TAGLINE}</span>;
+    return (
+      <span>
+        {PRODUCT_TAGLINE} Share {PRODUCT_NAME} with 2 people who confirm a work
+        email and you get a year of Pro — copy your link in Settings.
+      </span>
+    );
   }
 
   return (

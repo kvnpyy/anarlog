@@ -48,6 +48,7 @@ describe("ChatBodyEmpty", () => {
 
     fireEvent.click(followUp);
 
+    const followUpPrompt = onSendMessage.mock.calls[0]?.[3];
     expect(onSendMessage).toHaveBeenCalledWith(
       "Draft follow-up email.",
       [
@@ -57,8 +58,11 @@ describe("ChatBodyEmpty", () => {
         },
       ],
       undefined,
-      expect.stringContaining("under 250 words"),
+      followUpPrompt,
     );
+    expect(followUpPrompt).toContain("under 250 words");
+    expect(followUpPrompt).toContain("from me to the other people");
+    expect(followUpPrompt).toContain("I am the sender");
 
     fireEvent.click(decisions);
 

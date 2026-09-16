@@ -36,6 +36,13 @@ describe("user profile", () => {
     expect(userProfileInitials(profile)).toBe("KP");
     expect(userProfileSubtitle(profile)).toBe("Product · Engineering");
     expect(renderUserProfileGuidance(profile)).toContain("Name: Kevin Payoyo");
+    expect(renderUserProfileGuidance(profile)).toContain("Treat them as I/me");
+    expect(renderUserProfileGuidance(profile)).toContain(
+      "They are the sender of follow-up emails",
+    );
+    expect(renderUserProfileGuidance(profile)).not.toContain(
+      "not necessarily a meeting participant",
+    );
     expect(formatUserProfileGuidance("Base prompt", profile)).toContain(
       "Base prompt",
     );

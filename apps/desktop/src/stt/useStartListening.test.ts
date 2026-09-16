@@ -3295,7 +3295,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
+        "I'm using Acorn to record and transcribe this meeting. https://useacorn.app",
         ["com.tinyspeck.slackmacgap"],
       );
     });
@@ -3323,7 +3323,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
+        "I'm using Acorn to record and transcribe this meeting. https://useacorn.app",
         ["us.zoom.xos"],
       );
     });
@@ -3469,12 +3469,12 @@ describe("useStartListening", () => {
     expect(listMicUsingApplicationsMock).toHaveBeenCalledTimes(2);
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       1,
-      expect.stringContaining("https://acorn.so"),
+      expect.stringContaining("https://useacorn.app"),
       ["com.anarlog.dev"],
     );
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       2,
-      expect.stringContaining("https://acorn.so"),
+      expect.stringContaining("https://useacorn.app"),
       ["us.zoom.xos"],
     );
     expect(sonnerToastWarningMock).not.toHaveBeenCalled();
@@ -3505,7 +3505,7 @@ describe("useStartListening", () => {
 
     await waitFor(() => {
       expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-        expect.stringContaining("https://acorn.so"),
+        expect.stringContaining("https://useacorn.app"),
         ["com.anarlog.dev", "com.tinyspeck.slackmacgap"],
       );
     });
@@ -3534,7 +3534,7 @@ describe("useStartListening", () => {
     });
 
     expect(sendMeetingChatMessageMock).toHaveBeenCalledWith(
-      expect.stringContaining("https://acorn.so"),
+      expect.stringContaining("https://useacorn.app"),
       ["us.zoom.xos", "com.tinyspeck.slackmacgap"],
     );
     expect(warn).toHaveBeenCalledWith(
@@ -3717,7 +3717,7 @@ describe("useStartListening", () => {
       expect(startMeetingChatCaptureMock).toHaveBeenCalledWith({
         sessionId: "session-1",
         excludedTexts: [
-          "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
+          "I'm using Acorn to record and transcribe this meeting. https://useacorn.app",
         ],
         onParticipantDeclined: expect.any(Function),
       });
@@ -3756,7 +3756,7 @@ describe("useStartListening", () => {
       expect(startMeetingChatCaptureMock).toHaveBeenCalledWith({
         sessionId: "session-1",
         excludedTexts: [
-          "I'm using Acorn to record and transcribe this meeting. https://acorn.so",
+          "I'm using Acorn to record and transcribe this meeting. https://useacorn.app",
         ],
         onParticipantDeclined: expect.any(Function),
       });

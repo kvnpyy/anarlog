@@ -39,7 +39,7 @@ export function LiveAskRail({
           {
             label: t`Draft email`,
             icon: Envelope,
-            prompt: t`Draft a follow-up email to the participants. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences.`,
+            prompt: t`Draft a follow-up email from me to the other people on this call. I am the sender: write in first person as me, never refer to me in the third person, and do not write the other company's internal recap. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences.`,
           },
           {
             label: t`Action items`,
@@ -68,7 +68,7 @@ export function LiveAskRail({
           {
             label: t`Draft email`,
             icon: Envelope,
-            prompt: t`Draft a follow-up email from this meeting so far, based on the in-progress transcript. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences.`,
+            prompt: t`Draft a follow-up email from this meeting so far, based on the in-progress transcript. I am the sender: write in first person as me to the other people on the call, never refer to me in the third person, and do not write the other company's internal recap. Write it in my voice — how I actually talk — and skip generic AI phrasing. Keep the whole email under 250 words unless I ask for a longer recap. Start with a Subject line, then a blank line, then the body. Use short paragraphs and bullet points when they help scanning. Light markdown is OK: bullets, numbered lists, and bold. Do not use headings, tables, or code fences.`,
           },
         ];
   const handleRecipeClick = useCallback(

@@ -5,6 +5,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { setAcornProEntitlement } from "~/auth/acorn-pro";
 import { SettingSwitchRow } from "~/settings/setting-row";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
+import { AcornShareCard } from "~/shared/acorn-share-card";
 import {
   PRODUCT_ATTRIBUTION,
   PRODUCT_COPYRIGHT,
@@ -126,6 +127,7 @@ export function AcornProSettingsCard({
         <li>Teams & shared notes: {isPro ? "unlocked" : "Pro"}</li>
         <li>CLI, MCP & webhooks: {isPro ? "unlocked" : "Pro"}</li>
       </ul>
+      <AcornShareCard />
       {isPro ? null : (
         <div className="flex flex-col items-start gap-3">
           <button

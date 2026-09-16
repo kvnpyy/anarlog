@@ -172,6 +172,21 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "acorn_pro_source"],
     default: "" as string,
   },
+  acorn_pro_expires_at: {
+    type: "string",
+    path: ["general", "acorn_pro_expires_at"],
+    default: "" as string,
+  },
+  acorn_share_code: {
+    type: "string",
+    path: ["general", "acorn_share_code"],
+    default: "" as string,
+  },
+  acorn_share_email: {
+    type: "string",
+    path: ["general", "acorn_share_email"],
+    default: "" as string,
+  },
   ai_language: {
     type: "string",
     path: ["language", "ai_language"],

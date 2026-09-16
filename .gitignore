@@ -38,6 +38,7 @@ apps/desktop/.tauri-updater-key.pub
 apps/desktop/.acorn-pro-invites
 apps/desktop/.acorn-pro-invite-deploy-key
 apps/desktop/.acorn-pro-invite-deploy-key.pub
+apps/desktop/.acorn-share-resend-key
 
 .codex-security-artifacts-*/
 .codex-security-work-ledger-*.jsonl

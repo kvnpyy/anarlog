@@ -1,19 +1,43 @@
 import type { BillingInfo } from "@anlg/supabase";
 
-export function deriveLocalAcornBilling(isPro: boolean): BillingInfo {
+export function isLocalAcornProActive(
+  enabled: boolean,
+  expiresAt?: string | null,
+  now = Date.now(),
+): boolean {
+  if (!enabled) {
+    return false;
+  }
+  if (!expiresAt) {
+    return true;
+  }
+
+  const expires = Date.parse(expiresAt);
+  return Number.isFinite(expires) && expires > now;
+}
+
+export function deriveLocalAcornBilling(
+  isPro: boolean,
+  expiresAt?: string | null,
+): BillingInfo {
+  const active = isLocalAcornProActive(isPro, expiresAt);
+  const currentPeriodEnd =
+    expiresAt && Number.isFinite(Date.parse(expiresAt))
+      ? new Date(expiresAt)
+      : null;
   return {
-    entitlements: isPro ? ["acorn_pro"] : [],
-    subscriptionStatus: isPro ? "active" : null,
-    isPro,
+    entitlements: active ? ["acorn_pro"] : [],
+    subscriptionStatus: active ? "active" : null,
+    isPro: active,
     isLite: false,
-    isPaid: isPro,
+    isPaid: active,
     isTrialing: false,
     isPaused: false,
     hasPaymentMethod: false,
     trialEnd: null,
     trialDaysRemaining: null,
     cancelAtPeriodEnd: false,
-    currentPeriodEnd: null,
-    plan: isPro ? "pro" : "free",
+    currentPeriodEnd,
+    plan: active ? "pro" : "free",
   };
 }

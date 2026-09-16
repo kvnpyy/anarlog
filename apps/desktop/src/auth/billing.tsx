@@ -30,7 +30,11 @@ import { configurePaidSettings } from "../shared/config/configure-paid-settings"
 import { LOCAL_ONLY } from "../shared/product";
 import { startTrialOnce } from "../shared/trial-start";
 import { buildWebAppUrl } from "../shared/utils";
-import { deriveLocalAcornBilling } from "./acorn-billing";
+import {
+  deriveLocalAcornBilling,
+  isLocalAcornProActive,
+} from "./acorn-billing";
+import { setAcornProEntitlement } from "./acorn-pro";
 import { useAuth } from "./auth-context";
 import { type BillingAccess, BillingContext } from "./billing-context";
 
@@ -83,11 +87,13 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     current_stt_provider: currentSttProvider,
     current_stt_model: currentSttModel,
     acorn_pro: acornPro,
+    acorn_pro_expires_at: acornProExpiresAt,
   } = useConfigValues([
     "current_llm_provider",
     "current_stt_provider",
     "current_stt_model",
     "acorn_pro",
+    "acorn_pro_expires_at",
   ] as const);
 
   const claimsQuery = useQuery({
@@ -99,12 +105,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   });
 
   const billing = LOCAL_ONLY
-    ? deriveLocalAcornBilling(acornPro === true)
+    ? deriveLocalAcornBilling(acornPro === true, acornProExpiresAt)
     : deriveBillingInfo(claimsQuery.data ?? null);
   const isReady =
     LOCAL_ONLY || (!claimsQuery.isPending && !claimsQuery.isError);
   const claimsAreCurrent =
     !claimsQuery.isFetching && !claimsQuery.isPlaceholderData;
+
+  useEffect(() => {
+    if (
+      LOCAL_ONLY &&
+      acornPro === true &&
+      !isLocalAcornProActive(true, acornProExpiresAt)
+    ) {
+      void setAcornProEntitlement(false);
+    }
+  }, [acornPro, acornProExpiresAt]);
 
   // eslint-disable-next-line @tanstack/query/exhaustive-deps -- Auth supplies request headers; the user ID is the eligibility identity.
   const canTrialQuery = useQuery({

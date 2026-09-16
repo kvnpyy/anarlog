@@ -19,6 +19,10 @@ vi.mock("~/auth/acorn-pro-invite", () => ({
   redeemAcornProInvite: mocks.redeemAcornProInvite,
 }));
 
+vi.mock("~/shared/acorn-share-card", () => ({
+  AcornShareCard: () => <div>Share Acorn, get a year of Pro</div>,
+}));
+
 import { AppSettingsView, AcornProSettingsCard } from "./app-settings";
 
 function setting(value = true) {

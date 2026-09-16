@@ -2,7 +2,7 @@ export const PRODUCT_NAME = "Acorn";
 export const PRODUCT_TAGLINE = "Local meeting notes. Live Ask.";
 export const PRODUCT_ATTRIBUTION = "Acorn is built on Anarlog (MIT).";
 export const PRODUCT_COPYRIGHT = "Copyright (c) 2023-present Fastrepl, Inc.";
-export const PRODUCT_SITE_URL = "https://acorn.so";
+export const PRODUCT_SITE_URL = "https://useacorn.app";
 export const LOCAL_ONLY: boolean = true;
 
 export const FREE_AI_WINDOW_DAYS = 30;
@@ -48,7 +48,7 @@ export const ACORN_PLANS = [
   },
 ];
 
-export const ACORN_PRO_CHECKOUT_HREF = "https://acorn.so/pro";
+export const ACORN_PRO_CHECKOUT_HREF = "https://useacorn.app/pro";
 
 export const HOSTED_SIGN_IN_UNAVAILABLE_MESSAGE =
   "Cloud sign-in isn’t available in Acorn yet.";

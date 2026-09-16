@@ -52,6 +52,38 @@ async acornConsumeProInvite(hash: string) : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async acornRegisterShareCode(code: string, referrerEmail: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_register_share_code", { code, referrerEmail }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async acornRequestShareVerify(code: string, referredEmail: string) : Promise<Result<AcornShareRedeemResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_request_share_verify", { code, referredEmail }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async acornConfirmShareVerify(code: string, referredEmail: string, otp: string) : Promise<Result<AcornShareRedeemResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_confirm_share_verify", { code, referredEmail, otp }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async acornShareStatus(code: string) : Promise<Result<AcornShareStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_share_status", { code }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async acornHostedFetch(url: string, method: string, headers: ([string, string])[], body: number[] | null, onEvent: TAURI_CHANNEL<HostedFetchEvent>) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("acorn_hosted_fetch", { url, method, headers, body, onEvent }) };
@@ -186,6 +218,8 @@ async installClaudeMcp(command: string) : Promise<Result<ClaudeMcpInstallResult,
 /** user-defined types **/
 
 export type AcornHostedAiStatus = { stt: boolean; llm: boolean }
+export type AcornShareRedeemResult = { status: string; qualified_count: number; granted_referrer: boolean }
+export type AcornShareStatus = { code: string; qualified_count: number; granted: boolean }
 export type ClaudeMcpInstallResult = { desktop: boolean; claudeCode: boolean; desktopPath: string; claudeCodePath: string | null }
 export type EmbeddedCliState = "installed" | "missing" | "conflict" | "unsupported" | "resource_missing"
 export type EmbeddedCliStatus = { supported: boolean; commandName: string; installPath: string; state: EmbeddedCliState; details: string | null }

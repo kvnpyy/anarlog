@@ -12,6 +12,7 @@ import {
 
 import { useBillingAccess } from "~/auth/billing-context";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
+import { AcornShareCard } from "~/shared/acorn-share-card";
 import {
   ACORN_PLANS,
   ACORN_PRO_CHECKOUT_HREF,
@@ -99,6 +100,7 @@ export function AcornPlansDialog({
             );
           })}
         </div>
+        <AcornShareCard />
         <AcornProInviteForm
           alreadyPro={isPro}
           onRedeemed={() => onOpenChange(false)}

@@ -6,11 +6,12 @@ import {
   resolveAcornHostedLlmModel,
 } from "~/shared/acorn-defaults";
 
-export type AcornProSource = "invite" | "dev";
+export type AcornProSource = "invite" | "dev" | "share" | "share_invitee";
 
 export async function setAcornProEntitlement(
   enabled: boolean,
   source: AcornProSource | null = null,
+  expiresAt: string | null = null,
 ): Promise<void> {
   const stored = await getStoredSettingValues();
   const updates: SettingValues = {
@@ -18,6 +19,7 @@ export async function setAcornProEntitlement(
     acorn_pro_source: enabled
       ? (source ?? (stored.values.acorn_pro_source || "dev"))
       : "",
+    acorn_pro_expires_at: enabled ? (expiresAt ?? "") : "",
   };
 
   const defaultLlm = getAcornDefaultLlm();

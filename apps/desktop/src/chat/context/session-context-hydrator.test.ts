@@ -31,7 +31,10 @@ vi.mock("~/stt/render-transcript", () => ({
   renderTranscriptSegments: mocks.renderTranscriptSegments,
 }));
 
-import { hydrateSessionContext } from "./session-context-hydrator";
+import {
+  chatTranscriptSpeakerLabel,
+  hydrateSessionContext,
+} from "./session-context-hydrator";
 
 describe("session chat context hydration", () => {
   beforeEach(() => {
@@ -150,5 +153,87 @@ describe("session chat context hydration", () => {
       hydrateSessionContext("session-missing", "user-1"),
     ).resolves.toBeNull();
     expect(mocks.loadHumansByIds).not.toHaveBeenCalled();
+  });
+
+  it("labels the Acorn user's speech as You in chat transcripts", async () => {
+    mocks.renderTranscriptSegments.mockResolvedValueOnce([
+      {
+        speaker_label: "Kevin",
+        text: "Here is the ROI calculator",
+        key: {
+          channel: "DirectMic",
+          speaker_index: null,
+          speaker_human_id: "user-1",
+        },
+      },
+      {
+        speaker_label: "Marcy",
+        text: "We need to figure out labor costs",
+        key: {
+          channel: "RemoteParty",
+          speaker_index: 0,
+          speaker_human_id: "human-1",
+        },
+      },
+      {
+        speaker_label: "Kevin",
+        text: "Happy to send the recording",
+        key: {
+          channel: "RemoteParty",
+          speaker_index: 1,
+          speaker_human_id: "user-1",
+        },
+      },
+    ]);
+
+    const context = await hydrateSessionContext("session-1", "user-1");
+
+    expect(context?.transcript?.segments).toEqual([
+      { speaker: "You", text: "Here is the ROI calculator" },
+      { speaker: "Marcy", text: "We need to figure out labor costs" },
+      { speaker: "You", text: "Happy to send the recording" },
+    ]);
+  });
+});
+
+describe("chatTranscriptSpeakerLabel", () => {
+  it("keeps other speakers and unlabeled names unchanged", () => {
+    expect(
+      chatTranscriptSpeakerLabel({ speaker_label: "Marcy" }, "user-1"),
+    ).toBe("Marcy");
+    expect(
+      chatTranscriptSpeakerLabel(
+        {
+          speaker_label: "Kevin",
+          key: {
+            channel: "RemoteParty",
+            speaker_human_id: "someone-else",
+          },
+        },
+        "user-1",
+      ),
+    ).toBe("Kevin");
+  });
+
+  it("maps the user's mic, assigned identity, and You label to You", () => {
+    expect(
+      chatTranscriptSpeakerLabel(
+        {
+          speaker_label: "Kevin",
+          key: { channel: "DirectMic", speaker_human_id: null },
+        },
+        "user-1",
+      ),
+    ).toBe("You");
+    expect(
+      chatTranscriptSpeakerLabel(
+        {
+          speaker_label: "Kevin",
+          key: { channel: "RemoteParty", speaker_human_id: "user-1" },
+        },
+        "user-1",
+      ),
+    ).toBe("You");
+    expect(chatTranscriptSpeakerLabel({ speaker_label: "You" })).toBe("You");
   });
 });

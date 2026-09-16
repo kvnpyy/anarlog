@@ -34,6 +34,7 @@ const settingsState = vi.hoisted(() => ({
     current_stt_provider: undefined as string | undefined,
     current_stt_model: undefined as string | undefined,
     acorn_pro: undefined as boolean | undefined,
+    acorn_pro_expires_at: undefined as string | undefined,
   },
   setSettingValues: vi.fn(),
 }));

@@ -15,6 +15,28 @@ import {
   renderTranscriptSegments,
 } from "~/stt/render-transcript";
 
+export function chatTranscriptSpeakerLabel(
+  segment: {
+    speaker_label: string;
+    key?: { channel?: string; speaker_human_id?: string | null };
+  },
+  selfHumanId?: string,
+): string {
+  if (segment.speaker_label === "You") {
+    return "You";
+  }
+
+  const key = segment.key;
+  if (key?.channel === "DirectMic") {
+    return "You";
+  }
+  if (selfHumanId && key?.speaker_human_id === selfHumanId) {
+    return "You";
+  }
+
+  return segment.speaker_label;
+}
+
 function extractEventName(event: unknown): string | null {
   if (!event || typeof event !== "object") {
     return null;
@@ -64,7 +86,7 @@ async function buildTranscript(
 
   return {
     segments: segments.map((segment) => ({
-      speaker: segment.speaker_label,
+      speaker: chatTranscriptSpeakerLabel(segment, selfHumanId),
       text: segment.text,
     })),
     startedAt:

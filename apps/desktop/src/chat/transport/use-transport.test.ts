@@ -47,6 +47,10 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("or HTML tags");
     expect(prompt).toContain("Write in the user's voice");
     expect(prompt).toContain("Avoid obvious AI writing");
+    expect(prompt).toContain("Never treat the user as a third party");
+    expect(prompt).toContain("The Acorn user is the sender");
+    expect(prompt).toContain("Never refer to them in the third person");
+    expect(prompt).toContain("as if you work at the other company");
     expect(prompt).not.toContain("grep_notes");
     expect(prompt).not.toContain("search_sessions");
     expect(prompt).not.toContain("read_note");
@@ -93,6 +97,7 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain('"You" is the person using Acorn');
     expect(prompt).toContain("Never give questions for the other party");
     expect(prompt).toContain("in their role");
+    expect(prompt).toContain("Never as the other party's internal recap");
     expect(prompt).toContain(
       'Never attribute speech, questions, or leadership to "You"',
     );

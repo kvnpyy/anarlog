@@ -52,6 +52,7 @@ describe("setAcornProEntitlement", () => {
     expect(mocks.setSettingValues).toHaveBeenCalledWith({
       acorn_pro: true,
       acorn_pro_source: "invite",
+      acorn_pro_expires_at: "",
       current_llm_model: ACORN_HOSTED_SONNET_MODEL,
     });
   });
@@ -75,6 +76,7 @@ describe("setAcornProEntitlement", () => {
     expect(mocks.setSettingValues).toHaveBeenCalledWith({
       acorn_pro: false,
       acorn_pro_source: "",
+      acorn_pro_expires_at: "",
       current_llm_model: ACORN_HOSTED_HAIKU_MODEL,
     });
   });
@@ -93,6 +95,7 @@ describe("setAcornProEntitlement", () => {
     expect(mocks.setSettingValues).toHaveBeenCalledWith({
       acorn_pro: true,
       acorn_pro_source: "dev",
+      acorn_pro_expires_at: "",
     });
   });
 });

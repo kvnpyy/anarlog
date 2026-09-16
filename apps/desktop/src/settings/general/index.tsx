@@ -182,8 +182,7 @@ function SettingsSectionContent({
 }) {
   const { form, submitFieldValue } = useSettingsForm(storedSettings);
   const setSettingValues = useSetSettingValues();
-  const { upgradeToPro } = useBillingAccess();
-  const acornPro = resolveConfigValue("acorn_pro", storedSettings) === true;
+  const { upgradeToPro, isPro } = useBillingAccess();
   const audioRetention =
     resolveConfigValue("audio_retention", storedSettings) || "forever";
   const rememberSpeakers =
@@ -242,7 +241,7 @@ function SettingsSectionContent({
             )}
           </form.Subscribe>
 
-          <AcornProSettingsCard isPro={acornPro} onUpgrade={upgradeToPro} />
+          <AcornProSettingsCard isPro={isPro} onUpgrade={upgradeToPro} />
 
           <div>
             <h2 className="mb-4 font-sans text-lg font-semibold">

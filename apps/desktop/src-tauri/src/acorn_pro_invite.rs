@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 const LEDGER_RAW_URL: &str =
     "https://raw.githubusercontent.com/kvnpyy/acorn-pro-invites/main/redeemed.json";
-const LEDGER_GIT_URL: &str = "git@github.com:kvnpyy/acorn-pro-invites.git";
+pub(crate) const LEDGER_GIT_URL: &str = "git@github.com:kvnpyy/acorn-pro-invites.git";
 const HOSTED_KEY_XOR: u8 = 0x5A;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -50,22 +50,19 @@ async fn ledger_contains_hash(hash: &str) -> Result<bool, String> {
 fn consume_hash_via_git(hash: &str) -> Result<String, String> {
     let ssh_key = compiled_invite_ssh_key()
         .ok_or_else(|| "Invite ledger isn’t configured on this build.".to_string())?;
-    let work_dir = invite_work_dir()?;
+    let work_dir = invite_work_dir("acorn-pro-invite")?;
     let key_path = work_dir.join("id_ed25519");
     write_ssh_key(&key_path, &ssh_key)?;
     let repo_dir = work_dir.join("repo");
-    let ssh_command = format!(
-        "ssh -i {} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new",
-        key_path.display()
-    );
+    let ssh_command = invite_ssh_command(&key_path);
 
     let result = (|| {
-        clone_ledger(&ssh_command, &repo_dir)?;
+        clone_invite_ledger(&ssh_command, &repo_dir)?;
         match try_commit_hash(hash, &ssh_command, &repo_dir) {
             Ok(status) => Ok(status),
             Err(error) => {
-                git(&ssh_command, Some(&repo_dir), &["fetch", "origin", "main"])?;
-                git(
+                git_with_ssh(&ssh_command, Some(&repo_dir), &["fetch", "origin", "main"])?;
+                git_with_ssh(
                     &ssh_command,
                     Some(&repo_dir),
                     &["reset", "--hard", "origin/main"],
@@ -99,21 +96,21 @@ fn try_commit_hash(hash: &str, ssh_command: &str, repo_dir: &Path) -> Result<Str
     )
     .map_err(|error| error.to_string())?;
 
-    git(ssh_command, Some(repo_dir), &["add", "redeemed.json"])?;
-    git(
+    git_with_ssh(ssh_command, Some(repo_dir), &["add", "redeemed.json"])?;
+    git_with_ssh(
         ssh_command,
         Some(repo_dir),
         &[
             "-c",
             "user.name=Acorn",
             "-c",
-            "user.email=invites@acorn.so",
+            "user.email=invites@useacorn.app",
             "commit",
             "-m",
             &format!("Redeem {}", &hash[..8]),
         ],
     )?;
-    git(
+    git_with_ssh(
         ssh_command,
         Some(repo_dir),
         &["push", "origin", "HEAD:main"],
@@ -121,8 +118,8 @@ fn try_commit_hash(hash: &str, ssh_command: &str, repo_dir: &Path) -> Result<Str
     Ok("ok".into())
 }
 
-fn clone_ledger(ssh_command: &str, repo_dir: &Path) -> Result<(), String> {
-    git(
+pub(crate) fn clone_invite_ledger(ssh_command: &str, repo_dir: &Path) -> Result<(), String> {
+    git_with_ssh(
         ssh_command,
         None,
         &[
@@ -137,7 +134,11 @@ fn clone_ledger(ssh_command: &str, repo_dir: &Path) -> Result<(), String> {
     )
 }
 
-fn git(ssh_command: &str, cwd: Option<&Path>, args: &[&str]) -> Result<(), String> {
+pub(crate) fn git_with_ssh(
+    ssh_command: &str,
+    cwd: Option<&Path>,
+    args: &[&str],
+) -> Result<(), String> {
     let mut command = Command::new("git");
     command.env("GIT_SSH_COMMAND", ssh_command).args(args);
     if let Some(cwd) = cwd {
@@ -167,7 +168,7 @@ fn ledger_has_hash(ledger: &InviteLedger, hash: &str) -> bool {
         .any(|entry| entry.eq_ignore_ascii_case(hash))
 }
 
-fn write_ssh_key(path: &Path, key: &str) -> Result<(), String> {
+pub(crate) fn write_ssh_key(path: &Path, key: &str) -> Result<(), String> {
     let mut pem = key.trim().to_string();
     if !pem.ends_with('\n') {
         pem.push('\n');
@@ -182,17 +183,24 @@ fn write_ssh_key(path: &Path, key: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn invite_work_dir() -> Result<PathBuf, String> {
+pub(crate) fn invite_ssh_command(key_path: &Path) -> String {
+    format!(
+        "ssh -i {} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new",
+        key_path.display()
+    )
+}
+
+pub(crate) fn invite_work_dir(prefix: &str) -> Result<PathBuf, String> {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|error| error.to_string())?
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("acorn-pro-invite-{nanos}"));
+    let dir = std::env::temp_dir().join(format!("{prefix}-{nanos}"));
     fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
     Ok(dir)
 }
 
-fn compiled_invite_ssh_key() -> Option<String> {
+pub(crate) fn compiled_invite_ssh_key() -> Option<String> {
     decode_obfuscated(option_env!("ACORN_HOSTED_INVITE_SSH_KEY").unwrap_or(""))
 }
 

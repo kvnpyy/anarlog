@@ -205,6 +205,21 @@ vi.mock("./types/tauri.gen", () => ({
     getEnv: vi.fn().mockResolvedValue(""),
     acornHostedAiStatus: vi.fn().mockResolvedValue({ stt: false, llm: false }),
     acornHostedFetch: vi.fn().mockResolvedValue({ status: "ok", data: null }),
+    acornRegisterShareCode: vi
+      .fn()
+      .mockResolvedValue({ status: "ok", data: "ok" }),
+    acornRequestShareVerify: vi.fn().mockResolvedValue({
+      status: "ok",
+      data: { status: "sent", qualified_count: 0, granted_referrer: false },
+    }),
+    acornConfirmShareVerify: vi.fn().mockResolvedValue({
+      status: "ok",
+      data: { status: "ok", qualified_count: 1, granted_referrer: false },
+    }),
+    acornShareStatus: vi.fn().mockResolvedValue({
+      status: "ok",
+      data: { code: "", qualified_count: 0, granted: false },
+    }),
     googleCalendarToken: vi.fn().mockResolvedValue({
       status: "ok",
       data: { status: 200, body: "{}" },

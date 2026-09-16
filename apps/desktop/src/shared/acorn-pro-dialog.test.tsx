@@ -9,6 +9,10 @@ vi.mock("~/auth/acorn-pro-invite", () => ({
   redeemAcornProInvite: vi.fn(),
 }));
 
+vi.mock("~/shared/acorn-share-card", () => ({
+  AcornShareCard: () => <div>Share Acorn, get a year of Pro</div>,
+}));
+
 import { AcornPlansDialog } from "./acorn-pro-dialog";
 import { ACORN_PRO_CHECKOUT_HREF } from "./product";
 
