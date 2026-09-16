@@ -141,6 +141,7 @@ describe("SettingsNav", () => {
       "App",
       "General",
       "Profile",
+      "Teams",
       "Appearance",
       "Notifications",
       "Workspace",
@@ -163,7 +164,7 @@ describe("SettingsNav", () => {
     ["Account", "Automations", "Sync"].forEach((label) => {
       expect(screen.queryByText(label)).toBeNull();
     });
-    expect(screen.getByText("Teams")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Pro$/ })).toBeTruthy();
   });
 
   it.each([
@@ -179,6 +180,19 @@ describe("SettingsNav", () => {
       screen.getByTestId(`settings-nav-destination-icon-${destination.type}`),
     ).toBeTruthy();
     expect(mocks.openNew).toHaveBeenCalledWith(destination);
+  });
+
+  it("opens Pro inside settings without a Pro gate", () => {
+    mocks.isPro = false;
+    render(<SettingsNav />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Pro$/ }));
+
+    expect(mocks.upgradeToPro).not.toHaveBeenCalled();
+    expect(mocks.updateSettingsTabState).toHaveBeenCalledWith(
+      mocks.currentTab,
+      { tab: "pro" },
+    );
   });
 
   it("opens Profile inside settings", () => {

@@ -1,6 +1,5 @@
-import type { MouseEvent } from "react";
+import { useRef } from "react";
 
-import { PlanFeatureList } from "@anlg/pricing";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
   Dialog,
@@ -11,21 +10,15 @@ import {
 } from "@anlg/ui/components/ui/dialog";
 
 import { useBillingAccess } from "~/auth/billing-context";
+import { AcornPlanCards } from "~/shared/acorn-plans";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
 import { AcornShareCard } from "~/shared/acorn-share-card";
-import {
-  ACORN_PLANS,
-  ACORN_PRO_CHECKOUT_HREF,
-  PRODUCT_NAME,
-} from "~/shared/product";
+import { PRODUCT_NAME } from "~/shared/product";
 import {
   GlassDialogCancelButton,
   GlassDialogContent,
 } from "~/shared/ui/glass-dialog";
-
-function handleInertCheckout(event: MouseEvent<HTMLAnchorElement>) {
-  event.preventDefault();
-}
+import { useTabs } from "~/store/zustand/tabs";
 
 export function AcornPlansDialog({
   open,
@@ -35,77 +28,54 @@ export function AcornPlansDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { isPro } = useBillingAccess();
+  const openNew = useTabs((state) => state.openNew);
+  const shareSectionRef = useRef<HTMLDivElement>(null);
+
+  function openProSettings() {
+    onOpenChange(false);
+    openNew({ type: "settings", state: { tab: "pro" } });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <GlassDialogContent className="max-w-[640px] overflow-y-auto">
-        <DialogHeader className="text-left sm:text-left">
+      <GlassDialogContent className="max-h-[min(88dvh,720px)] w-[calc(100vw-32px)] max-w-[560px] min-w-0 gap-0 overflow-auto overscroll-contain p-0">
+        <DialogHeader className="bg-card/75 sticky top-0 z-10 px-5 pt-5 pb-3 text-left backdrop-blur-md sm:text-left">
           <DialogTitle>Plans</DialogTitle>
           <DialogDescription>
-            Free runs Haiku. Pro is smarter AI. Checkout opens when{" "}
-            {PRODUCT_NAME} is public.
+            Free runs Haiku. Pro is smarter AI. Checkout isn’t open yet — share{" "}
+            {PRODUCT_NAME} or redeem an invite.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {ACORN_PLANS.map((tier) => {
-            const isCurrent =
-              (tier.id === "pro" && isPro) || (tier.id === "free" && !isPro);
-
-            return (
-              <div key={tier.id} className="flex flex-col p-2">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-foreground font-sans text-base font-medium">
-                    {tier.name}
-                  </span>
-                </div>
-                <div className="mb-2">
-                  <span className="text-muted-foreground font-sans text-xl">
-                    {tier.price}
-                  </span>
-                  {tier.period ? (
-                    <span className="text-muted-foreground ml-1 text-sm">
-                      {tier.period}
-                    </span>
-                  ) : null}
-                  {tier.subtitle ? (
-                    <div className="text-muted-foreground mt-0.5 text-xs">
-                      {tier.subtitle}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="mb-3">
-                  <PlanFeatureList features={tier.features} dense />
-                </div>
-                <div className="mt-auto">
-                  {isCurrent ? (
-                    <div className="border-border bg-muted text-muted-foreground flex h-8 w-full items-center justify-center rounded-full border text-xs">
-                      Current plan
-                    </div>
-                  ) : tier.id === "pro" ? (
-                    <a
-                      href={ACORN_PRO_CHECKOUT_HREF}
-                      aria-disabled="true"
-                      onClick={handleInertCheckout}
-                      className="bg-primary text-primary-foreground flex h-8 w-full cursor-not-allowed items-center justify-center rounded-full text-xs font-medium no-underline opacity-80"
-                    >
-                      Get Pro
-                    </a>
-                  ) : (
-                    <div className="border-border bg-muted text-muted-foreground flex h-8 w-full items-center justify-center rounded-full border text-xs">
-                      Included on Free
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="px-5">
+          <AcornPlanCards
+            compact
+            isPro={isPro}
+            onShareForPro={() => {
+              shareSectionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }}
+          />
+          <div ref={shareSectionRef} className="mt-5 scroll-mt-16">
+            <AcornShareCard />
+          </div>
+          <div className="mt-4 mb-5">
+            <AcornProInviteForm
+              alreadyPro={isPro}
+              onRedeemed={() => onOpenChange(false)}
+            />
+          </div>
         </div>
-        <AcornShareCard />
-        <AcornProInviteForm
-          alreadyPro={isPro}
-          onRedeemed={() => onOpenChange(false)}
-        />
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter className="border-border/60 bg-card/75 sticky bottom-0 z-10 flex-row items-center justify-between gap-2 border-t px-5 py-3 backdrop-blur-md sm:justify-between">
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-muted-foreground h-8 rounded-full px-3 text-xs"
+            onClick={openProSettings}
+          >
+            Open in Settings
+          </Button>
           <GlassDialogCancelButton
             type="button"
             onClick={() => onOpenChange(false)}

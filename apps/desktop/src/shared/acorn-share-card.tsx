@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 
 import { Button } from "@anlg/ui/components/ui/button";
 import { Input } from "@anlg/ui/components/ui/input";
+import { cn } from "@anlg/utils";
 
 import {
   confirmShareVerify,
@@ -36,6 +37,9 @@ export function AcornShareCard() {
   );
   const [error, setError] = useState<string | null>(null);
   const [redeemed, setRedeemed] = useState(false);
+  const emailId = useId();
+  const codeId = useId();
+  const otpId = useId();
 
   useEffect(() => {
     setEmail(storedEmail ?? "");
@@ -178,36 +182,29 @@ export function AcornShareCard() {
   const mailbox = normalizeMailbox(workEmail);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div>
+    <section className="border-border/80 bg-background/30 flex min-w-0 flex-col gap-4 rounded-2xl border p-4">
+      <div className="flex flex-col gap-1">
         <h3 className="text-sm font-medium">
           Share {PRODUCT_NAME}, get a year of Pro
         </h3>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-muted-foreground text-sm leading-5">
           Two people install {PRODUCT_NAME} and confirm a work email — not Gmail
           or Outlook. They don’t have to be coworkers.
         </p>
       </div>
-      <p className="text-sm">
-        {granted
-          ? "Unlocked: a year of Pro on this Mac."
-          : `${qualifiedCount}/${SHARE_QUALIFYING_INSTALLS} work-email installs`}
-      </p>
+      <ShareProgress count={qualifiedCount} granted={granted} />
       <form
-        className="flex flex-col gap-2"
+        className="flex min-w-0 flex-col gap-2"
         onSubmit={(event) => void handleCopyLink(event)}
       >
-        <label
-          className="text-muted-foreground text-xs"
-          htmlFor="acorn-share-email"
-        >
+        <label className="text-muted-foreground text-xs" htmlFor={emailId}>
           Your email (so you can’t redeem your own link)
         </label>
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Input
-            id="acorn-share-email"
+            id={emailId}
             autoComplete="email"
-            className="h-8 text-xs"
+            className="h-8 w-auto min-w-0 flex-1 text-xs"
             disabled={pending !== null}
             onChange={(event) => {
               setEmail(event.target.value);
@@ -226,116 +223,148 @@ export function AcornShareCard() {
           </Button>
         </div>
       </form>
-      {awaitingCode ? (
-        <form
-          className="flex flex-col gap-2"
-          onSubmit={(event) => void handleConfirm(event)}
-        >
-          <label
-            className="text-muted-foreground text-xs"
-            htmlFor="acorn-share-otp"
+      <div className="border-border/70 border-t pt-4">
+        {awaitingCode ? (
+          <form
+            className="flex min-w-0 flex-col gap-2"
+            onSubmit={(event) => void handleConfirm(event)}
           >
-            We sent a code to {mailbox ?? workEmail}. Enter it to prove that
-            inbox is yours.
-          </label>
-          <Input
-            id="acorn-share-otp"
-            autoComplete="one-time-code"
-            className="h-8 font-mono text-xs tracking-widest"
-            disabled={pending !== null}
-            inputMode="numeric"
-            maxLength={6}
-            onChange={(event) => {
-              setOtpInput(event.target.value.replace(/\D/g, "").slice(0, 6));
-              if (error) setError(null);
-            }}
-            placeholder="6-digit code"
-            value={otpInput}
-          />
-          <div className="flex gap-2">
+            <label className="text-muted-foreground text-xs" htmlFor={otpId}>
+              We sent a code to {mailbox ?? workEmail}. Enter it to prove that
+              inbox is yours.
+            </label>
+            <Input
+              id={otpId}
+              autoComplete="one-time-code"
+              autoFocus
+              className="h-8 font-mono text-xs tracking-widest"
+              disabled={pending !== null}
+              inputMode="numeric"
+              maxLength={6}
+              onChange={(event) => {
+                setOtpInput(event.target.value.replace(/\D/g, "").slice(0, 6));
+                if (error) setError(null);
+              }}
+              placeholder="6-digit code"
+              value={otpInput}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="h-8 w-fit rounded-full px-3 text-xs"
+                disabled={pending !== null || otpInput.length !== 6}
+                type="submit"
+              >
+                {pending === "confirm" ? "Confirming…" : "Confirm email"}
+              </Button>
+              <Button
+                className="h-8 w-fit rounded-full px-3 text-xs"
+                disabled={pending !== null}
+                onClick={() => void sendVerify()}
+                type="button"
+                variant="ghost"
+              >
+                {pending === "redeem" ? "Sending…" : "Resend code"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form
+            className="flex min-w-0 flex-col gap-2"
+            onSubmit={(event) => void handleRedeem(event)}
+          >
+            <label className="text-muted-foreground text-xs" htmlFor={codeId}>
+              Have a share code?
+            </label>
+            <Input
+              id={codeId}
+              autoComplete="off"
+              className="h-8 min-w-0 font-mono text-xs"
+              disabled={pending !== null}
+              onChange={(event) => {
+                setCodeInput(event.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Share code"
+              spellCheck={false}
+              value={codeInput}
+            />
+            <Input
+              aria-label="Work email for share code"
+              autoComplete="email"
+              className="h-8 min-w-0 text-xs"
+              disabled={pending !== null}
+              onChange={(event) => {
+                setWorkEmail(event.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Work email"
+              type="email"
+              value={workEmail}
+            />
             <Button
               className="h-8 w-fit rounded-full px-3 text-xs"
-              disabled={pending !== null || otpInput.length !== 6}
+              disabled={
+                pending !== null ||
+                codeInput.trim().length === 0 ||
+                workEmail.trim().length === 0 ||
+                !isBusinessEmail(workEmail)
+              }
               type="submit"
             >
-              {pending === "confirm" ? "Confirming…" : "Confirm email"}
+              {pending === "redeem" ? "Sending code…" : "Email me a code"}
             </Button>
-            <Button
-              className="h-8 w-fit rounded-full px-3 text-xs"
-              disabled={pending !== null}
-              onClick={() => void sendVerify()}
-              type="button"
-              variant="ghost"
-            >
-              {pending === "redeem" ? "Sending…" : "Resend code"}
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <form
-          className="flex flex-col gap-2"
-          onSubmit={(event) => void handleRedeem(event)}
-        >
-          <label
-            className="text-muted-foreground text-xs"
-            htmlFor="acorn-share-code"
-          >
-            Have a share code?
-          </label>
-          <Input
-            id="acorn-share-code"
-            autoComplete="off"
-            className="h-8 font-mono text-xs"
-            disabled={pending !== null}
-            onChange={(event) => {
-              setCodeInput(event.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="Share code"
-            spellCheck={false}
-            value={codeInput}
-          />
-          <Input
-            aria-label="Work email for share code"
-            autoComplete="email"
-            className="h-8 text-xs"
-            disabled={pending !== null}
-            onChange={(event) => {
-              setWorkEmail(event.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="Work email"
-            type="email"
-            value={workEmail}
-          />
-          <Button
-            className="h-8 w-fit rounded-full px-3 text-xs"
-            disabled={
-              pending !== null ||
-              codeInput.trim().length === 0 ||
-              workEmail.trim().length === 0 ||
-              !isBusinessEmail(workEmail)
-            }
-            type="submit"
-          >
-            {pending === "redeem" ? "Sending code…" : "Email me a code"}
-          </Button>
-          {workEmail.trim() && !isBusinessEmail(workEmail) ? (
-            <p className="text-muted-foreground text-xs">
-              Use a company email, not Gmail, Outlook, or iCloud.
-            </p>
-          ) : (
-            <p className="text-muted-foreground text-xs">
-              We’ll email that work inbox a code. Typing the address isn’t
-              enough.
-            </p>
-          )}
-        </form>
-      )}
+            {workEmail.trim() && !isBusinessEmail(workEmail) ? (
+              <p className="text-muted-foreground text-xs">
+                Use a company email, not Gmail, Outlook, or iCloud.
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                We’ll email that work inbox a code. Typing the address isn’t
+                enough.
+              </p>
+            )}
+          </form>
+        )}
+      </div>
       {redeemed ? (
         <p className="text-xs">You have 30 days of Pro on this Mac.</p>
       ) : null}
       {error ? <p className="text-destructive text-xs">{error}</p> : null}
+    </section>
+  );
+}
+
+function ShareProgress({
+  count,
+  granted,
+}: {
+  count: number;
+  granted: boolean;
+}) {
+  if (granted) {
+    return (
+      <p className="text-sm font-medium">
+        Unlocked: a year of Pro on this Mac.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex gap-1.5" aria-hidden>
+        {Array.from({ length: SHARE_QUALIFYING_INSTALLS }, (_, index) => (
+          <span
+            key={index}
+            className={cn([
+              "size-2 rounded-full",
+              index < count ? "bg-primary" : "bg-muted-foreground/25",
+            ])}
+          />
+        ))}
+      </div>
+      <p className="text-sm">
+        {count}/{SHARE_QUALIFYING_INSTALLS} work-email installs
+      </p>
     </div>
   );
 }

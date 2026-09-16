@@ -8,7 +8,7 @@ import { commands as analyticsCommands } from "@anlg/plugin-analytics";
 import { commands as listenerCommands } from "@anlg/plugin-transcription";
 
 export { SettingsAccount } from "./account";
-import { AppSettingsView, AcornProSettingsCard } from "./app-settings";
+import { AppSettingsView } from "./app-settings";
 import { AudioSettingsView } from "./audio-settings";
 import {
   CORE_TRANSCRIPTION_LANGUAGE_CODES,
@@ -24,7 +24,6 @@ import { SummaryLengthSelector } from "./summary-length";
 import { TimezoneSelector } from "./timezone";
 import { WeekStartSelector } from "./week-start";
 
-import { useBillingAccess } from "~/auth/billing-context";
 import { SettingsPageTitle } from "~/settings/page-title";
 import {
   type StoredSettingValues,
@@ -182,7 +181,6 @@ function SettingsSectionContent({
 }) {
   const { form, submitFieldValue } = useSettingsForm(storedSettings);
   const setSettingValues = useSetSettingValues();
-  const { upgradeToPro, isPro } = useBillingAccess();
   const audioRetention =
     resolveConfigValue("audio_retention", storedSettings) || "forever";
   const rememberSpeakers =
@@ -240,8 +238,6 @@ function SettingsSectionContent({
               />
             )}
           </form.Subscribe>
-
-          <AcornProSettingsCard isPro={isPro} onUpgrade={upgradeToPro} />
 
           <div>
             <h2 className="mb-4 font-sans text-lg font-semibold">

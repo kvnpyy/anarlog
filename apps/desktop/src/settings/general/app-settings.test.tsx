@@ -3,27 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   platform: vi.fn(() => "macos"),
-  setAcornProEntitlement: vi.fn(),
-  redeemAcornProInvite: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/plugin-os", () => ({
   platform: mocks.platform,
 }));
 
-vi.mock("~/auth/acorn-pro", () => ({
-  setAcornProEntitlement: mocks.setAcornProEntitlement,
-}));
-
-vi.mock("~/auth/acorn-pro-invite", () => ({
-  redeemAcornProInvite: mocks.redeemAcornProInvite,
-}));
-
-vi.mock("~/shared/acorn-share-card", () => ({
-  AcornShareCard: () => <div>Share Acorn, get a year of Pro</div>,
-}));
-
-import { AppSettingsView, AcornProSettingsCard } from "./app-settings";
+import { AppSettingsView } from "./app-settings";
 
 function setting(value = true) {
   return {
@@ -116,6 +102,13 @@ describe("AppSettingsView", () => {
     expect(screen.queryByRole("switch", { name: "Sentry" })).toBeNull();
   });
 
+  it("keeps Pro sharing on its dedicated settings page", () => {
+    renderAppSettings();
+
+    expect(screen.queryByText("Share Acorn, get a year of Pro")).toBeNull();
+    expect(screen.queryByLabelText("Have a Pro invite?")).toBeNull();
+  });
+
   it("shows About and license attribution", () => {
     renderAppSettings();
 
@@ -126,55 +119,5 @@ describe("AppSettingsView", () => {
       screen.getByText(/Copyright \(c\) 2023-present Fastrepl, Inc./),
     ).toBeTruthy();
     expect(screen.getByText(/MIT License/)).toBeTruthy();
-  });
-});
-
-describe("AcornProSettingsCard", () => {
-  afterEach(() => {
-    cleanup();
-    mocks.setAcornProEntitlement.mockReset();
-    mocks.redeemAcornProInvite.mockReset();
-  });
-
-  it("shows Free vs Pro copy and an inert upgrade action", () => {
-    const onUpgrade = vi.fn();
-    render(
-      <AcornProSettingsCard
-        isPro={false}
-        onUpgrade={onUpgrade}
-        showDevToggle={false}
-      />,
-    );
-
-    expect(screen.getByRole("heading", { name: "Acorn Pro" })).toBeTruthy();
-    expect(screen.getByText(/AI memory: 30 days vs 365 days/)).toBeTruthy();
-    expect(screen.getByText(/Default AI: Haiku vs smarter AI/)).toBeTruthy();
-    expect(screen.getByText(/Teams & shared notes: Pro/)).toBeTruthy();
-    expect(screen.getByText(/CLI, MCP & webhooks: Pro/)).toBeTruthy();
-    expect(screen.getByLabelText("Have a Pro invite?")).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "Acorn Pro" }));
-    expect(onUpgrade).toHaveBeenCalledOnce();
-  });
-
-  it("redeems an invite code on Free", async () => {
-    mocks.redeemAcornProInvite.mockResolvedValue("ok");
-    render(
-      <AcornProSettingsCard
-        isPro={false}
-        onUpgrade={vi.fn()}
-        showDevToggle={false}
-      />,
-    );
-
-    fireEvent.change(screen.getByLabelText("Have a Pro invite?"), {
-      target: { value: "ACORN-TEST-CODE-0001" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Redeem" }));
-
-    expect(mocks.redeemAcornProInvite).toHaveBeenCalledWith(
-      "ACORN-TEST-CODE-0001",
-      false,
-    );
   });
 });

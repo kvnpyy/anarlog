@@ -2,10 +2,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { platform } from "@tauri-apps/plugin-os";
 
-import { setAcornProEntitlement } from "~/auth/acorn-pro";
 import { SettingSwitchRow } from "~/settings/setting-row";
-import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
-import { AcornShareCard } from "~/shared/acorn-share-card";
 import {
   PRODUCT_ATTRIBUTION,
   PRODUCT_COPYRIGHT,
@@ -103,65 +100,5 @@ export function AppSettingsView({
         </p>
       </section>
     </div>
-  );
-}
-
-export function AcornProSettingsCard({
-  isPro,
-  onUpgrade,
-  showDevToggle = import.meta.env.DEV,
-}: {
-  isPro: boolean;
-  onUpgrade: () => void;
-  showDevToggle?: boolean;
-}) {
-  return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-medium">Acorn Pro</h2>
-      <p className="text-muted-foreground text-sm">
-        {isPro ? "You’re on Acorn Pro (private beta)." : "You’re on Free."}
-      </p>
-      <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-        <li>AI memory: {isPro ? "365 days" : "30 days vs 365 days"}</li>
-        <li>Default AI: {isPro ? "Smarter AI" : "Haiku vs smarter AI"}</li>
-        <li>Teams & shared notes: {isPro ? "unlocked" : "Pro"}</li>
-        <li>CLI, MCP & webhooks: {isPro ? "unlocked" : "Pro"}</li>
-      </ul>
-      <AcornShareCard />
-      {isPro ? null : (
-        <div className="flex flex-col items-start gap-3">
-          <button
-            type="button"
-            onClick={onUpgrade}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 items-center rounded-full px-3 text-xs font-medium"
-          >
-            Acorn Pro
-          </button>
-          <AcornProInviteForm alreadyPro={isPro} />
-        </div>
-      )}
-      {showDevToggle ? (
-        <SettingSwitchRow
-          title="Pro on this Mac"
-          description="Local testing only. Testers should redeem an invite instead."
-          checked={isPro}
-          onChange={(enabled) => {
-            void setAcornProEntitlement(enabled, enabled ? "dev" : null);
-          }}
-        />
-      ) : isPro ? (
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              void setAcornProEntitlement(false);
-            }}
-            className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
-          >
-            Use Free on this Mac
-          </button>
-        </div>
-      ) : null}
-    </section>
   );
 }

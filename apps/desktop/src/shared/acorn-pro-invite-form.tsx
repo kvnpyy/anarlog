@@ -49,15 +49,21 @@ export function AcornProInviteForm({
   }
 
   return (
-    <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
-      <label className="text-muted-foreground text-xs" htmlFor={inputId}>
+    <form
+      className="border-border/80 bg-background/30 flex min-w-0 flex-col gap-2 rounded-2xl border p-4"
+      onSubmit={handleSubmit}
+    >
+      <label className="text-sm font-medium" htmlFor={inputId}>
         Have a Pro invite?
       </label>
-      <div className="flex gap-2">
+      <p className="text-muted-foreground text-xs">
+        If someone sent you an Acorn Pro code, paste it here.
+      </p>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Input
           id={inputId}
           autoComplete="off"
-          className="h-8 font-mono text-xs"
+          className="h-8 w-auto min-w-0 flex-1 font-mono text-xs"
           disabled={pending}
           onChange={(event) => {
             setCode(event.target.value);

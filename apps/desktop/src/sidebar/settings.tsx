@@ -7,6 +7,7 @@ import {
   CalendarDots,
   CircleNotch,
   Code,
+  Crown,
   DownloadSimple,
   FileText,
   Gear,
@@ -84,6 +85,9 @@ export function SettingsNav() {
       items: [
         { id: "app", label: t`General`, icon: Gear },
         { id: "profile", label: t`Profile`, icon: IdentificationCard },
+        ...(LOCAL_ONLY
+          ? [{ id: "pro" as const, label: "Pro", icon: Crown }]
+          : []),
         ...(LOCAL_ONLY
           ? [
               {
