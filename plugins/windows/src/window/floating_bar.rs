@@ -312,6 +312,10 @@ mod platform {
         .emit(app);
         if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
             apply_layout(&window, Some(&state), false)?;
+            if !window.is_visible().unwrap_or(false) {
+                window.show()?;
+                crate::window::exclude_from_capture(&window);
+            }
         }
         Ok(())
     }
@@ -409,17 +413,27 @@ mod platform {
         Ok(())
     }
 
+    fn resolve_monitor(window: &WebviewWindow<tauri::Wry>) -> Option<tauri::Monitor> {
+        window
+            .current_monitor()
+            .ok()
+            .flatten()
+            .or_else(|| window.app_handle().primary_monitor().ok().flatten())
+            .or_else(|| {
+                window
+                    .app_handle()
+                    .available_monitors()
+                    .ok()
+                    .and_then(|monitors| monitors.into_iter().next())
+            })
+    }
+
     fn default_origin(
         window: &WebviewWindow<tauri::Wry>,
         width: f64,
         height: f64,
     ) -> Result<(f64, f64), Error> {
-        let monitor = window
-            .current_monitor()
-            .ok()
-            .flatten()
-            .or_else(|| window.app_handle().primary_monitor().ok().flatten())
-            .ok_or(Error::MonitorNotFound)?;
+        let monitor = resolve_monitor(window).ok_or(Error::MonitorNotFound)?;
         let scale = monitor.scale_factor();
         let work_area = monitor.work_area();
         let origin = work_area.position.to_logical::<f64>(scale);
@@ -441,12 +455,7 @@ mod platform {
         width: f64,
         height: f64,
     ) -> Result<(f64, f64), Error> {
-        let monitor = window
-            .current_monitor()
-            .ok()
-            .flatten()
-            .or_else(|| window.app_handle().primary_monitor().ok().flatten());
-        let Some(monitor) = monitor else {
+        let Some(monitor) = resolve_monitor(window) else {
             return Ok((x, y));
         };
         let scale = monitor.scale_factor();

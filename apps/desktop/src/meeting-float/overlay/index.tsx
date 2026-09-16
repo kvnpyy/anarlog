@@ -17,29 +17,22 @@ export function FloatingBarOverlayScreen() {
     let cancelled = false;
     const unlisteners: Array<() => void> = [];
 
-    void windowsCommands.floatingBarCurrentState().then((result) => {
-      if (cancelled || result.status === "error" || !result.data) {
-        return;
-      }
-      setState(result.data);
-    });
+    const applyCurrentState = () => {
+      void windowsCommands.floatingBarCurrentState().then((result) => {
+        if (cancelled || result.status === "error" || !result.data) {
+          return;
+        }
+        setState(result.data);
+      });
+    };
 
-    windowsEvents.floatingBarOverlayState
-      .listen((event) => {
+    Promise.all([
+      windowsEvents.floatingBarOverlayState.listen((event) => {
         if (!cancelled) {
           setState(event.payload.state);
         }
-      })
-      .then((unlisten) => {
-        if (cancelled) {
-          unlisten();
-          return;
-        }
-        unlisteners.push(unlisten);
-      });
-
-    windowsEvents.floatingBarOverlayAmplitude
-      .listen((event) => {
+      }),
+      windowsEvents.floatingBarOverlayAmplitude.listen((event) => {
         if (cancelled) {
           return;
         }
@@ -48,14 +41,16 @@ export function FloatingBarOverlayScreen() {
             ? { ...current, amplitude: event.payload.amplitude }
             : current,
         );
-      })
-      .then((unlisten) => {
-        if (cancelled) {
-          unlisten();
-          return;
-        }
-        unlisteners.push(unlisten);
-      });
+      }),
+    ]).then((unlistens) => {
+      if (cancelled) {
+        unlistens.forEach((unlisten) => unlisten());
+        return;
+      }
+
+      unlisteners.push(...unlistens);
+      applyCurrentState();
+    });
 
     return () => {
       cancelled = true;
