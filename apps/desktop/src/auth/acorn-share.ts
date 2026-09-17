@@ -10,12 +10,36 @@ import { commands as desktopCommands } from "~/types/tauri.gen";
 
 export const SHARE_CODE_PATTERN = /^[a-f0-9]{24}$/;
 export const SHARE_QUALIFYING_INSTALLS = 2;
+export const SHARE_INVITE_MAX = 5;
 export const SHARE_INVITEE_DAYS = 30;
 export const SHARE_REFERRER_DAYS = 365;
 
 export function normalizeShareCode(raw: string): string | null {
-  const normalized = raw.trim().toLowerCase();
+  const normalized = raw.toLowerCase().replace(/[^a-f0-9]/g, "");
   return SHARE_CODE_PATTERN.test(normalized) ? normalized : null;
+}
+
+export function formatShareCode(code: string): string {
+  const normalized = normalizeShareCode(code) ?? code.trim().toLowerCase();
+  return normalized.replace(/(.{4})(?=.)/g, "$1-");
+}
+
+export function parseInviteEmails(raw: string, skipMailbox?: string): string[] {
+  const skip = skipMailbox ? normalizeMailbox(skipMailbox) : undefined;
+  const seen = new Set<string>();
+  const recipients: string[] = [];
+  for (const part of raw.split(/[,;\s]+/)) {
+    const mailbox = normalizeMailbox(part);
+    if (!mailbox || mailbox === skip || seen.has(mailbox)) {
+      continue;
+    }
+    seen.add(mailbox);
+    recipients.push(mailbox);
+    if (recipients.length === SHARE_INVITE_MAX) {
+      break;
+    }
+  }
+  return recipients;
 }
 
 export function createShareCode(): string {
@@ -29,13 +53,13 @@ export function shareUrl(code: string): string {
 }
 
 export function shareMessage(code: string): string {
-  return `I'm using ${PRODUCT_NAME} for meeting notes. Get it here and confirm your work email in the app for 30 days of Pro:\n${shareUrl(code)}`;
+  return `I'm using ${PRODUCT_NAME} for meeting notes. Get it here and confirm your work email in the app for 30 days of Pro:\n${shareUrl(code)}\nShare code: ${formatShareCode(code)}`;
 }
 
 export async function ensureShareCode(email: string): Promise<string> {
   const mailbox = normalizeMailbox(email);
   if (!mailbox) {
-    throw new Error("Enter a valid email to create your share link.");
+    throw new Error("Enter a valid email so we can send invites.");
   }
 
   const stored = await getStoredSettingValues();
@@ -73,6 +97,43 @@ export async function loadShareStatus(code: string): Promise<{
   return {
     qualifiedCount: result.data.qualified_count,
     granted: result.data.granted,
+  };
+}
+
+export type SendShareInvitesResult = {
+  code: string;
+  sent: string[];
+  failed: string[];
+  emailError?: string;
+};
+
+export async function sendShareInvites(
+  referrerEmail: string,
+  recipientEmails: string[],
+): Promise<SendShareInvitesResult> {
+  const code = await ensureShareCode(referrerEmail);
+  const recipients = parseInviteEmails(
+    recipientEmails.join("\n"),
+    referrerEmail,
+  );
+  if (recipients.length === 0) {
+    return { code, sent: [], failed: [] };
+  }
+
+  const result = await desktopCommands.acornSendShareInvites(code, recipients);
+  if (result.status === "error") {
+    return {
+      code,
+      sent: [],
+      failed: recipients,
+      emailError: result.error,
+    };
+  }
+
+  return {
+    code,
+    sent: result.data.sent,
+    failed: result.data.failed,
   };
 }
 

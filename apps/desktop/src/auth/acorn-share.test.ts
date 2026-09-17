@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   setSettingValues: vi.fn(),
   setAcornProEntitlement: vi.fn(),
   acornRegisterShareCode: vi.fn(),
+  acornSendShareInvites: vi.fn(),
   acornRequestShareVerify: vi.fn(),
   acornConfirmShareVerify: vi.fn(),
   acornShareStatus: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("./acorn-pro", () => ({
 vi.mock("~/types/tauri.gen", () => ({
   commands: {
     acornRegisterShareCode: mocks.acornRegisterShareCode,
+    acornSendShareInvites: mocks.acornSendShareInvites,
     acornRequestShareVerify: mocks.acornRequestShareVerify,
     acornConfirmShareVerify: mocks.acornConfirmShareVerify,
     acornShareStatus: mocks.acornShareStatus,
@@ -32,7 +34,11 @@ import {
   confirmShareVerify,
   createShareCode,
   ensureShareCode,
+  formatShareCode,
+  normalizeShareCode,
+  parseInviteEmails,
   requestShareVerify,
+  sendShareInvites,
   shareMessage,
   shareUrl,
   syncShareReferrerGrant,
@@ -52,6 +58,13 @@ describe("acorn share codes", () => {
     mocks.acornRegisterShareCode.mockReset().mockResolvedValue({
       status: "ok",
       data: "ok",
+    });
+    mocks.acornSendShareInvites.mockReset().mockResolvedValue({
+      status: "ok",
+      data: {
+        sent: ["ada@yotpo.com"],
+        failed: [],
+      },
     });
     mocks.acornRequestShareVerify.mockReset().mockResolvedValue({
       status: "ok",
@@ -78,10 +91,25 @@ describe("acorn share codes", () => {
     expect(shareMessage("aaaaaaaaaaaaaaaaaaaaaaaa")).toContain(
       "https://useacorn.app/r/aaaaaaaaaaaaaaaaaaaaaaaa",
     );
-    expect(shareMessage("aaaaaaaaaaaaaaaaaaaaaaaa")).not.toContain(
-      "https://useacorn.app\n",
+    expect(shareMessage("aaaaaaaaaaaaaaaaaaaaaaaa")).toContain(
+      "Share code: aaaa-aaaa-aaaa-aaaa-aaaa-aaaa",
     );
     expect(createShareCode()).toMatch(/^[a-f0-9]{24}$/);
+  });
+
+  it("formats dashed codes and skips the referrer mailbox", () => {
+    expect(formatShareCode("aaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      "aaaa-aaaa-aaaa-aaaa-aaaa-aaaa",
+    );
+    expect(normalizeShareCode("AAAA-aaaa-AAAA-aaaa-AAAA-aaaa")).toBe(
+      "aaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+    expect(
+      parseInviteEmails(
+        "Ada@Yotpo.com, kevin@yotpo.com sam@yotpo.com",
+        "Kevin+share@Yotpo.com",
+      ),
+    ).toEqual(["ada@yotpo.com", "sam@yotpo.com"]);
   });
 
   it("registers a share code for the local user", async () => {
@@ -95,6 +123,30 @@ describe("acorn share codes", () => {
       acorn_share_code: code,
       acorn_share_email: "kevin@yotpo.com",
     });
+  });
+
+  it("emails invitees and still returns the code if delivery fails", async () => {
+    await expect(
+      sendShareInvites("kevin@yotpo.com", ["ada@yotpo.com", "kevin@yotpo.com"]),
+    ).resolves.toEqual({
+      code: expect.stringMatching(/^[a-f0-9]{24}$/),
+      sent: ["ada@yotpo.com"],
+      failed: [],
+    });
+    expect(mocks.acornSendShareInvites).toHaveBeenCalledWith(
+      expect.stringMatching(/^[a-f0-9]{24}$/),
+      ["ada@yotpo.com"],
+    );
+
+    mocks.acornSendShareInvites.mockResolvedValue({
+      status: "error",
+      error: "Invite email isn’t configured on this build.",
+    });
+    const failed = await sendShareInvites("kevin@yotpo.com", ["ada@yotpo.com"]);
+    expect(failed.sent).toEqual([]);
+    expect(failed.failed).toEqual(["ada@yotpo.com"]);
+    expect(failed.emailError).toContain("Invite email isn’t configured");
+    expect(failed.code).toMatch(/^[a-f0-9]{24}$/);
   });
 
   it("rejects personal inboxes and waits for work-email confirmation", async () => {

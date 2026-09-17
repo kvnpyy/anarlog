@@ -12,6 +12,8 @@ use crate::acorn_pro_invite::{
     invite_work_dir, write_ssh_key,
 };
 
+mod email;
+
 const SHARE_LEDGER_RAW_URL: &str =
     "https://raw.githubusercontent.com/kvnpyy/acorn-pro-invites/main/shares.json";
 const SHARE_LEDGER_FILE: &str = "shares.json";
@@ -20,8 +22,10 @@ const SHARE_CODE_LEN: usize = 24;
 const VERIFY_TTL_SECS: i64 = 15 * 60;
 const VERIFY_COOLDOWN_SECS: i64 = 45;
 const VERIFY_MAX_ATTEMPTS: i32 = 5;
+const INVITE_SEND_MAX: usize = 5;
 const RESEND_API_URL: &str = "https://api.resend.com/emails";
 const RESEND_FROM: &str = "Acorn <shares@useacorn.app>";
+const SHARE_DOWNLOAD_URL: &str = "https://useacorn.app";
 const HOSTED_KEY_XOR: u8 = 0x5A;
 
 const PERSONAL_EMAIL_DOMAINS: &[&str] = &[
@@ -61,6 +65,12 @@ pub struct AcornShareRedeemResult {
     pub granted_referrer: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct AcornShareInviteSendResult {
+    pub sent: Vec<String>,
+    pub failed: Vec<String>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct ShareLedger {
     #[serde(default)]
@@ -94,12 +104,44 @@ pub async fn acorn_register_share_code(
     referrer_email: String,
 ) -> Result<String, String> {
     let code =
-        normalize_share_code(&code).ok_or_else(|| "That share link isn’t valid.".to_string())?;
+        normalize_share_code(&code).ok_or_else(|| "That share code isn’t valid.".to_string())?;
     let mailbox = normalize_mailbox(&referrer_email)
-        .ok_or_else(|| "Enter a valid email to create your share link.".to_string())?;
+        .ok_or_else(|| "Enter a valid email so we can send invites.".to_string())?;
     let referrer_hash = mailbox_hash(&mailbox);
 
     mutate_share_ledger(move |ledger| register_share(ledger, &code, &referrer_hash)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn acorn_send_share_invites(
+    code: String,
+    recipient_emails: Vec<String>,
+) -> Result<AcornShareInviteSendResult, String> {
+    let code =
+        normalize_share_code(&code).ok_or_else(|| "That share code isn’t valid.".to_string())?;
+    let formatted = format_share_code(&code);
+    let recipients = unique_invite_mailboxes(recipient_emails);
+    if recipients.is_empty() {
+        return Err("Enter at least one email to invite.".into());
+    }
+
+    if resend_api_key().is_none() {
+        return Err("Invite email isn’t configured on this build.".into());
+    }
+
+    let mut sent = Vec::new();
+    let mut failed = Vec::new();
+    for mailbox in recipients {
+        match send_share_invite_email(&mailbox, &formatted).await {
+            Ok(()) => sent.push(mailbox),
+            Err(_) => failed.push(mailbox),
+        }
+    }
+    if sent.is_empty() {
+        return Err("Couldn’t send those invites. Share the code instead.".into());
+    }
+    Ok(AcornShareInviteSendResult { sent, failed })
 }
 
 #[tauri::command]
@@ -455,29 +497,60 @@ fn unix_now() -> i64 {
 }
 
 async fn send_share_verify_email(to: &str, otp: &str) -> Result<(), String> {
-    let api_key = resend_api_key()
-        .ok_or_else(|| "Confirmation email isn’t configured on this build.".to_string())?;
+    send_resend_email(
+        to,
+        "Your Acorn confirmation code",
+        &format!(
+            "Your Acorn confirmation code is {otp}.\n\nEnter it in Settings → Pro to prove this work email is yours. It expires in 15 minutes.\n\nIf you didn’t ask for this, ignore the email.\n"
+        ),
+        Some(email::share_verify_html(otp)),
+        "Could not send the confirmation email",
+    )
+    .await
+}
+
+async fn send_share_invite_email(to: &str, formatted_code: &str) -> Result<(), String> {
+    send_resend_email(
+        to,
+        "You’re invited to Acorn",
+        &format!(
+            "Someone invited you to try Acorn for meeting notes.\n\n1. Download Acorn: {SHARE_DOWNLOAD_URL}\n2. Open Settings → Pro\n3. Enter this share code:\n\n{formatted_code}\n\n4. Confirm a work email (not Gmail or Outlook) for 30 days of Pro.\n\nIf this email is delayed, the same code still works when you paste it in the app.\n\nIf you didn’t expect this, ignore the email.\n"
+        ),
+        Some(email::share_invite_html(formatted_code, SHARE_DOWNLOAD_URL)),
+        "Could not send the invite email",
+    )
+    .await
+}
+
+async fn send_resend_email(
+    to: &str,
+    subject: &str,
+    text: &str,
+    html: Option<String>,
+    error_prefix: &str,
+) -> Result<(), String> {
+    let api_key = resend_api_key().ok_or_else(|| format!("{error_prefix} (not configured)"))?;
+    let mut payload = serde_json::json!({
+        "from": resend_from(),
+        "to": [to],
+        "subject": subject,
+        "text": text,
+    });
+    if let Some(html) = html {
+        payload["html"] = serde_json::Value::String(html);
+        payload["attachments"] = serde_json::json!([email::icon_attachment()]);
+    }
     let response = reqwest::Client::new()
         .post(RESEND_API_URL)
         .bearer_auth(api_key)
-        .json(&serde_json::json!({
-            "from": resend_from(),
-            "to": [to],
-            "subject": "Your Acorn confirmation code",
-            "text": format!(
-                "Your Acorn confirmation code is {otp}.\n\nEnter it in Settings → Acorn Pro to prove this work email is yours. It expires in 15 minutes.\n\nIf you didn’t ask for this, ignore the email.\n"
-            ),
-        }))
+        .json(&payload)
         .send()
         .await
-        .map_err(|error| format!("Could not send the confirmation email ({error})"))?;
+        .map_err(|error| format!("{error_prefix} ({error})"))?;
     if response.status().is_success() {
         return Ok(());
     }
-    Err(format!(
-        "Could not send the confirmation email ({})",
-        response.status()
-    ))
+    Err(format!("{error_prefix} ({})", response.status()))
 }
 
 fn resend_from() -> String {
@@ -548,9 +621,38 @@ fn parse_share_ledger(body: &str) -> Result<ShareLedger, String> {
     serde_json::from_str(trimmed).map_err(|error| format!("Share ledger is unreadable ({error})"))
 }
 
+fn unique_invite_mailboxes(raw: Vec<String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut recipients = Vec::new();
+    for value in raw {
+        let Some(mailbox) = normalize_mailbox(&value) else {
+            continue;
+        };
+        if seen.insert(mailbox.clone()) {
+            recipients.push(mailbox);
+        }
+        if recipients.len() == INVITE_SEND_MAX {
+            break;
+        }
+    }
+    recipients
+}
+
+fn format_share_code(code: &str) -> String {
+    code.as_bytes()
+        .chunks(4)
+        .map(|chunk| std::str::from_utf8(chunk).unwrap_or(""))
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
 fn normalize_share_code(code: &str) -> Option<String> {
-    let normalized = code.trim().to_lowercase();
-    if normalized.len() != SHARE_CODE_LEN || !normalized.chars().all(|ch| ch.is_ascii_hexdigit()) {
+    let normalized: String = code
+        .chars()
+        .filter(|ch| ch.is_ascii_hexdigit())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect();
+    if normalized.len() != SHARE_CODE_LEN {
         return None;
     }
     Some(normalized)
@@ -636,6 +738,43 @@ mod tests {
         let again = preflight_redeem(&ledger, "dddddddddddddddddddddddd", "hash-b").unwrap();
         assert_eq!(again.status, "ok");
         assert!(preflight_redeem(&ledger, "dddddddddddddddddddddddd", "hash-c").is_none());
+    }
+
+    #[test]
+    fn formats_and_accepts_dashed_share_codes() {
+        assert_eq!(
+            format_share_code("aaaaaaaaaaaaaaaaaaaaaaaa"),
+            "aaaa-aaaa-aaaa-aaaa-aaaa-aaaa"
+        );
+        assert_eq!(
+            normalize_share_code("AAAA-aaaa-AAAA-aaaa-AAAA-aaaa"),
+            Some("aaaaaaaaaaaaaaaaaaaaaaaa".into())
+        );
+        assert_eq!(normalize_share_code("short"), None);
+    }
+
+    #[test]
+    fn unique_invite_mailboxes_dedupes_and_caps() {
+        let recipients = unique_invite_mailboxes(vec![
+            "Sam+1@Yotpo.com".into(),
+            "not-an-email".into(),
+            "sam@yotpo.com".into(),
+            "ada@yotpo.com".into(),
+            "a@yotpo.com".into(),
+            "b@yotpo.com".into(),
+            "c@yotpo.com".into(),
+            "d@yotpo.com".into(),
+        ]);
+        assert_eq!(
+            recipients,
+            vec![
+                "sam@yotpo.com",
+                "ada@yotpo.com",
+                "a@yotpo.com",
+                "b@yotpo.com",
+                "c@yotpo.com",
+            ]
+        );
     }
 
     #[test]

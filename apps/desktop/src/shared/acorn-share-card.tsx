@@ -1,3 +1,4 @@
+import { writeText as writeClipboardText } from "@tauri-apps/plugin-clipboard-manager";
 import { useEffect, useId, useState, type FormEvent } from "react";
 
 import { Button } from "@anlg/ui/components/ui/button";
@@ -6,11 +7,12 @@ import { cn } from "@anlg/utils";
 
 import {
   confirmShareVerify,
-  ensureShareCode,
+  formatShareCode,
   loadShareStatus,
+  parseInviteEmails,
   requestShareVerify,
   SHARE_QUALIFYING_INSTALLS,
-  shareMessage,
+  sendShareInvites,
   syncShareReferrerGrant,
   type ShareRedeemStatus,
 } from "~/auth/acorn-share";
@@ -25,6 +27,9 @@ export function AcornShareCard() {
   const { acorn_share_code: storedCode, acorn_share_email: storedEmail } =
     useConfigValues(["acorn_share_code", "acorn_share_email"]);
   const [email, setEmail] = useState(storedEmail ?? "");
+  const [inviteInput, setInviteInput] = useState("");
+  const [visibleCode, setVisibleCode] = useState(storedCode ?? "");
+  const [sentTo, setSentTo] = useState<string[]>([]);
   const [codeInput, setCodeInput] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [otpInput, setOtpInput] = useState("");
@@ -32,18 +37,26 @@ export function AcornShareCard() {
   const [qualifiedCount, setQualifiedCount] = useState(0);
   const [granted, setGranted] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [pending, setPending] = useState<"copy" | "redeem" | "confirm" | null>(
+  const [pending, setPending] = useState<"send" | "redeem" | "confirm" | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [redeemed, setRedeemed] = useState(false);
   const emailId = useId();
+  const inviteId = useId();
   const codeId = useId();
   const otpId = useId();
 
   useEffect(() => {
     setEmail(storedEmail ?? "");
   }, [storedEmail]);
+
+  useEffect(() => {
+    if (storedCode) {
+      setVisibleCode(storedCode);
+    }
+  }, [storedCode]);
 
   useEffect(() => {
     if (!storedCode) {
@@ -74,17 +87,21 @@ export function AcornShareCard() {
     };
   }, [storedCode]);
 
-  async function handleCopyLink(event: FormEvent<HTMLFormElement>) {
+  async function handleSendInvites(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) {
       return;
     }
 
-    setPending("copy");
+    const recipients = parseInviteEmails(inviteInput, email);
+    setPending("send");
     setError(null);
+    setNotice(null);
     try {
-      const code = await ensureShareCode(email);
-      const status = await loadShareStatus(code);
+      const result = await sendShareInvites(email, recipients);
+      setVisibleCode(result.code);
+      setSentTo(result.sent);
+      const status = await loadShareStatus(result.code);
       if (status) {
         setQualifiedCount(status.qualifiedCount);
         setGranted(status.granted);
@@ -92,17 +109,43 @@ export function AcornShareCard() {
           await syncShareReferrerGrant();
         }
       }
-      await navigator.clipboard.writeText(shareMessage(code));
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2_000);
+      if (result.emailError) {
+        setError(result.emailError);
+        setNotice("Share the code below if they don’t get an email.");
+      } else if (result.failed.length > 0) {
+        setError(
+          `Couldn’t email ${result.failed.join(", ")}. Share the code below instead.`,
+        );
+      } else if (result.sent.length > 0) {
+        setNotice(
+          `Emailed ${result.sent.join(", ")}. If they don’t see it, send them the code below.`,
+        );
+        setInviteInput("");
+      } else {
+        setNotice("If they don’t get an email, send them this code.");
+      }
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Couldn’t create your share link. Try again.",
+          : "Couldn’t create your share code. Try again.",
       );
     } finally {
       setPending(null);
+    }
+  }
+
+  async function handleCopyCode() {
+    if (!visibleCode) {
+      return;
+    }
+
+    try {
+      await writeClipboardText(formatShareCode(visibleCode));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2_000);
+    } catch {
+      setNotice("Select the code and copy it if clipboard access is blocked.");
     }
   }
 
@@ -180,6 +223,7 @@ export function AcornShareCard() {
   }
 
   const mailbox = normalizeMailbox(workEmail);
+  const invitees = parseInviteEmails(inviteInput, email);
 
   return (
     <section className="border-border/80 bg-background/30 flex min-w-0 flex-col gap-4 rounded-2xl border p-4">
@@ -188,41 +232,74 @@ export function AcornShareCard() {
           Share {PRODUCT_NAME}, get a year of Pro
         </h3>
         <p className="text-muted-foreground text-sm leading-5">
-          Two people install {PRODUCT_NAME} and confirm a work email — not Gmail
-          or Outlook. They don’t have to be coworkers.
+          Invite two people. We’ll email them a download link and a code. They
+          install {PRODUCT_NAME} and confirm a work email — not Gmail or
+          Outlook.
         </p>
       </div>
       <ShareProgress count={qualifiedCount} granted={granted} />
       <form
         className="flex min-w-0 flex-col gap-2"
-        onSubmit={(event) => void handleCopyLink(event)}
+        onSubmit={(event) => void handleSendInvites(event)}
       >
         <label className="text-muted-foreground text-xs" htmlFor={emailId}>
-          Your email (so you can’t redeem your own link)
+          Your email (so you can’t redeem your own invite)
         </label>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Input
-            id={emailId}
-            autoComplete="email"
-            className="h-8 w-auto min-w-0 flex-1 text-xs"
-            disabled={pending !== null}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="you@company.com"
-            type="email"
-            value={email}
-          />
-          <Button
-            className="h-8 shrink-0 rounded-full px-3 text-xs"
-            disabled={pending !== null || email.trim().length === 0}
-            type="submit"
-          >
-            {copied ? "Copied" : pending === "copy" ? "Copying…" : "Copy link"}
-          </Button>
-        </div>
+        <Input
+          id={emailId}
+          autoComplete="email"
+          className="h-8 min-w-0 text-xs"
+          disabled={pending !== null || Boolean(storedCode)}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="you@company.com"
+          type="email"
+          value={email}
+        />
+        <label className="text-muted-foreground text-xs" htmlFor={inviteId}>
+          Their emails
+        </label>
+        <Input
+          id={inviteId}
+          autoComplete="off"
+          className="h-8 min-w-0 text-xs"
+          disabled={pending !== null}
+          onChange={(event) => {
+            setInviteInput(event.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="ada@company.com, sam@company.com"
+          type="text"
+          value={inviteInput}
+        />
+        <Button
+          className="h-8 w-fit rounded-full px-3 text-xs"
+          disabled={pending !== null || email.trim().length === 0}
+          type="submit"
+        >
+          {pending === "send"
+            ? invitees.length > 0
+              ? "Sending…"
+              : "Creating…"
+            : invitees.length > 0
+              ? "Send invites"
+              : "Show code"}
+        </Button>
+        <p className="text-muted-foreground text-xs">
+          We’ll email them Acorn plus a backup code. They can still use the code
+          if the message is delayed.
+        </p>
       </form>
+      {visibleCode ? (
+        <ShareCodePanel
+          code={visibleCode}
+          copied={copied}
+          onCopy={() => void handleCopyCode()}
+          sentTo={sentTo}
+        />
+      ) : null}
       <div className="border-border/70 border-t pt-4">
         {awaitingCode ? (
           <form
@@ -329,8 +406,47 @@ export function AcornShareCard() {
       {redeemed ? (
         <p className="text-xs">You have 30 days of Pro on this Mac.</p>
       ) : null}
+      {notice ? <p className="text-xs">{notice}</p> : null}
       {error ? <p className="text-destructive text-xs">{error}</p> : null}
     </section>
+  );
+}
+
+function ShareCodePanel({
+  code,
+  copied,
+  onCopy,
+  sentTo,
+}: {
+  code: string;
+  copied: boolean;
+  onCopy: () => void;
+  sentTo: string[];
+}) {
+  return (
+    <div className="border-border/70 bg-background/40 flex min-w-0 flex-col gap-2 rounded-xl border p-3">
+      <p className="text-xs font-medium">
+        {sentTo.length > 0
+          ? "Backup code if they don’t get the email"
+          : "Share this code"}
+      </p>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <code className="bg-muted/60 rounded-md px-2 py-1 font-mono text-xs tracking-wide select-all">
+          {formatShareCode(code)}
+        </code>
+        <Button
+          className="h-8 shrink-0 rounded-full px-3 text-xs"
+          onClick={onCopy}
+          type="button"
+          variant="outline"
+        >
+          {copied ? "Copied" : "Copy code"}
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        They paste it in Settings → Pro, then confirm a work email.
+      </p>
+    </div>
   );
 }
 

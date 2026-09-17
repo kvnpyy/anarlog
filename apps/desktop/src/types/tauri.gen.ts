@@ -60,6 +60,14 @@ async acornRegisterShareCode(code: string, referrerEmail: string) : Promise<Resu
     else return { status: "error", error: e  as any };
 }
 },
+async acornSendShareInvites(code: string, recipientEmails: string[]) : Promise<Result<AcornShareInviteSendResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("acorn_send_share_invites", { code, recipientEmails }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async acornRequestShareVerify(code: string, referredEmail: string) : Promise<Result<AcornShareRedeemResult, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("acorn_request_share_verify", { code, referredEmail }) };
@@ -218,6 +226,7 @@ async installClaudeMcp(command: string) : Promise<Result<ClaudeMcpInstallResult,
 /** user-defined types **/
 
 export type AcornHostedAiStatus = { stt: boolean; llm: boolean }
+export type AcornShareInviteSendResult = { sent: string[]; failed: string[] }
 export type AcornShareRedeemResult = { status: string; qualified_count: number; granted_referrer: boolean }
 export type AcornShareStatus = { code: string; qualified_count: number; granted: boolean }
 export type ClaudeMcpInstallResult = { desktop: boolean; claudeCode: boolean; desktopPath: string; claudeCodePath: string | null }

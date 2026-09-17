@@ -4686,6 +4686,7 @@ version = "0.0.0"
 dependencies = [
  "audio-actual",
  "audio-mock",
+ "base64 0.22.1",
  "chrono",
  "db-app",
  "db-core",

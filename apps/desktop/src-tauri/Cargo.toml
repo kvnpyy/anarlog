@@ -95,6 +95,7 @@ anlg-host = { workspace = true }
 anlg-storage = { workspace = true }
 anlg-supervisor = { workspace = true }
 
+base64 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
 futures-util = { workspace = true }

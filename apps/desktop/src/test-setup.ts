@@ -208,6 +208,10 @@ vi.mock("./types/tauri.gen", () => ({
     acornRegisterShareCode: vi
       .fn()
       .mockResolvedValue({ status: "ok", data: "ok" }),
+    acornSendShareInvites: vi.fn().mockResolvedValue({
+      status: "ok",
+      data: { sent: [], failed: [] },
+    }),
     acornRequestShareVerify: vi.fn().mockResolvedValue({
       status: "ok",
       data: { status: "sent", qualified_count: 0, granted_referrer: false },

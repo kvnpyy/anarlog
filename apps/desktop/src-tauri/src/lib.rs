@@ -746,6 +746,7 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::acorn_hosted_ai_status,
             acorn_pro_invite::acorn_consume_pro_invite,
             acorn_share::acorn_register_share_code,
+            acorn_share::acorn_send_share_invites,
             acorn_share::acorn_request_share_verify,
             acorn_share::acorn_confirm_share_verify,
             acorn_share::acorn_share_status,
