@@ -1233,8 +1233,13 @@ msgid "Configure Providers"
 msgstr ""
 
 #: src/onboarding/folder-location.tsx
+#: src/session/components/note-input/transcript/renderer/segment-header.tsx
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
 msgid "Confirm"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/segment-header.tsx
+msgid "Confirm speaker"
 msgstr ""
 
 #: src/settings/ai/llm/subscriptions/connect.tsx

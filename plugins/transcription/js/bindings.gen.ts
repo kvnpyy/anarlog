@@ -182,9 +182,17 @@ async extractVoiceprintCandidates(sessionId: string, transcriptId: string, audio
     else return { status: "error", error: e  as any };
 }
 },
-async promoteVoiceprintCandidates(transcriptId: string, speakerChannel: number, speakerIndex: number | null, humanId: string) : Promise<Result<number, string>> {
+async promoteVoiceprintCandidates(transcriptId: string, speakerChannel: number, speakerIndex: number | null, humanId: string, confirmationSource: string | null) : Promise<Result<number, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:transcription|promote_voiceprint_candidates", { transcriptId, speakerChannel, speakerIndex, humanId }) };
+    return { status: "ok", data: await TAURI_INVOKE("plugin:transcription|promote_voiceprint_candidates", { transcriptId, speakerChannel, speakerIndex, humanId, confirmationSource }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async matchVoiceprintCandidates(transcriptId: string, humanIds: string[]) : Promise<Result<VoiceprintSpeakerMatch[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:transcription|match_voiceprint_candidates", { transcriptId, humanIds }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -270,6 +278,7 @@ export type Token = { text: string; start_time: number; end_time: number; speake
 export type TranscriptionEvent = { type: "started"; session_id: string } | { type: "progress"; session_id: string; event: BatchStreamEvent } | { type: "completed"; session_id: string; response: BatchResponse; mode: BatchRunMode } | { type: "stopped"; session_id: string } | { type: "failed"; session_id: string; code: BatchErrorCode; error: string }
 export type TranscriptionMode = "live" | "batch"
 export type TranscriptionParams = { session_id: string; provider: BatchProvider; file_path: string; model?: string | null; base_url: string; api_key: string; languages?: string[]; keywords?: string[]; num_speakers?: number | null; min_speakers?: number | null; max_speakers?: number | null }
+export type VoiceprintSpeakerMatch = { speakerChannel: number; speakerIndex: number | null; humanId: string; score: number; runnerUpScore: number | null }
 export type VttWord = { text: string; start_ms: number; end_ms: number; speaker: string | null }
 /**
  * Whether a finalized word is stable or awaiting correction.

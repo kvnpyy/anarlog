@@ -14,6 +14,7 @@ import {
   collectAssignedHumanIdsFromTranscriptRows,
   type TranscriptRow,
 } from "~/stt/render-transcript";
+import { collectSuggestedSpeakerAssignments } from "~/stt/speaker-identity";
 
 export type TranscriptRowWithId = {
   transcriptId: string;
@@ -26,6 +27,7 @@ export function useTranscriptRenderData(
 ): {
   request: RenderTranscriptRequest | null;
   transcriptRows: TranscriptRowWithId[];
+  suggestions: ReturnType<typeof collectSuggestedSpeakerAssignments>;
 } {
   const transcript = useTranscript(transcriptId, includePendingDeltas);
   const transcripts = useMemo(
@@ -39,6 +41,7 @@ export function useTranscriptRenderData(
 export function useSessionTranscriptRenderData(sessionId: string): {
   request: RenderTranscriptRequest | null;
   transcriptRows: TranscriptRowWithId[];
+  suggestions: ReturnType<typeof collectSuggestedSpeakerAssignments>;
 } {
   const transcripts = useSessionTranscripts(sessionId);
 
@@ -51,6 +54,7 @@ function useRenderData(
 ): {
   request: RenderTranscriptRequest | null;
   transcriptRows: TranscriptRowWithId[];
+  suggestions: ReturnType<typeof collectSuggestedSpeakerAssignments>;
 } {
   const participantHumanIds = useSessionParticipantHumanIds(sessionId);
   const selfHumanId = transcripts[0]?.ownerUserId;
@@ -74,16 +78,27 @@ function useRenderData(
     [transcriptRows],
   );
 
+  const suggestions = useMemo(
+    () =>
+      transcriptRows.flatMap((transcriptRow) =>
+        collectSuggestedSpeakerAssignments(
+          transcriptRow.row.speaker_hints ?? [],
+        ),
+      ),
+    [transcriptRows],
+  );
+
   const humanIds = useMemo(
     () =>
       [
         ...new Set([
           ...participantHumanIds,
           ...assignedHumanIds,
+          ...suggestions.map((suggestion) => suggestion.humanId),
           selfHumanId ?? "",
         ]),
       ].filter(Boolean),
-    [assignedHumanIds, participantHumanIds, selfHumanId],
+    [assignedHumanIds, participantHumanIds, selfHumanId, suggestions],
   );
   const humans = useTranscriptHumans(humanIds);
 
@@ -97,7 +112,7 @@ function useRenderData(
     [humans, participantHumanIds, selfHumanId, transcriptRows],
   );
 
-  return { request, transcriptRows };
+  return { request, transcriptRows, suggestions };
 }
 
 const emptyTranscripts: TranscriptRecord[] = [];

@@ -24,7 +24,10 @@ import {
   normalizeAudioRetention,
 } from "~/services/audio-retention";
 import { getEnhancerService } from "~/services/enhancer";
-import { maybeExtractVoiceprintCandidates } from "~/services/voiceprint";
+import {
+  maybeExtractVoiceprintCandidates,
+  maybeIdentifyTranscriptSpeakers,
+} from "~/services/voiceprint";
 import { flushCanonicalSessionEditorChanges } from "~/session-sharing/editor-activity";
 import {
   catalogLocalSessionAudio,
@@ -643,16 +646,24 @@ export function useCaptureLifecycle(sessionId: string) {
         }
 
         try {
-          if (details.audioPath && transcriptIsComplete) {
-            await maybeExtractVoiceprintCandidates({
-              enabled: rememberSpeakers,
+          if (transcriptIsComplete) {
+            if (details.audioPath) {
+              await maybeExtractVoiceprintCandidates({
+                enabled: rememberSpeakers,
+                sessionId,
+                transcriptId,
+                audioPath: details.audioPath,
+              });
+            }
+            await maybeIdentifyTranscriptSpeakers({
               sessionId,
               transcriptId,
-              audioPath: details.audioPath,
             });
-            await persistTranscriptWrite(() =>
-              markSessionAudioTranscriptionComplete(sessionId),
-            );
+            if (details.audioPath) {
+              await persistTranscriptWrite(() =>
+                markSessionAudioTranscriptionComplete(sessionId),
+              );
+            }
           }
           await clearCaptureLifecycleMarker(sessionId, transcriptId);
           recoveryPending = false;

@@ -13,6 +13,7 @@ import {
   type SmartFolderSuggestion,
 } from "../smart-folders";
 
+import { useOptionalAuth } from "~/auth";
 import { executeTransaction, liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 
@@ -43,6 +44,7 @@ type SmartFolderSessionSqlRow = {
   created_at: string;
   owner_user_id: string;
   event_json: string;
+  discussed: string;
 };
 
 type SmartFolderParticipantSqlRow = {
@@ -84,22 +86,41 @@ export function useFolderSummaries(): FolderSummary[] {
 export function useSmartFolderSuggestions(
   enabled = true,
 ): SmartFolderSuggestion[] {
+  const authSession = useOptionalAuth()?.session;
+  const ownerEmail = authSession?.user?.email ?? null;
+  const ownerUserId = authSession?.user?.id ?? null;
   const { data: sessions = EMPTY_SESSIONS } = useLiveQuery<
     SmartFolderSessionSqlRow,
     SmartFolderSession[]
   >({
     sql: `
       SELECT
-        id,
-        title,
-        folder_path,
-        COALESCE(series_id, '') AS series_id,
-        created_at,
-        COALESCE(owner_user_id, '') AS owner_user_id,
-        COALESCE(event_json, '') AS event_json
+        sessions.id,
+        sessions.title,
+        sessions.folder_path,
+        COALESCE(sessions.series_id, '') AS series_id,
+        sessions.created_at,
+        COALESCE(sessions.owner_user_id, '') AS owner_user_id,
+        COALESCE(sessions.event_json, '') AS event_json,
+        COALESCE((
+          SELECT TRIM(document.title)
+          FROM session_documents AS document
+          WHERE document.session_id = sessions.id
+            AND document.deleted_at IS NULL
+            AND TRIM(document.title) != ''
+            AND lower(trim(document.title)) NOT IN (
+              'summary', 'untitled', 'untitled note', 'notes'
+            )
+          ORDER BY CASE document.kind
+            WHEN 'summary' THEN 0
+            WHEN 'template_output' THEN 1
+            ELSE 2
+          END, document.updated_at DESC
+          LIMIT 1
+        ), '') AS discussed
       FROM sessions
-      WHERE deleted_at IS NULL
-        AND folder_path = ''
+      WHERE sessions.deleted_at IS NULL
+        AND sessions.folder_path = ''
     `,
     enabled,
     mapRows: (rows) => rows.map(mapSmartFolderSessionRow),
@@ -133,8 +154,11 @@ export function useSmartFolderSuggestions(
   });
 
   return useMemo(
-    () => (enabled ? suggestSmartFolders(sessions, participants) : []),
-    [enabled, participants, sessions],
+    () =>
+      enabled
+        ? suggestSmartFolders(sessions, participants, ownerUserId, ownerEmail)
+        : [],
+    [enabled, ownerEmail, ownerUserId, participants, sessions],
   );
 }
 
@@ -295,6 +319,7 @@ function mapSmartFolderSessionRow(
     createdAt: row.created_at,
     ownerUserId: row.owner_user_id,
     eventJson: row.event_json,
+    discussed: row.discussed,
   };
 }
 

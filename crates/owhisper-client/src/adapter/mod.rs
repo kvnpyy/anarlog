@@ -554,6 +554,13 @@ impl AdapterKind {
             ),
             Self::Zai => (OPENAI_COMPATIBLE_MAX_UPLOAD_BYTES, Duration::from_secs(25)),
             Self::SiliconFlow => (50 * 1024 * 1024, Duration::from_secs(50 * 60)),
+            // Hosted STT goes through the Anarlog proxy. Hour-long meetings
+            // otherwise sit on one HTTP request until the proxy or upstream
+            // times out, so the client splits them like OpenRouter.
+            Self::Anarlog => (
+                OPENAI_COMPATIBLE_MAX_UPLOAD_BYTES,
+                Duration::from_secs(10 * 60),
+            ),
             _ => return None,
         };
 

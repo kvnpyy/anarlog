@@ -306,7 +306,8 @@ export function upsertSpeakerAssignment(
   const nextHints = hints.filter((hint) => {
     if (
       hint.type !== "automatic_speaker_assignment" &&
-      hint.type !== "user_speaker_assignment"
+      hint.type !== "user_speaker_assignment" &&
+      hint.type !== "suggested_speaker_assignment"
     ) {
       return true;
     }
@@ -851,7 +852,8 @@ function isSegmentSpeakerAssignmentHint(hint: SpeakerHintWithId): boolean {
 function isSpeakerScopedAssignmentHint(hint: SpeakerHintWithId): boolean {
   if (
     hint.type !== "automatic_speaker_assignment" &&
-    hint.type !== "user_speaker_assignment"
+    hint.type !== "user_speaker_assignment" &&
+    hint.type !== "suggested_speaker_assignment"
   ) {
     return false;
   }

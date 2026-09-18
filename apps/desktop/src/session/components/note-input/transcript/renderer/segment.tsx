@@ -52,6 +52,7 @@ export const SegmentRenderer = memo(
     transcriptId,
     sessionId,
     speakerLabel,
+    suggestedHumanId,
     currentMs,
     seekAndPlay,
     audioExists,
@@ -63,6 +64,7 @@ export const SegmentRenderer = memo(
     transcriptId: string;
     sessionId?: string;
     speakerLabel: string;
+    suggestedHumanId?: string;
     currentMs: number;
     seekAndPlay: (word: SegmentWord) => void;
     audioExists: boolean;
@@ -120,6 +122,7 @@ export const SegmentRenderer = memo(
           transcriptId={transcriptId}
           sessionId={sessionId}
           label={speakerLabel}
+          suggestedHumanId={suggestedHumanId}
           selected={selected}
         />
 
@@ -184,6 +187,7 @@ export const SegmentRenderer = memo(
       prev.transcriptId !== next.transcriptId ||
       prev.sessionId !== next.sessionId ||
       prev.speakerLabel !== next.speakerLabel ||
+      prev.suggestedHumanId !== next.suggestedHumanId ||
       prev.audioExists !== next.audioExists ||
       prev.seekAndPlay !== next.seekAndPlay ||
       prev.editMode !== next.editMode

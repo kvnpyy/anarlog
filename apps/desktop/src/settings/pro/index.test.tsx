@@ -20,7 +20,7 @@ vi.mock("~/auth/acorn-pro-invite", () => ({
 }));
 
 vi.mock("~/shared/acorn-share-card", () => ({
-  AcornShareCard: () => <div>Share Acorn, get a year of Pro</div>,
+  AcornShareCard: () => <div>Share Acorn, get 3 months of Pro</div>,
 }));
 
 import { SettingsPro } from "./index";
@@ -40,7 +40,7 @@ describe("SettingsPro", () => {
     expect(screen.getByText(/share Acorn or redeem an invite/)).toBeTruthy();
     expect(screen.getByText("Free")).toBeTruthy();
     expect(screen.getAllByText("Pro").length).toBeGreaterThan(1);
-    expect(screen.getByText("Share Acorn, get a year of Pro")).toBeTruthy();
+    expect(screen.getByText("Share Acorn, get 3 months of Pro")).toBeTruthy();
     expect(screen.getByLabelText("Have a Pro invite?")).toBeTruthy();
     expect(screen.queryByText("Share or redeem below")).toBeNull();
   });

@@ -16,6 +16,7 @@ const COMMANDS: &[&str] = &[
     "run_denoise",
     "extract_voiceprint_candidates",
     "promote_voiceprint_candidates",
+    "match_voiceprint_candidates",
     "cleanup_expired_voiceprint_candidates",
     "parse_subtitle",
     "export_to_vtt",
@@ -24,6 +25,7 @@ const COMMANDS: &[&str] = &[
     "list_documented_language_codes_batch",
     "extract_voiceprint_candidates",
     "promote_voiceprint_candidates",
+    "match_voiceprint_candidates",
     "cleanup_expired_voiceprint_candidates",
 ];
 

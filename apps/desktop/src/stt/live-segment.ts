@@ -43,6 +43,7 @@ export type RenderLabelContext = {
   getSelfHumanId: () => string | undefined;
   getHumanName: (id: string) => string | undefined;
   getParticipantHumanIds?: () => string[];
+  getSuggestedHumanId?: (key: SegmentKey) => string | undefined;
 };
 
 export type SegmentKey = BoundSegmentKey;
@@ -150,6 +151,16 @@ export const SegmentKeyUtils = {
       const remoteHumanId = getUniqueRemoteParticipantHumanId(ctx);
       if (remoteHumanId) {
         return ctx.getHumanName(remoteHumanId) || remoteHumanId;
+      }
+    }
+
+    if (ctx && assignedHumanId == null) {
+      const suggestedHumanId = ctx.getSuggestedHumanId?.(key);
+      if (suggestedHumanId) {
+        const suggestedName = ctx.getHumanName(suggestedHumanId);
+        if (suggestedName) {
+          return `${suggestedName}?`;
+        }
       }
     }
 

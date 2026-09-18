@@ -198,6 +198,14 @@ fn segments_only_when_a_provider_limit_is_exceeded() {
         ),
         Some(Duration::from_secs(60))
     );
+    assert_eq!(
+        segment_plan(
+            path,
+            Some(Duration::from_secs(60 * 60)),
+            owhisper_client::AdapterKind::Anarlog.batch_upload_limit(),
+        ),
+        Some(Duration::from_secs(10 * 60))
+    );
 }
 
 #[test]

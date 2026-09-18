@@ -548,3 +548,12 @@ fn test_maybe_append_provider_param_keeps_proxy_provider() {
     let url = maybe_append_provider_param("https://api.anarlog.so/stt", "deepgram");
     assert!(url.contains("provider=deepgram"));
 }
+
+#[test]
+fn test_anarlog_batch_splits_hour_long_recordings() {
+    let limit = AdapterKind::Anarlog
+        .batch_upload_limit()
+        .expect("hosted STT should split long recordings");
+    assert_eq!(limit.max_bytes, 25 * 1024 * 1024);
+    assert_eq!(limit.max_duration, std::time::Duration::from_secs(10 * 60));
+}

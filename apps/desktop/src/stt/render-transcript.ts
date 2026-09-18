@@ -156,7 +156,8 @@ export function collectAssignedHumanIdsFromTranscriptRows(
     for (const hint of transcript.speaker_hints ?? []) {
       if (
         hint.type !== "automatic_speaker_assignment" &&
-        hint.type !== "user_speaker_assignment"
+        hint.type !== "user_speaker_assignment" &&
+        hint.type !== "suggested_speaker_assignment"
       ) {
         continue;
       }

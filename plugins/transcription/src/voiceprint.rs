@@ -182,6 +182,7 @@ pub async fn promote_voiceprint_candidates<R: tauri::Runtime>(
     speaker_channel: i32,
     speaker_index: Option<i32>,
     human_id: String,
+    confirmation_source: Option<String>,
 ) -> Result<u32, String> {
     let pool = app
         .try_state::<tauri_plugin_db::ManagedState>()
@@ -226,6 +227,9 @@ pub async fn promote_voiceprint_candidates<R: tauri::Runtime>(
         .await;
     }
 
+    let confirmation_source =
+        confirmation_source.unwrap_or_else(|| "manual_speaker_assignment".to_string());
+
     let candidates = anlg_db_app::list_active_voiceprint_candidates_for_speaker(
         &pool,
         &workspace_id,
@@ -269,7 +273,7 @@ pub async fn promote_voiceprint_candidates<R: tauri::Runtime>(
                 candidate_id: &candidate.id,
                 workspace_id: &workspace_id,
                 human_id: &human_id,
-                confirmation_source: "manual_speaker_assignment",
+                confirmation_source: &confirmation_source,
                 label_confidence: 1.0,
             },
         )
@@ -303,6 +307,146 @@ pub async fn promote_voiceprint_candidates<R: tauri::Runtime>(
         "voiceprint_candidates_promoted"
     );
     Ok(promoted)
+}
+
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceprintSpeakerMatch {
+    pub speaker_channel: i32,
+    pub speaker_index: Option<i32>,
+    pub human_id: String,
+    pub score: f32,
+    pub runner_up_score: Option<f32>,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn match_voiceprint_candidates<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    transcript_id: String,
+    human_ids: Vec<String>,
+) -> Result<Vec<VoiceprintSpeakerMatch>, String> {
+    let unique_human_ids = unique_nonempty_ids(&human_ids);
+    if unique_human_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let pool = app
+        .try_state::<tauri_plugin_db::ManagedState>()
+        .map(|state| state.pool().clone())
+        .ok_or_else(|| "database is not ready yet".to_string())?;
+
+    let Some(workspace_id) = sqlx::query_scalar::<_, String>(
+        "SELECT workspace_id FROM transcripts WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+    )
+    .bind(&transcript_id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|error| error.to_string())?
+    else {
+        return Ok(Vec::new());
+    };
+
+    let candidates = anlg_db_app::list_active_voiceprint_candidates_for_transcript(
+        &pool,
+        &workspace_id,
+        &transcript_id,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+
+    let mut cluster_embeddings: HashMap<(i32, Option<i32>), Vec<Vec<f32>>> = HashMap::new();
+    for candidate in candidates {
+        if candidate.model_provider != MODEL_PROVIDER || candidate.model_version != MODEL_VERSION {
+            continue;
+        }
+        if candidate.speaker_channel == 0 {
+            continue;
+        }
+        let Some(embedding) = read_embedding(
+            &app,
+            candidate.keyring_scope,
+            candidate.keyring_key,
+            &candidate.id,
+        )
+        .await
+        else {
+            continue;
+        };
+        cluster_embeddings
+            .entry((
+                candidate.speaker_channel as i32,
+                candidate.speaker_index.map(|index| index as i32),
+            ))
+            .or_default()
+            .push(embedding);
+    }
+
+    let mut pairs = Vec::new();
+    for human_id in unique_human_ids {
+        let exemplars = anlg_db_app::list_active_voiceprint_exemplars_for_human(
+            &pool,
+            &workspace_id,
+            &human_id,
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+
+        let mut human_embeddings = Vec::new();
+        for exemplar in exemplars {
+            if exemplar.model_provider != MODEL_PROVIDER || exemplar.model_version != MODEL_VERSION
+            {
+                continue;
+            }
+            if let Some(embedding) = read_embedding(
+                &app,
+                exemplar.keyring_scope,
+                exemplar.keyring_key,
+                &exemplar.id,
+            )
+            .await
+            {
+                human_embeddings.push(embedding);
+            }
+        }
+        if human_embeddings.is_empty() {
+            continue;
+        }
+
+        for ((channel, speaker_index), embeddings) in &cluster_embeddings {
+            let Some(cluster) = anlg_voiceprint::mean_embedding(embeddings) else {
+                continue;
+            };
+            let mut best = None;
+            for exemplar in &human_embeddings {
+                let Some(score) = anlg_voiceprint::cosine_similarity(&cluster, exemplar) else {
+                    continue;
+                };
+                best = Some(best.map_or(score, |current: f32| current.max(score)));
+            }
+            if let Some(score) = best {
+                pairs.push(anlg_voiceprint::ScoredPair {
+                    speaker: anlg_voiceprint::SpeakerKey {
+                        channel: *channel,
+                        speaker_index: *speaker_index,
+                    },
+                    human_id: human_id.clone(),
+                    score,
+                });
+            }
+        }
+    }
+
+    Ok(anlg_voiceprint::greedy_unique_matches(&pairs)
+        .into_iter()
+        .map(|matched| VoiceprintSpeakerMatch {
+            speaker_channel: matched.speaker.channel,
+            speaker_index: matched.speaker.speaker_index,
+            human_id: matched.human_id,
+            score: matched.score,
+            runner_up_score: matched.runner_up_score,
+        })
+        .collect())
 }
 
 #[tauri::command]
@@ -568,6 +712,47 @@ fn encode_embedding(embedding: &[f32]) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes)
 }
 
+fn decode_embedding(encoded: &str) -> Option<Vec<f32>> {
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .ok()?;
+    if bytes.is_empty() || bytes.len() % 4 != 0 {
+        return None;
+    }
+    let mut embedding = Vec::with_capacity(bytes.len() / 4);
+    for chunk in bytes.chunks_exact(4) {
+        embedding.push(f32::from_le_bytes(chunk.try_into().ok()?));
+    }
+    Some(embedding)
+}
+
+fn unique_nonempty_ids(ids: &[String]) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut unique = Vec::new();
+    for id in ids {
+        let trimmed = id.trim();
+        if trimmed.is_empty() || !seen.insert(trimmed.to_string()) {
+            continue;
+        }
+        unique.push(trimmed.to_string());
+    }
+    unique
+}
+
+async fn read_embedding<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    scope: String,
+    key: String,
+    id: &str,
+) -> Option<Vec<f32>> {
+    let Ok(Some(secret_value)) = tauri_plugin_store2::read_secret(app.clone(), scope, key).await
+    else {
+        tracing::warn!(embedding_id = %id, "voiceprint_embedding_secret_missing");
+        return None;
+    };
+    decode_embedding(&secret_value)
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::NonZero;
@@ -737,15 +922,12 @@ mod tests {
     #[test]
     fn embedding_round_trips_through_base64() {
         let embedding = vec![0.5_f32, -1.25, 3.0];
-        let encoded = encode_embedding(&embedding);
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(encoded)
-            .unwrap();
-        let decoded: Vec<f32> = bytes
-            .chunks_exact(4)
-            .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
-            .collect();
-        assert_eq!(decoded, embedding);
+        assert_eq!(
+            decode_embedding(&encode_embedding(&embedding)),
+            Some(embedding)
+        );
+        assert_eq!(decode_embedding("not-base64"), None);
+        assert_eq!(decode_embedding("YQ=="), None);
     }
 
     struct SyntheticStereoSource {

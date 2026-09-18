@@ -12,7 +12,7 @@ export const SHARE_CODE_PATTERN = /^[a-f0-9]{24}$/;
 export const SHARE_QUALIFYING_INSTALLS = 2;
 export const SHARE_INVITE_MAX = 5;
 export const SHARE_INVITEE_DAYS = 30;
-export const SHARE_REFERRER_DAYS = 365;
+export const SHARE_REFERRER_DAYS = 90;
 
 export function normalizeShareCode(raw: string): string | null {
   const normalized = raw.toLowerCase().replace(/[^a-f0-9]/g, "");

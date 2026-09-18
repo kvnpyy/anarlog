@@ -48,7 +48,7 @@ export function FinalDescription() {
     return (
       <span>
         {PRODUCT_TAGLINE} Share {PRODUCT_NAME} with 2 people who confirm a work
-        email and you get a year of Pro — send invites in Settings → Pro.
+        email and you get 3 months of Pro — send invites in Settings → Pro.
       </span>
     );
   }

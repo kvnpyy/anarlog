@@ -168,7 +168,7 @@ describe("acorn share codes", () => {
     );
   });
 
-  it("grants the referrer a year after two installs", async () => {
+  it("grants the referrer 3 months after two installs", async () => {
     mocks.getStoredSettingValues.mockResolvedValue({
       values: {
         acorn_share_code: "aaaaaaaaaaaaaaaaaaaaaaaa",
@@ -182,5 +182,9 @@ describe("acorn share codes", () => {
       "share",
       expect.any(String),
     );
+    const expiresAt = mocks.setAcornProEntitlement.mock.calls[0]?.[2] as string;
+    const remainingMs = Date.parse(expiresAt) - Date.now();
+    expect(remainingMs).toBeGreaterThan(89 * 86_400_000);
+    expect(remainingMs).toBeLessThan(91 * 86_400_000);
   });
 });

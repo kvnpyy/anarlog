@@ -88,6 +88,21 @@ describe("SegmentKeyUtils", () => {
     expect(SegmentKeyUtils.renderLabel(key, twoPersonCtx)).toBe("Artem");
   });
 
+  it("labels unknown speakers with a suggested name", () => {
+    const key: Parameters<typeof SegmentKeyUtils.renderLabel>[0] = {
+      channel: "MixedCapture",
+      speaker_index: 1,
+      speaker_human_id: null,
+    };
+    const ctx: RenderLabelContext = {
+      getSelfHumanId: () => "self",
+      getHumanName: (id) => (id === "ada" ? "Ada" : undefined),
+      getSuggestedHumanId: () => "ada",
+    };
+
+    expect(SegmentKeyUtils.renderLabel(key, ctx)).toBe("Ada?");
+  });
+
   it("derives max speaker number from distinct participants plus self", () => {
     expect(getMaxSpeakerNumberForParticipants(["remote"], "self")).toBe(2);
     expect(getMaxSpeakerNumberForParticipants(["self", "remote"], "self")).toBe(

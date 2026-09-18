@@ -119,6 +119,7 @@ function PersistedTranscript({
     maxSpeakerNumber,
     request,
     segments: storedSegments,
+    suggestions,
   } = useRenderedTranscriptData(transcriptId, currentActive, captureGeneration);
   const mergedSegments = useMemo(() => {
     const merged = mergeRenderedAndLiveSegments(
@@ -143,6 +144,7 @@ function PersistedTranscript({
       audioExists={audioExists}
       maxSpeakerNumber={maxSpeakerNumber}
       request={request}
+      suggestions={suggestions}
       editMode={editMode}
     />
   );
@@ -159,6 +161,7 @@ function TranscriptSegments({
   audioExists,
   maxSpeakerNumber,
   request,
+  suggestions,
   editMode,
 }: {
   segments: Segment[];
@@ -171,6 +174,11 @@ function TranscriptSegments({
   audioExists: boolean;
   maxSpeakerNumber?: number;
   request: RenderTranscriptRequest | null;
+  suggestions: Array<{
+    channel: number;
+    speakerIndex: number | null;
+    humanId: string;
+  }>;
   editMode: boolean;
 }) {
   const segments = useStableSegments(rawSegments);
@@ -181,12 +189,29 @@ function TranscriptSegments({
     const names = new Map(
       request.humans.map((human) => [human.human_id, human.name]),
     );
+    const suggestionByCluster = new Map(
+      suggestions.map((suggestion) => [
+        `${suggestion.channel}:${suggestion.speakerIndex ?? "none"}`,
+        suggestion.humanId,
+      ]),
+    );
     return {
       getSelfHumanId: () => request.self_human_id ?? undefined,
       getHumanName: (humanId) => names.get(humanId),
       getParticipantHumanIds: () => request.participant_human_ids,
+      getSuggestedHumanId: (key) => {
+        const channel =
+          key.channel === "DirectMic"
+            ? 0
+            : key.channel === "RemoteParty"
+              ? 1
+              : 2;
+        return suggestionByCluster.get(
+          `${channel}:${key.speaker_index ?? "none"}`,
+        );
+      },
     };
-  }, [request]);
+  }, [request, suggestions]);
 
   if (segments.length === 0) {
     return null;
@@ -361,6 +386,9 @@ const SegmentsList = memo(
                     speakerLabels.get(segment) ??
                     SegmentKeyUtils.renderLabel(segment.key)
                   }
+                  suggestedHumanId={labelContext?.getSuggestedHumanId?.(
+                    segment.key,
+                  )}
                   currentMs={currentMs}
                   seekAndPlay={seekAndPlay}
                   audioExists={audioExists}

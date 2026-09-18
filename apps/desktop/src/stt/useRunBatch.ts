@@ -17,7 +17,10 @@ import {
   deleteProcessedAudioForRetention,
   normalizeAudioRetention,
 } from "~/services/audio-retention";
-import { maybeExtractVoiceprintCandidates } from "~/services/voiceprint";
+import {
+  maybeExtractVoiceprintCandidates,
+  maybeIdentifyTranscriptSpeakers,
+} from "~/services/voiceprint";
 import { markSessionAudioTranscriptionComplete } from "~/session/attachments";
 import { useSession, useSessionParticipants } from "~/session/queries";
 import { useConfigValue } from "~/shared/config";
@@ -998,6 +1001,10 @@ export const useRunBatch = (sessionId: string) => {
                     sessionId,
                     transcriptId: completedTranscriptId,
                     audioPath: filePath,
+                  });
+                  await maybeIdentifyTranscriptSpeakers({
+                    sessionId,
+                    transcriptId: completedTranscriptId,
                   });
                 }
               }

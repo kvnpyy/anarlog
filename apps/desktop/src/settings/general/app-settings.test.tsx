@@ -105,7 +105,7 @@ describe("AppSettingsView", () => {
   it("keeps Pro sharing on its dedicated settings page", () => {
     renderAppSettings();
 
-    expect(screen.queryByText("Share Acorn, get a year of Pro")).toBeNull();
+    expect(screen.queryByText("Share Acorn, get 3 months of Pro")).toBeNull();
     expect(screen.queryByLabelText("Have a Pro invite?")).toBeNull();
   });
 

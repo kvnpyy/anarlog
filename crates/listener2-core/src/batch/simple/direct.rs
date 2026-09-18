@@ -109,7 +109,7 @@ async fn run_anarlog_batch(
         &AdapterKind::Anarlog.to_string(),
         params,
         listen_params,
-        None,
+        AdapterKind::Anarlog.batch_upload_limit(),
     )
     .await
 }

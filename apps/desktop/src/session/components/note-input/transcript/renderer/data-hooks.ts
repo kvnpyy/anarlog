@@ -18,6 +18,7 @@ import {
   getRenderTranscriptRequestKey,
   renderTranscriptSegments,
 } from "~/stt/render-transcript";
+import { collectSuggestedSpeakerAssignments } from "~/stt/speaker-identity";
 
 export function useRenderedTranscriptSegments(transcriptId: string): Segment[] {
   return useRenderedTranscriptData(transcriptId).segments;
@@ -31,8 +32,12 @@ export function useRenderedTranscriptData(
   maxSpeakerNumber?: number;
   request: RenderTranscriptRequest | null;
   segments: Segment[];
+  suggestions: ReturnType<typeof collectSuggestedSpeakerAssignments>;
 } {
-  const { request } = useTranscriptRenderData(transcriptId, !currentActive);
+  const { request, suggestions } = useTranscriptRenderData(
+    transcriptId,
+    !currentActive,
+  );
   // Recovery needs the persisted prefix. The active key stays stable across
   // word and assignment writes so tab remounts reuse the same native render.
   const activeBaselineRef = useRef<{
@@ -96,7 +101,7 @@ export function useRenderedTranscriptData(
     [request],
   );
 
-  return { maxSpeakerNumber, request, segments: data };
+  return { maxSpeakerNumber, request, segments: data, suggestions };
 }
 
 export function getTranscriptTimelineOffsetMs(

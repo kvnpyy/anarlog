@@ -7,6 +7,10 @@ import { commands as transcriptionCommands } from "@anlg/plugin-transcription";
 import { executeTransaction, liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import type { SegmentKey } from "~/stt/live-segment";
+import {
+  applySpeakerIdentityHints,
+  type SpeakerIdentityResult,
+} from "~/stt/speaker-identity";
 import { coalesceLiveTranscriptDeltas } from "~/stt/transcript-persistence-worker";
 import type { SpeakerHintWithId, WordWithId } from "~/stt/types";
 import {
@@ -495,6 +499,7 @@ export function assignTranscriptSpeaker({
           ? segmentKey.speaker_index
           : null,
         humanId,
+        null,
       )
       .then((result) => {
         if (result.status === "error") {
@@ -504,6 +509,26 @@ export function assignTranscriptSpeaker({
       .catch((error) => {
         console.error("[voiceprint] promotion failed", error);
       });
+  });
+}
+
+export function applySpeakerIdentityToTranscript(
+  transcriptId: string,
+  identity: SpeakerIdentityResult,
+): Promise<void> {
+  if (identity.assignments.length === 0 && identity.suggestions.length === 0) {
+    return Promise.resolve();
+  }
+
+  return mutateTranscript(transcriptId, (store) => {
+    updateTranscriptHints(
+      store,
+      transcriptId,
+      applySpeakerIdentityHints(
+        parseTranscriptHints(store, transcriptId),
+        identity,
+      ),
+    );
   });
 }
 

@@ -21,6 +21,7 @@ Default permissions for the plugin
 - `allow-run-denoise`
 - `allow-extract-voiceprint-candidates`
 - `allow-promote-voiceprint-candidates`
+- `allow-match-voiceprint-candidates`
 - `allow-cleanup-expired-voiceprint-candidates`
 - `allow-parse-subtitle`
 - `allow-export-to-vtt`
@@ -29,6 +30,7 @@ Default permissions for the plugin
 - `allow-list-documented-language-codes-batch`
 - `allow-extract-voiceprint-candidates`
 - `allow-promote-voiceprint-candidates`
+- `allow-match-voiceprint-candidates`
 - `allow-cleanup-expired-voiceprint-candidates`
 
 ## Permission Table
@@ -348,6 +350,32 @@ Enables the list_microphone_devices command without any pre-configured scope.
 <td>
 
 Denies the list_microphone_devices command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`transcription:allow-match-voiceprint-candidates`
+
+</td>
+<td>
+
+Enables the match_voiceprint_candidates command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`transcription:deny-match-voiceprint-candidates`
+
+</td>
+<td>
+
+Denies the match_voiceprint_candidates command without any pre-configured scope.
 
 </td>
 </tr>

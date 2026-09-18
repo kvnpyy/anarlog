@@ -199,6 +199,153 @@ describe("suggestSmartFolders", () => {
     ]);
   });
 
+  it("keeps customer meetings out of internal teammate folders", () => {
+    const suggestions = suggestSmartFolders(
+      [
+        session({ id: "customer", title: "Check-in" }),
+        session({ id: "internal", title: "Standup" }),
+        session({ id: "internal-2", title: "Standup" }),
+        session({ id: "customer-2", title: "Pricing" }),
+      ],
+      [
+        participant({
+          sessionId: "customer",
+          humanId: "bob",
+          name: "Bob",
+          email: "bob@acme.com",
+        }),
+        participant({
+          sessionId: "customer",
+          humanId: "ada",
+          name: "Ada",
+          email: "ada@contoso.com",
+          organizationName: "Contoso",
+        }),
+        participant({
+          sessionId: "customer-2",
+          humanId: "bob",
+          name: "Bob",
+          email: "bob@acme.com",
+        }),
+        participant({
+          sessionId: "customer-2",
+          humanId: "ada",
+          name: "Ada",
+          email: "ada@contoso.com",
+          organizationName: "Contoso",
+        }),
+        participant({
+          sessionId: "internal",
+          humanId: "bob",
+          name: "Bob",
+          email: "bob@acme.com",
+        }),
+        participant({
+          sessionId: "internal",
+          humanId: "lin",
+          name: "Lin",
+          email: "lin@acme.com",
+        }),
+        participant({
+          sessionId: "customer",
+          humanId: "user-1",
+          name: "Me",
+          email: "me@acme.com",
+        }),
+        participant({
+          sessionId: "customer-2",
+          humanId: "user-1",
+          name: "Me",
+          email: "me@acme.com",
+        }),
+        participant({
+          sessionId: "internal-2",
+          humanId: "bob",
+          name: "Bob",
+          email: "bob@acme.com",
+        }),
+        participant({
+          sessionId: "internal-2",
+          humanId: "lin",
+          name: "Lin",
+          email: "lin@acme.com",
+        }),
+        participant({
+          sessionId: "internal",
+          humanId: "user-1",
+          name: "Me",
+          email: "me@acme.com",
+        }),
+        participant({
+          sessionId: "internal-2",
+          humanId: "user-1",
+          name: "Me",
+          email: "me@acme.com",
+        }),
+      ],
+      "user-1",
+      "me@acme.com",
+    );
+
+    const customer = suggestions.find((item) =>
+      item.sessionIds.includes("customer"),
+    );
+    const internal = suggestions.find((item) =>
+      item.sessionIds.includes("internal"),
+    );
+    expect(customer?.sessionIds).toEqual(
+      expect.arrayContaining(["customer", "customer-2"]),
+    );
+    expect(customer?.sessionIds).not.toContain("internal");
+    expect(customer?.name).toMatch(/Contoso/);
+    expect(internal?.sessionIds).toEqual(
+      expect.arrayContaining(["internal", "internal-2"]),
+    );
+    expect(internal?.sessionIds).not.toContain("customer");
+    expect(internal?.name).toMatch(/Internal/);
+  });
+
+  it("names customer folders from the company and what was discussed", () => {
+    const suggestions = suggestSmartFolders(
+      [
+        session({
+          id: "a",
+          title: "Check-in",
+          discussed: "Q3 pricing",
+        }),
+        session({
+          id: "b",
+          title: "Follow-up",
+          discussed: "Q3 pricing",
+        }),
+      ],
+      [
+        participant({
+          sessionId: "a",
+          humanId: "ada",
+          name: "Ada",
+          email: "ada@northwind.com",
+          organizationName: "Northwind",
+        }),
+        participant({
+          sessionId: "b",
+          humanId: "ada",
+          name: "Ada",
+          email: "ada@northwind.com",
+          organizationName: "Northwind",
+        }),
+      ],
+      "user-1",
+      "me@acme.com",
+    );
+
+    expect(suggestions[0]).toMatchObject({
+      name: "Northwind · Q3 pricing",
+      reason: "shared_participants",
+      sessionIds: expect.arrayContaining(["a", "b"]),
+    });
+  });
+
   it("ignores generic titles and already filed notes", () => {
     expect(
       suggestSmartFolders(

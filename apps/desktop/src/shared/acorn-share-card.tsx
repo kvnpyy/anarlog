@@ -229,7 +229,7 @@ export function AcornShareCard() {
     <section className="border-border/80 bg-background/30 flex min-w-0 flex-col gap-4 rounded-2xl border p-4">
       <div className="flex flex-col gap-1">
         <h3 className="text-sm font-medium">
-          Share {PRODUCT_NAME}, get a year of Pro
+          Share {PRODUCT_NAME}, get 3 months of Pro
         </h3>
         <p className="text-muted-foreground text-sm leading-5">
           Invite two people. We’ll email them a download link and a code. They
@@ -460,7 +460,7 @@ function ShareProgress({
   if (granted) {
     return (
       <p className="text-sm font-medium">
-        Unlocked: a year of Pro on this Mac.
+        Unlocked: 3 months of Pro on this Mac.
       </p>
     );
   }

@@ -1,4 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SegmentHeader } from "./segment-header";
@@ -6,10 +7,39 @@ import { TranscriptSelectionProvider } from "./selection-context";
 
 import type { Segment } from "~/stt/live-segment";
 
+const mocks = vi.hoisted(() => ({
+  assignTranscriptSpeaker: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@lingui/react/macro", () => ({
+  Trans: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  useLingui: () => ({
+    t: (strings: TemplateStringsArray, ...values: unknown[]) =>
+      strings.reduce(
+        (message, part, index) =>
+          `${message}${part}${index < values.length ? String(values[index]) : ""}`,
+        "",
+      ),
+  }),
+}));
+
 vi.mock("./speaker-assign", () => ({
   SpeakerAssignPopover: ({ label }: { label: string }) => (
     <button type="button">{label}</button>
   ),
+  getAssignmentAnchorWordId: (segment: Segment) => segment.words[0]?.id,
+  getAssignmentWordIds: (segment: Segment) =>
+    segment.words
+      .map((word) => word.id)
+      .filter((wordId): wordId is string => typeof wordId === "string"),
+}));
+
+vi.mock("~/stt/queries", () => ({
+  assignTranscriptSpeaker: mocks.assignTranscriptSpeaker,
+}));
+
+vi.mock("~/analytics", () => ({
+  trackAnalyticsEvent: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -104,6 +134,33 @@ describe("SegmentHeader", () => {
     );
 
     expect(screen.getByRole("button", { name: "Speaker 1" })).toBeTruthy();
+  });
+
+  it("confirms a suggested speaker in one tap", () => {
+    render(
+      <SegmentHeader
+        transcriptId="transcript-1"
+        sessionId="session-1"
+        label="Ada?"
+        suggestedHumanId="ada"
+        segment={createRemoteSegment(1)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm speaker" }));
+
+    expect(mocks.assignTranscriptSpeaker).toHaveBeenCalledWith({
+      transcriptId: "transcript-1",
+      segmentKey: {
+        channel: "RemoteParty",
+        speaker_index: 1,
+        speaker_human_id: null,
+      },
+      humanId: "ada",
+      anchorWordId: "word-1",
+      mode: "all",
+      wordIds: ["word-1"],
+    });
   });
 });
 
