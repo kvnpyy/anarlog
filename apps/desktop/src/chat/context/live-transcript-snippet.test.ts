@@ -141,7 +141,7 @@ describe("formatRecentLiveTranscript", () => {
     expect(text).toBe(
       [
         "IN-PROGRESS TRANSCRIPT:",
-        'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else.',
+        'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else. Their "we" and "our" are not yours.',
         LIVE_TRANSCRIPT_UNLABELED_CAPTION,
         "Partial caption so far",
       ].join("\n"),

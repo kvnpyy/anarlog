@@ -5,10 +5,16 @@ import { EMPTY_DOC } from "@anlg/editor/markdown";
 import { commands as analyticsCommands } from "@anlg/plugin-analytics";
 import { sonnerToast } from "@anlg/ui/components/ui/toast";
 
+import {
+  attachmentsFromEditorJson,
+  draftLabel,
+  messagePartsFromDraft,
+} from "./attachments";
 import { DraftCache, type DraftRetentionFailure } from "./draft-cache";
 import { pushSentMessage, sentMessageAt, sentMessageCount } from "./history";
 
 import type { ContextRef } from "~/chat/context/entities";
+import type { AnlgUIMessage } from "~/chat/types";
 import { useMountEffect } from "~/shared/hooks/useMountEffect";
 
 const draftCache = new DraftCache();
@@ -28,7 +34,7 @@ export function useDraftState({
 }) {
   const initialContent = useRef(draftCache.peek(draftKey) ?? EMPTY_DOC);
   const [hasContent, setHasContent] = useState(() =>
-    hasTextContent(initialContent.current),
+    hasDraftContent(initialContent.current),
   );
 
   useMountEffect(() => {
@@ -52,7 +58,7 @@ export function useDraftState({
 
   const handleEditorUpdate = useCallback(
     (json: JSONContent) => {
-      setHasContent(hasTextContent(json));
+      setHasContent(hasDraftContent(json));
       const shouldPersist = shouldPersistUpdate?.() ?? true;
       if (shouldPersist) {
         draftCache.update(draftKey, hasDraftContent(json) ? json : undefined);
@@ -94,7 +100,7 @@ export function useSubmit({
   isStreaming?: boolean;
   onSendMessage: (
     content: string,
-    parts: Array<{ type: "text"; text: string }>,
+    parts: AnlgUIMessage["parts"],
     contextRefs?: ContextRef[],
   ) => void;
   onDraftContentChange?: (hasDraftContent: boolean) => void;
@@ -104,14 +110,16 @@ export function useSubmit({
   return useCallback(() => {
     const json = editorRef.current?.getJSON();
     const text = proseMirrorJsonToText(json).trim();
+    const attachments = attachmentsFromEditorJson(json);
+    const parts = messagePartsFromDraft(text, attachments);
     const mentionRefs = extractContextRefsFromTiptapJson(json);
 
-    if (!text || disabled) {
+    if (parts.length === 0 || disabled) {
       return;
     }
 
     void analyticsCommands.event({ event: "message_sent" });
-    onSendMessage(text, [{ type: "text", text }], mentionRefs);
+    onSendMessage(draftLabel(text, attachments), parts, mentionRefs);
     editorRef.current?.clearContent();
     draftCache.delete(draftKey);
     onDraftContentChange?.(false);

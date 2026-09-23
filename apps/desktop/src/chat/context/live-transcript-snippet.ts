@@ -13,7 +13,7 @@ export const LIVE_ASK_TRANSCRIPT_WINDOW_MS = 10 * 60 * 1000;
 export const LIVE_ASK_TRANSCRIPT_MAX_CHARS = 24_000;
 export const LIVE_TRANSCRIPT_CONTEXT_HEADER = "IN-PROGRESS TRANSCRIPT:";
 export const LIVE_TRANSCRIPT_SPEAKER_LEGEND =
-  'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else.';
+  'Labels: "You" is the person using Acorn (microphone). Other speakers are everyone else. Their "we" and "our" are not yours.';
 export const LIVE_TRANSCRIPT_UNLABELED_CAPTION =
   'Unlabeled live caption (speaker unknown). Do not treat this as "You".';
 export const LIVE_TRANSCRIPT_SILENT_USER_NOTE =

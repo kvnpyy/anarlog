@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   EnvelopeSimple,
+  File,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -18,6 +19,7 @@ import { Disclosure, MessageBubble, MessageContainer } from "./shared";
 import { Tool } from "./tool";
 import type { Part } from "./types";
 
+import { parseAttachedFileText } from "~/chat/components/input/attachments";
 import { hasRenderableContent } from "~/chat/components/shared";
 import { toCopyableChatText } from "~/chat/copy-text";
 import {
@@ -34,10 +36,16 @@ import type { AnlgUIMessage } from "~/chat/types";
 
 function getMessageText(message: AnlgUIMessage): string {
   return message.parts
-    .filter(
-      (part): part is Extract<Part, { type: "text" }> => part.type === "text",
-    )
-    .map((part) => part.text)
+    .map((part) => {
+      if (part.type === "text") {
+        return part.text;
+      }
+      if (part.type === "file") {
+        return part.filename ?? "Attachment";
+      }
+      return "";
+    })
+    .filter((text) => text.trim().length > 0)
     .join("\n");
 }
 
@@ -129,13 +137,54 @@ function Part({ part }: { part: Part }) {
     return <Reasoning part={part} />;
   }
   if (part.type === "text") {
+    const attached = parseAttachedFileText(part.text);
+    if (attached) {
+      return <AttachedFileText name={attached.name} body={attached.body} />;
+    }
     return <Text part={part} />;
+  }
+  if (part.type === "file") {
+    return <FileMessagePart part={part} />;
   }
   if (part.type === "step-start") {
     return null;
   }
 
   return <Tool part={part} />;
+}
+
+function FileMessagePart({ part }: { part: Extract<Part, { type: "file" }> }) {
+  const name = part.filename || "Attachment";
+  if (part.mediaType.startsWith("image/")) {
+    return (
+      <img
+        src={part.url}
+        alt={name}
+        className="my-1 max-h-40 max-w-full rounded-md object-contain"
+      />
+    );
+  }
+
+  return (
+    <span className="border-border bg-muted text-muted-foreground my-1 inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+      <File size={12} className="shrink-0" />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
+function AttachedFileText({ name, body }: { name: string; body: string }) {
+  return (
+    <details className="my-1 max-w-full">
+      <summary className="border-border bg-muted text-muted-foreground inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs">
+        <File size={12} className="shrink-0" />
+        <span className="truncate">{name}</span>
+      </summary>
+      <pre className="bg-muted/60 mt-1 max-h-40 max-w-full overflow-auto rounded-md p-2 text-xs whitespace-pre-wrap">
+        {body}
+      </pre>
+    </details>
+  );
 }
 
 function Reasoning({ part }: { part: Extract<Part, { type: "reasoning" }> }) {

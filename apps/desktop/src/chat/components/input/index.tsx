@@ -5,6 +5,7 @@ import {
   ArrowUp,
   CircleNotch,
   Microphone,
+  Paperclip,
   Square,
 } from "@phosphor-icons/react";
 import { useMemo, useRef } from "react";
@@ -25,6 +26,7 @@ import { useDictation } from "./use-dictation";
 
 import type { ContextRef } from "~/chat/context/entities";
 import { useChatAppearance } from "~/chat/hooks/use-chat-appearance";
+import type { AnlgUIMessage } from "~/chat/types";
 import { useShell } from "~/contexts/shell";
 import { useMentionConfig } from "~/editor-bridge/mention-config";
 
@@ -45,7 +47,7 @@ export function ChatMessageInput({
   pageIntegrated?: boolean;
   onSendMessage: (
     content: string,
-    parts: Array<{ type: "text"; text: string }>,
+    parts: AnlgUIMessage["parts"],
     contextRefs?: ContextRef[],
   ) => void;
   disabled?: boolean | { disabled: boolean; message?: string };
@@ -132,6 +134,12 @@ export function ChatMessageInput({
         ])}
         data-chat-voice-state={dictation.phase}
       >
+        {isFloating && !isStreaming && !hasVoiceStatus ? (
+          <AttachButton
+            disabled={Boolean(disabled)}
+            onFiles={(files) => editorRef.current?.addFiles(files)}
+          />
+        ) : null}
         <div className={cn([isFloating ? "min-w-0 flex-1" : "mb-1 min-h-0"])}>
           <ChatEditor
             ref={editorRef}
@@ -174,14 +182,15 @@ export function ChatMessageInput({
           <div
             className={cn([
               "flex shrink-0 items-center gap-1",
-              isFloating
-                ? "absolute right-0 bottom-0.5"
-                : isStreaming
-                  ? "justify-between"
-                  : "justify-end",
+              isFloating ? "absolute right-0 bottom-0.5" : "justify-between",
             ])}
           >
-            {isStreaming && !isFloating ? (
+            {!isFloating && !isStreaming ? (
+              <AttachButton
+                disabled={Boolean(disabled)}
+                onFiles={(files) => editorRef.current?.addFiles(files)}
+              />
+            ) : isStreaming && !isFloating ? (
               <div
                 role="status"
                 data-chat-input-thinking
@@ -191,45 +200,47 @@ export function ChatMessageInput({
                 <span className="truncate">{t`Thinking...`}</span>
               </div>
             ) : null}
-            {!isStreaming && (
-              <button
-                type="button"
-                aria-label={t`Start voice input`}
-                onClick={() => void dictation.start()}
-                disabled={Boolean(disabled)}
-                className={cn([
-                  "text-muted-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
-                  "disabled:cursor-default disabled:opacity-45",
-                ])}
-              >
-                <Microphone size={17} weight="regular" />
-              </button>
-            )}
-            {isStreaming ? (
-              <>
-                {isFloating ? (
-                  <span
-                    role="status"
-                    data-chat-input-thinking
-                    className="text-muted-foreground inline-flex size-7 items-center justify-center"
-                  >
-                    <CircleNotch className="size-3.5 animate-spin" />
-                    <span className="sr-only">{t`Thinking...`}</span>
-                  </span>
-                ) : null}
-                <Button
-                  onClick={onStop}
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 rounded-full"
-                  aria-label={t`Stop response`}
+            <div className="flex shrink-0 items-center gap-1">
+              {!isStreaming && (
+                <button
+                  type="button"
+                  aria-label={t`Start voice input`}
+                  onClick={() => void dictation.start()}
+                  disabled={Boolean(disabled)}
+                  className={cn([
+                    "text-muted-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
+                    "disabled:cursor-default disabled:opacity-45",
+                  ])}
                 >
-                  <Square size={14} weight="fill" />
-                </Button>
-              </>
-            ) : showSendControl ? (
-              <SendButton disabled={isSendDisabled} onClick={handleSubmit} />
-            ) : null}
+                  <Microphone size={17} weight="regular" />
+                </button>
+              )}
+              {isStreaming ? (
+                <>
+                  {isFloating ? (
+                    <span
+                      role="status"
+                      data-chat-input-thinking
+                      className="text-muted-foreground inline-flex size-7 items-center justify-center"
+                    >
+                      <CircleNotch className="size-3.5 animate-spin" />
+                      <span className="sr-only">{t`Thinking...`}</span>
+                    </span>
+                  ) : null}
+                  <Button
+                    onClick={onStop}
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 rounded-full"
+                    aria-label={t`Stop response`}
+                  >
+                    <Square size={14} weight="fill" />
+                  </Button>
+                </>
+              ) : showSendControl ? (
+                <SendButton disabled={isSendDisabled} onClick={handleSubmit} />
+              ) : null}
+            </div>
           </div>
         )}
       </div>
@@ -290,6 +301,47 @@ function Container({
         {children}
       </div>
     </div>
+  );
+}
+
+function AttachButton({
+  disabled,
+  onFiles,
+}: {
+  disabled: boolean;
+  onFiles: (files: File[]) => void;
+}) {
+  const { t } = useLingui();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          if (files.length > 0) {
+            onFiles(files);
+          }
+          event.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        aria-label={t`Attach file`}
+        onClick={() => inputRef.current?.click()}
+        disabled={disabled}
+        className={cn([
+          "text-muted-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
+          "disabled:cursor-default disabled:opacity-45",
+        ])}
+      >
+        <Paperclip size={16} />
+      </button>
+    </>
   );
 }
 

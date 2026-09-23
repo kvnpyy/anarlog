@@ -71,6 +71,7 @@ export interface ChatEditorHandle {
   getJSON(): JSONContent | undefined;
   clearContent(): void;
   insertText(text: string): void;
+  addFiles(files: File[]): void;
   replaceContent(content: JSONContent, selection?: "start" | "end"): void;
 }
 
@@ -113,27 +114,47 @@ const mac =
     ? /Mac|iP(hone|[oa]d)/.test(navigator.platform)
     : false;
 
-function fileHandlerPlugin(onAttachmentError: (message: string) => void) {
-  const pendingImages = { bytes: 0 };
-
+function fileHandlerPlugin(
+  pendingImages: { bytes: number },
+  onAttachmentError: (message: string) => void,
+) {
   return new Plugin({
     key: new PluginKey("chatFileHandler"),
     props: {
       handleDrop(view, event) {
-        const files = Array.from(event.dataTransfer?.files ?? []);
+        const files = filesFromTransfer(event.dataTransfer);
         if (files.length === 0) return false;
         event.preventDefault();
         insertFiles(view, files, pendingImages, onAttachmentError);
         return true;
       },
       handlePaste(view, event) {
-        const files = Array.from(event.clipboardData?.files ?? []);
+        const files = filesFromTransfer(event.clipboardData);
         if (files.length === 0) return false;
         insertFiles(view, files, pendingImages, onAttachmentError);
         return true;
       },
     },
   });
+}
+
+function filesFromTransfer(transfer: DataTransfer | null): File[] {
+  const listed = Array.from(transfer?.files ?? []);
+  if (listed.length > 0) {
+    return listed;
+  }
+
+  const files: File[] = [];
+  for (const item of Array.from(transfer?.items ?? [])) {
+    if (item.kind !== "file") {
+      continue;
+    }
+    const file = item.getAsFile();
+    if (file) {
+      files.push(file);
+    }
+  }
+  return files;
 }
 
 function insertFiles(
@@ -143,68 +164,80 @@ function insertFiles(
   onAttachmentError: (message: string) => void,
 ) {
   for (const file of files) {
-    if (file.type.startsWith("image/")) {
-      if (file.size > MAX_CHAT_IMAGE_BYTES) {
-        onAttachmentError("Images must be 8 MB or smaller.");
-        continue;
-      }
-      const currentDraftBytes = utf8Length(
-        JSON.stringify(view.state.doc.toJSON()),
+    const isImage = file.type.startsWith("image/");
+    if (file.size > MAX_CHAT_IMAGE_BYTES) {
+      onAttachmentError(
+        isImage
+          ? "Images must be 8 MB or smaller."
+          : "Files must be 8 MB or smaller.",
       );
-      if (
-        !canRetainChatImage({
-          fileSize: file.size,
-          mimeType: file.type,
-          currentDraftBytes,
-          pendingImageBytes: pendingImages.bytes,
-        })
-      ) {
-        onAttachmentError(
-          "This image would make the chat draft too large. Remove another image and try again.",
-        );
-        continue;
-      }
+      continue;
+    }
+    const currentDraftBytes = utf8Length(
+      JSON.stringify(view.state.doc.toJSON()),
+    );
+    if (
+      !canRetainChatImage({
+        fileSize: file.size,
+        mimeType: file.type || "application/octet-stream",
+        currentDraftBytes,
+        pendingImageBytes: pendingImages.bytes,
+      })
+    ) {
+      onAttachmentError(
+        isImage
+          ? "This image would make the chat draft too large. Remove another image and try again."
+          : "This file would make the chat draft too large. Remove another attachment and try again.",
+      );
+      continue;
+    }
 
-      const reservedBytes =
-        estimateImageDataUrlBytes(file.size, file.type) +
+    const reservedBytes =
+      estimateImageDataUrlBytes(
+        file.size,
+        file.type || "application/octet-stream",
+      ) + CHAT_ATTACHMENT_OVERHEAD_BYTES;
+    pendingImages.bytes += reservedBytes;
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      pendingImages.bytes -= reservedBytes;
+      const url = reader.result as string;
+      const nextDraftBytes =
+        utf8Length(JSON.stringify(view.state.doc.toJSON())) +
+        utf8Length(url) +
         CHAT_ATTACHMENT_OVERHEAD_BYTES;
-      pendingImages.bytes += reservedBytes;
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        pendingImages.bytes -= reservedBytes;
-        const url = reader.result as string;
-        const nextDraftBytes =
-          utf8Length(JSON.stringify(view.state.doc.toJSON())) +
-          utf8Length(url) +
-          CHAT_ATTACHMENT_OVERHEAD_BYTES;
-        if (nextDraftBytes > MAX_CHAT_DRAFT_BYTES) {
-          onAttachmentError(
-            "This image would make the chat draft too large. Remove another image and try again.",
-          );
-          return;
-        }
-        insertAttachmentNode(view, {
-          id: crypto.randomUUID(),
-          name: file.name,
-          mimeType: file.type,
-          url,
-          size: file.size,
-        });
-      };
-      reader.onerror = reader.onabort = () => {
-        pendingImages.bytes -= reservedBytes;
-      };
-    } else {
+      if (nextDraftBytes > MAX_CHAT_DRAFT_BYTES) {
+        onAttachmentError(
+          isImage
+            ? "This image would make the chat draft too large. Remove another image and try again."
+            : "This file would make the chat draft too large. Remove another attachment and try again.",
+        );
+        return;
+      }
       insertAttachmentNode(view, {
         id: crypto.randomUUID(),
-        name: file.name,
+        name: attachmentName(file),
         mimeType: file.type,
-        url: null,
+        url,
         size: file.size,
       });
-    }
+    };
+    reader.onerror = reader.onabort = () => {
+      pendingImages.bytes -= reservedBytes;
+    };
   }
+}
+
+function attachmentName(file: File): string {
+  const name = file.name.trim();
+  if (name) {
+    return name;
+  }
+  if (file.type.startsWith("image/")) {
+    return "Pasted image";
+  }
+  return "Pasted file";
 }
 
 function insertAttachmentNode(
@@ -249,6 +282,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
     onHistoryNavigateRef.current = onHistoryNavigate;
     const onAttachmentErrorRef = useRef(onAttachmentError);
     onAttachmentErrorRef.current = onAttachmentError;
+    const pendingImagesRef = useRef({ bytes: 0 });
 
     useImperativeHandle(
       ref,
@@ -275,6 +309,13 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
             doc.content,
           );
           view.dispatch(tr);
+        },
+        addFiles(files) {
+          const view = viewRef.current;
+          if (!view || files.length === 0) return;
+          insertFiles(view, files, pendingImagesRef.current, (message) =>
+            onAttachmentErrorRef.current?.(message),
+          );
         },
         insertText(text) {
           const view = viewRef.current;
@@ -393,7 +434,9 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
         history(),
         placeholderPlugin(placeholder),
         ...(mentionConfig ? [mentionSkipPlugin()] : []),
-        fileHandlerPlugin((message) => onAttachmentErrorRef.current?.(message)),
+        fileHandlerPlugin(pendingImagesRef.current, (message) =>
+          onAttachmentErrorRef.current?.(message),
+        ),
       ];
     }, [mentionConfig, placeholder, submitShortcut]);
 

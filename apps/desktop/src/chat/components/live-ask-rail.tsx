@@ -62,7 +62,7 @@ export function LiveAskRail({
           {
             label: t`Sound smart`,
             icon: Lightning,
-            prompt: t`Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise talking points in my voice that I can say next. Do not claim I already said them.`,
+            prompt: t`Help me sound smart in this meeting. Using only the in-progress transcript from the last 10 minutes, give 2-3 concise lines I can say next, in my voice. I am the person labeled You:. Infer my company and role from my lines, not from the other party's "we" or "our". On a vendor and customer call, write only what my side would say next. If I am the vendor, answer their concerns, clarify what we own, and propose the next step — never their internal recap, their team's problems, or questions they would ask me. Do not claim I already said them.`,
             transcriptWindowMs: LIVE_ASK_TRANSCRIPT_WINDOW_MS,
           },
           {

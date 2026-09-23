@@ -478,6 +478,32 @@ describe("ChatContent", () => {
     expect(screen.queryByTestId("context-bar")).toBeNull();
   });
 
+  it("lets the note composer switch to asking across meetings", () => {
+    const onToggle = vi.fn();
+    render(
+      <ChatContent
+        sessionId="active-session"
+        messages={[]}
+        sendMessage={vi.fn()}
+        regenerate={vi.fn()}
+        stop={vi.fn()}
+        status="ready"
+        model={{} as never}
+        handleSendMessage={vi.fn()}
+        contextEntities={[]}
+        pendingRefs={[]}
+        isSystemPromptReady
+        pageIntegrated
+        askScope={{ label: "Ask across meetings", onToggle }}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ask across meetings" }),
+    );
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
   it("keeps context chips on workspace Ask", () => {
     render(
       <ChatContent

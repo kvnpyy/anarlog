@@ -131,6 +131,7 @@ describe("ChatView", () => {
     mocks.requestedLiveTranscription = null;
     mocks.liveTranscriptionActive = null;
     mocks.toolbarControls.mockClear();
+    mocks.chat.workspaceAsk = false;
   });
 
   it("passes batch-only recording state to the chat session", () => {
@@ -223,6 +224,19 @@ describe("ChatView", () => {
       root?.firstElementChild?.hasAttribute("data-tauri-drag-region"),
     ).toBe(false);
     expect(screen.getByTestId("chat-toolbar").dataset.surface).toBe("light");
+  });
+
+  it("does not pin the open note when asking across meetings", () => {
+    mocks.chat.workspaceAsk = true;
+
+    render(<ChatView />);
+
+    expect(mocks.chatSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentSessionId: undefined,
+        isLiveAsk: false,
+      }),
+    );
   });
 
   it("asks the open note instead of the live meeting when another call is in progress", () => {

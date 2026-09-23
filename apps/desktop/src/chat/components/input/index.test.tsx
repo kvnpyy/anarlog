@@ -251,15 +251,16 @@ describe("ChatMessageInput", () => {
     expect(onDraftContentChange).toHaveBeenLastCalledWith(false);
   });
 
-  it("tracks attachment-only drafts without enabling text send", () => {
+  it("sends an attachment-only draft so the model can read it", () => {
     shellState.mode = "RightPanelOpen";
+    const onSendMessage = vi.fn();
     const onDraftContentChange = vi.fn();
     render(
       <ChatMessageInput
         draftKey="chat-input-test"
         layout="right-panel"
         onDraftContentChange={onDraftContentChange}
-        onSendMessage={vi.fn()}
+        onSendMessage={onSendMessage}
       />,
     );
 
@@ -292,7 +293,22 @@ describe("ChatMessageInput", () => {
     });
 
     expect(onDraftContentChange).toHaveBeenCalledWith(true);
-    expect(sendButton.disabled).toBe(true);
+    expect(sendButton.disabled).toBe(false);
+
+    fireEvent.click(sendButton);
+
+    expect(onSendMessage).toHaveBeenCalledWith(
+      "image.png",
+      [
+        {
+          type: "file",
+          mediaType: "image/png",
+          filename: "image.png",
+          url: "data:image/png;base64,abc",
+        },
+      ],
+      [],
+    );
   });
 
   it("shows thinking in the composer while a reply is in flight", () => {
@@ -541,7 +557,7 @@ describe("ChatMessageInput", () => {
     const sendButton = screen.getByRole<HTMLButtonElement>("button", {
       name: /send/i,
     });
-    const sendControl = sendButton.parentElement;
+    const sendControl = sendButton.parentElement?.parentElement;
     const messageInput = screen
       .getByTestId("chat-editor")
       .closest("[data-chat-message-input]");

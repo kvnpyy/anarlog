@@ -98,6 +98,11 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Never give questions for the other party");
     expect(prompt).toContain("in their role");
     expect(prompt).toContain("Never as the other party's internal recap");
+    expect(prompt).toContain("Lines to say next are only for the Acorn user");
+    expect(prompt).toContain("they are correcting their side");
+    expect(prompt).toContain(
+      "do not treat the correction as a switch from questions to statements",
+    );
     expect(prompt).toContain(
       'Never attribute speech, questions, or leadership to "You"',
     );

@@ -26,6 +26,7 @@ import { ChatSession } from "~/chat/components/session-provider";
 import { dedupeByKey, type ContextRef } from "~/chat/context/entities";
 import { useChatGroup } from "~/chat/store/queries";
 import { useChatActions } from "~/chat/store/use-chat-actions";
+import type { AnlgUIMessage } from "~/chat/types";
 import { useShell } from "~/contexts/shell";
 import { useMentionConfig } from "~/editor-bridge/mention-config";
 import { useOwnerUserId } from "~/shared/owner-user";
@@ -78,7 +79,7 @@ export function ComposerScreen() {
         {(sessionProps) => {
           const sendMessage = (
             content: string,
-            parts: Array<{ type: "text"; text: string }>,
+            parts: AnlgUIMessage["parts"],
             contextRefs?: ContextRef[],
           ) => {
             handleSendMessage(
@@ -175,7 +176,7 @@ function ComposerInput({
   title: string;
   onSendMessage: (
     content: string,
-    parts: Array<{ type: "text"; text: string }>,
+    parts: AnlgUIMessage["parts"],
     contextRefs?: ContextRef[],
   ) => void;
 }) {

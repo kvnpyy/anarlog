@@ -45,6 +45,12 @@ describe("LiveAskRail", () => {
     expect(onSendMessage.mock.calls[1]?.[3]).toContain(
       "Do not claim I already said them",
     );
+    expect(onSendMessage.mock.calls[1]?.[3]).toContain(
+      'not from the other party\'s "we" or "our"',
+    );
+    expect(onSendMessage.mock.calls[1]?.[3]).toContain(
+      "never their internal recap",
+    );
     expect(onSendMessage.mock.calls[1]?.[4]).toBe(
       LIVE_ASK_TRANSCRIPT_WINDOW_MS,
     );

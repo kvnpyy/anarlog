@@ -20,6 +20,7 @@ import {
 import { useShell } from "~/contexts/shell";
 import { useSessionHasTranscript } from "~/session/queries";
 import { useOwnerUserId } from "~/shared/owner-user";
+import { useFolderFilter } from "~/store/zustand/folder-filter";
 import { isBatchTranscriptionPending } from "~/store/zustand/listener/general-shared";
 import { useListener } from "~/stt/contexts";
 
@@ -74,7 +75,7 @@ export function ChatSessionHost({
     return state.getSessionMode(sessionId) === "active";
   });
   const contextSessionId =
-    chat.scope === "automations"
+    chat.scope === "automations" || (!isLiveAsk && chat.workspaceAsk)
       ? undefined
       : isLiveAsk
         ? (liveSessionId ?? currentSessionId)
@@ -131,6 +132,7 @@ export function ChatPanelFrame({
   const { chat } = useShell();
   const { groupId, setGroupId, rollbackFailedGroup } = chat;
   const { currentSessionId } = useSessionTab();
+  const folderName = useFolderFilter((state) => state.activeFolderPath);
   const { panelClassName, toolbarSurface } = useChatAppearance();
   const isFloating = layout === "floating";
   const isInline = layout === "inline";
@@ -246,6 +248,24 @@ export function ChatPanelFrame({
           handleSendMessage={handleSendMessageWithActivate}
           isRecording={sessionProps.isLiveAsk}
           isBatchOnly={chat.isBatchOnly}
+          askScope={
+            pageIntegrated &&
+            chat.scope === "general" &&
+            Boolean(currentSessionId) &&
+            !chat.isRecording &&
+            !sessionProps.isLiveAsk
+              ? {
+                  label: chat.workspaceAsk
+                    ? t`Ask this meeting`
+                    : folderName
+                      ? t`Ask this folder`
+                      : t`Ask across meetings`,
+                  onToggle: chat.workspaceAsk
+                    ? chat.openMeetingAsk
+                    : chat.openWorkspaceAsk,
+                }
+              : undefined
+          }
           placeholder={
             currentSessionId && !chat.workspaceAsk
               ? t`Ask this meeting`

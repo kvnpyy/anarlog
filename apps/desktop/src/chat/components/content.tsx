@@ -58,6 +58,7 @@ export function ChatContent({
   isRecording = false,
   isBatchOnly = false,
   placeholder,
+  askScope,
   children,
 }: {
   layout?: "floating" | "right-panel" | "inline";
@@ -89,6 +90,10 @@ export function ChatContent({
   isRecording?: boolean;
   isBatchOnly?: boolean;
   placeholder?: string;
+  askScope?: {
+    label: string;
+    onToggle: () => void;
+  };
   children?: React.ReactNode;
 }) {
   const isModelConfigured = !!model;
@@ -330,6 +335,18 @@ export function ChatContent({
             />
           )}
           {showThinking && !collapseThread ? <ChatThinkingStatus /> : null}
+          {askScope ? (
+            <div className="flex shrink-0 justify-center px-1 pb-1.5">
+              <button
+                type="button"
+                data-chat-scope-switch
+                onClick={askScope.onToggle}
+                className="border-border bg-card text-muted-foreground hover:bg-muted/55 hover:text-foreground inline-flex items-center rounded-full border px-3 py-1 text-xs"
+              >
+                {askScope.label}
+              </button>
+            </div>
+          ) : null}
           <ChatMessageInput
             draftKey={sessionId}
             layout={layout}
