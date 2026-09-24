@@ -63,11 +63,24 @@ export type SegmentChannelProfile = BoundChannelProfile;
 
 const REPLACEMENT_TIME_BUCKET_MS = 1_000;
 
+const DISCOVERED_SPEAKER_LABEL_CAP = 8;
+
 export class SpeakerLabelManager {
   private unknownSpeakerMap: Map<string, number> = new Map();
+  private remoteSpeakerIndexes: Set<number | null> = new Set();
   private nextIndex = 1;
 
   constructor(private readonly maxUnknownSpeakerNumber?: number) {}
+
+  observe(key: SegmentKey) {
+    if (key.channel === "RemoteParty" && !key.speaker_human_id) {
+      this.remoteSpeakerIndexes.add(key.speaker_index ?? null);
+    }
+  }
+
+  hasSingleRemoteCluster() {
+    return this.remoteSpeakerIndexes.size <= 1;
+  }
 
   getUnknownSpeakerNumber(key: SegmentKey): number {
     const serialized = SegmentKeyUtils.serialize(key);
@@ -92,6 +105,7 @@ export class SpeakerLabelManager {
   ): SpeakerLabelManager {
     const manager = new SpeakerLabelManager(maxUnknownSpeakerNumber);
     for (const segment of segments) {
+      manager.observe(segment.key);
       if (!SegmentKeyUtils.isKnownSpeaker(segment.key, ctx)) {
         manager.getUnknownSpeakerNumber(segment.key);
       }
@@ -118,7 +132,11 @@ export const SegmentKeyUtils = {
       return Boolean(ctx.getSelfHumanId());
     }
 
-    if (ctx && key.channel === "RemoteParty") {
+    if (
+      ctx &&
+      key.channel === "RemoteParty" &&
+      (key.speaker_index === null || key.speaker_index === undefined)
+    ) {
       return Boolean(getUniqueRemoteParticipantHumanId(ctx));
     }
 
@@ -148,9 +166,14 @@ export const SegmentKeyUtils = {
     }
 
     if (ctx && key.channel === "RemoteParty" && assignedHumanId == null) {
-      const remoteHumanId = getUniqueRemoteParticipantHumanId(ctx);
-      if (remoteHumanId) {
-        return ctx.getHumanName(remoteHumanId) || remoteHumanId;
+      const singleRemoteCluster = manager
+        ? manager.hasSingleRemoteCluster()
+        : key.speaker_index === null || key.speaker_index === undefined;
+      if (singleRemoteCluster) {
+        const remoteHumanId = getUniqueRemoteParticipantHumanId(ctx);
+        if (remoteHumanId) {
+          return ctx.getHumanName(remoteHumanId) || remoteHumanId;
+        }
       }
     }
 
@@ -207,7 +230,7 @@ export function getMaxSpeakerNumberForParticipants(
     ids.add(selfHumanId);
   }
 
-  return ids.size > 1 ? ids.size : undefined;
+  return ids.size > 1 ? DISCOVERED_SPEAKER_LABEL_CAP : undefined;
 }
 
 export function mergeRenderedAndLiveSegments(

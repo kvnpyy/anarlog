@@ -107,6 +107,9 @@ pub(super) fn assign_complete_channel_human_id(segment: &mut ProtoSegment, state
     if !state.complete_channels.contains(&channel) {
         return;
     }
+    if channel != ChannelProfile::DirectMic && segment.key.speaker_index.is_some() {
+        return;
+    }
 
     if let Some(human_id) = state.human_id_by_channel.get(&channel) {
         segment.key = SegmentKey {
@@ -132,8 +135,11 @@ fn apply_identity_rules(
         identity.human_id = Some(human_id.clone());
     }
 
+    let channel_identity_applies = state.complete_channels.contains(&word.channel)
+        && (word.channel == ChannelProfile::DirectMic
+            || (identity.speaker_index.is_none() && word.speaker_index.is_none()));
     if identity.human_id.is_none()
-        && state.complete_channels.contains(&word.channel)
+        && channel_identity_applies
         && let Some(human_id) = state.human_id_by_channel.get(&word.channel)
     {
         identity.human_id = Some(human_id.clone());

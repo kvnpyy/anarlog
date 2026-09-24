@@ -506,26 +506,40 @@ fn long_exact_speaker_diarization_is_omitted_from_the_plan() {
     let error =
         ensure_soniqo_diarization_within_limit(SONIQO_DIARIZATION_MAX_SAMPLES + 1).unwrap_err();
 
-    assert!(error.contains("10 minutes"));
-    assert!(error.contains("without an exact speaker count"));
+    assert!(error.contains("30 minutes"));
+    assert!(error.contains("another transcription provider"));
 
     let maximum_channel = [SONIQO_DIARIZATION_MAX_SAMPLES];
     assert!(soniqo_diarization_plan_within_limit(
         &maximum_channel,
-        Some(2)
+        None,
+        false
     ));
     let long_channel = [SONIQO_DIARIZATION_MAX_SAMPLES + 1];
-    assert!(soniqo_diarization_plan_within_limit(&long_channel, None));
+    assert!(soniqo_diarization_plan_within_limit(
+        &long_channel,
+        Some(1),
+        false
+    ));
     assert!(!soniqo_diarization_plan_within_limit(
         &long_channel,
-        Some(2)
+        None,
+        false
     ));
     let long_stereo = [
         SONIQO_DIARIZATION_MAX_SAMPLES + 1,
         SONIQO_DIARIZATION_MAX_SAMPLES + 1,
     ];
-    assert!(soniqo_diarization_plan_within_limit(&long_stereo, Some(2)));
-    assert!(!soniqo_diarization_plan_within_limit(&long_stereo, Some(3)));
+    assert!(soniqo_diarization_plan_within_limit(
+        &long_stereo,
+        None,
+        true
+    ));
+    assert!(!soniqo_diarization_plan_within_limit(
+        &long_stereo,
+        None,
+        false
+    ));
 }
 
 #[test]
@@ -636,16 +650,17 @@ fn soniqo_language_hint_uses_base_language_code() {
 }
 
 #[test]
-fn soniqo_diarization_uses_remote_count_for_system_channel() {
-    assert_eq!(soniqo_diarization_speaker_count(Some(3), 2, 0), None);
-    assert_eq!(soniqo_diarization_speaker_count(Some(3), 2, 1), Some(2));
-}
+fn soniqo_diarization_discovers_speakers_on_mixed_audio() {
+    let bounds = anlg_transcribe_soniqo::DiarizationBounds::DISCOVERED;
 
-#[test]
-fn soniqo_diarization_uses_total_count_for_mono_audio() {
-    assert_eq!(soniqo_diarization_speaker_count(Some(2), 1, 0), Some(2));
-    assert_eq!(soniqo_diarization_speaker_count(Some(1), 1, 0), None);
-    assert_eq!(soniqo_diarization_speaker_count(None, 1, 0), None);
+    assert_eq!(soniqo_diarization_bounds(None, 2, 0, false), None);
+    assert_eq!(
+        soniqo_diarization_bounds(Some(3), 2, 1, false),
+        Some(bounds)
+    );
+    assert_eq!(soniqo_diarization_bounds(None, 2, 1, true), None);
+    assert_eq!(soniqo_diarization_bounds(Some(1), 1, 0, false), None);
+    assert_eq!(soniqo_diarization_bounds(None, 1, 0, false), Some(bounds));
 }
 
 #[test]

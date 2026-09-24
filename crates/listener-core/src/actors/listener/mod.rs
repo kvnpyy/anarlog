@@ -421,6 +421,8 @@ fn process_stream_response(
         ));
     }
 
+    clamp_capture_speaker_indices(&mut response, state.args.mode);
+
     match state.args.mode {
         crate::actors::ChannelMode::MicOnly => response.remap_channel_index(0, 2),
         crate::actors::ChannelMode::SpeakerOnly => response.remap_channel_index(1, 2),
@@ -447,6 +449,22 @@ fn process_stream_response(
     }
 
     None
+}
+
+const DISCOVERED_REMOTE_SPEAKER_INDEX: i32 = 7;
+
+fn clamp_capture_speaker_indices(response: &mut StreamResponse, mode: crate::actors::ChannelMode) {
+    let channel_index = match response {
+        StreamResponse::TranscriptResponse { channel_index, .. } => channel_index.first().copied(),
+        _ => return,
+    };
+    let max_speaker_index = match mode {
+        crate::actors::ChannelMode::MicOnly => 0,
+        crate::actors::ChannelMode::SpeakerOnly => DISCOVERED_REMOTE_SPEAKER_INDEX,
+        crate::actors::ChannelMode::MicAndSpeaker if channel_index == Some(0) => 0,
+        crate::actors::ChannelMode::MicAndSpeaker => DISCOVERED_REMOTE_SPEAKER_INDEX,
+    };
+    crate::live_transcript::clamp_response_speaker_indices(response, max_speaker_index);
 }
 
 fn classify_provider_error(

@@ -65,10 +65,11 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-// Takes the install-at-open intent and returns it for the next tick. A
-// completed pass installs (which restarts the app) and consumes the intent;
-// a meeting deferral or a transient check/download/install failure (e.g.
-// network not up yet at login) preserves it so a later tick can still install.
+// Takes the install-at-open intent and returns it for the next tick. A cache
+// that was already downloaded installs now. A download that finishes during
+// this pass stays cached and keeps the intent, so the Restart button can
+// apply it before a later tick does. A meeting deferral or a transient
+// check/download/install failure preserves the intent too.
 async fn check_and_download<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     install_at_open: bool,
@@ -126,22 +127,10 @@ async fn check_and_download<R: tauri::Runtime>(
         return install_at_open;
     }
 
-    // With frequent releases the cached version is rarely still the latest by
-    // the next open, so deferring the install to the next session would
-    // re-download forever and never install anything. Install as soon as the
-    // at-open download completes instead.
-    if install_at_open {
-        if updater2.meeting_active() {
-            tracing::info!("automatic_update_deferred_meeting_active");
-            return true;
-        }
-        if let Err(e) = updater2.install_and_relaunch(&version).await {
-            tracing::error!("downloaded_update_install_failed: {}", e);
-            return true;
-        }
-    }
-
-    false
+    // Leave a download that just finished for the Restart button. Installing
+    // in this same pass restarts the app while that button is on screen.
+    // The next tick installs the cache if it is still the current release.
+    true
 }
 
 #[cfg(test)]

@@ -366,6 +366,54 @@ describe("ToastNotifications", () => {
     );
   });
 
+  it("updates download progress without recreating the notice", () => {
+    mocks.update.status = "downloading";
+    mocks.update.version = "1.0.34";
+    mocks.update.progress = 0.1;
+
+    const view = render(<ToastNotifications />);
+    act(() => vi.advanceTimersByTime(500));
+
+    expect(mocks.loading).toHaveBeenCalledTimes(1);
+    expect(mocks.dismiss).not.toHaveBeenCalled();
+
+    mocks.update.progress = 0.42;
+    mocks.loading.mockClear();
+    view.rerender(<ToastNotifications />);
+
+    expect(mocks.loading).toHaveBeenCalledTimes(1);
+    expect(mocks.loading).toHaveBeenCalledWith(
+      "Downloading Acorn 1.0.34 (42%)",
+      expect.objectContaining({ id: "desktop-update:1.0.34:downloading" }),
+    );
+    expect(mocks.dismiss).not.toHaveBeenCalled();
+  });
+
+  it("shows restart as soon as the download is ready", () => {
+    mocks.update.status = "downloading";
+    mocks.update.version = "1.0.34";
+    mocks.update.progress = 0.9;
+
+    const view = render(<ToastNotifications />);
+    act(() => vi.advanceTimersByTime(500));
+
+    mocks.update.status = "ready";
+    mocks.update.downloadStarting = true;
+    mocks.message.mockClear();
+    view.rerender(<ToastNotifications />);
+
+    expect(mocks.dismiss).toHaveBeenCalledWith(
+      "desktop-update:1.0.34:downloading",
+    );
+    expect(mocks.message).toHaveBeenCalledWith(
+      "Acorn 1.0.34 is ready to install",
+      expect.objectContaining({
+        id: "desktop-update:1.0.34:ready",
+        action: expect.objectContaining({ label: "Restart" }),
+      }),
+    );
+  });
+
   it("resurfaces a dismissed ready update after relaunch", () => {
     mocks.update.status = "ready";
     mocks.update.version = "1.0.34";

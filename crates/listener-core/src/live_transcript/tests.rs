@@ -614,15 +614,7 @@ fn apple_speech_engine_drops_unfinalized_hypothesis_on_flush() {
 }
 
 #[test]
-fn clamps_provider_speakers_to_participant_count() {
-    let max_speaker_index = max_speaker_index_for_participants(
-        &[
-            "self".to_string(),
-            "remote-a".to_string(),
-            "remote-b".to_string(),
-        ],
-        Some("self"),
-    );
+fn clamps_direct_mic_speakers_to_one_voice() {
     let mut high_word = word("too-high", 0.0, 0.5);
     high_word.speaker = Some(2);
     let mut negative_word = word("negative", 0.5, 1.0);
@@ -636,31 +628,39 @@ fn clamps_provider_speakers_to_participant_count() {
         1.0,
     );
 
-    clamp_response_speaker_indices(&mut response, max_speaker_index);
+    clamp_response_speaker_indices(&mut response, 0);
 
     let StreamResponse::TranscriptResponse { channel, .. } = response else {
         panic!("expected transcript response");
     };
     let words = &channel.alternatives[0].words;
 
-    assert_eq!(words[0].speaker, Some(1));
+    assert_eq!(words[0].speaker, Some(0));
     assert_eq!(words[1].speaker, Some(0));
 }
 
 #[test]
-fn clamps_single_remote_speaker_to_zero() {
-    let max_speaker_index =
-        max_speaker_index_for_participants(&["remote".to_string()], Some("self"));
+fn keeps_distinct_remote_speakers_under_the_discovery_cap() {
     let mut high_word = word("too-high", 0.0, 0.5);
     high_word.speaker = Some(2);
-    let mut response = transcript_response_at("too-high", vec![high_word], true, 1, 0.0, 0.5);
+    let mut overflow_word = word("overflow", 0.5, 1.0);
+    overflow_word.speaker = Some(20);
+    let mut response = transcript_response_at(
+        "too-high overflow",
+        vec![high_word, overflow_word],
+        true,
+        1,
+        0.0,
+        1.0,
+    );
 
-    clamp_response_speaker_indices(&mut response, max_speaker_index);
+    clamp_response_speaker_indices(&mut response, 7);
 
     let StreamResponse::TranscriptResponse { channel, .. } = response else {
         panic!("expected transcript response");
     };
-    assert_eq!(channel.alternatives[0].words[0].speaker, Some(0));
+    assert_eq!(channel.alternatives[0].words[0].speaker, Some(2));
+    assert_eq!(channel.alternatives[0].words[1].speaker, Some(7));
 }
 
 #[test]

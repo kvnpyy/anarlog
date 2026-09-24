@@ -7,7 +7,11 @@ import {
 
 import type { ListenerStore } from "~/store/zustand/listener";
 import { LIVE_TRANSCRIPT_PREVIEW_SEGMENT_LIMIT } from "~/store/zustand/listener/transcript";
-import { SegmentKeyUtils, type RenderLabelContext } from "~/stt/live-segment";
+import {
+  SegmentKeyUtils,
+  SpeakerLabelManager,
+  type RenderLabelContext,
+} from "~/stt/live-segment";
 
 export type ListenerState = ReturnType<ListenerStore["getState"]>;
 type FloatingBarStatus = "recording" | "error";
@@ -118,6 +122,9 @@ export function getFloatingTranscriptBubbles(
   segments: ListenerState["liveSegments"],
   speakerLabelContext?: RenderLabelContext,
 ): FloatingTranscriptBubble[] {
+  const speakerLabelManager = speakerLabelContext
+    ? SpeakerLabelManager.fromSegments(segments, speakerLabelContext)
+    : undefined;
   const bubbles = segments
     .slice()
     .sort(
@@ -135,7 +142,11 @@ export function getFloatingTranscriptBubbles(
 
       return {
         id: segment.id,
-        speakerLabel: getFloatingSpeakerLabel(segment.key, speakerLabelContext),
+        speakerLabel: getFloatingSpeakerLabel(
+          segment.key,
+          speakerLabelContext,
+          speakerLabelManager,
+        ),
         text,
         isSelf: isFloatingSelfSpeaker(segment.key),
         isFinal: segment.words.every((word) => word.is_final),
@@ -166,13 +177,14 @@ function getFloatingSegmentText(
 function getFloatingSpeakerLabel(
   key: ListenerState["liveSegments"][number]["key"],
   ctx?: RenderLabelContext,
+  manager?: SpeakerLabelManager,
 ) {
   if (isFloatingSelfSpeaker(key)) {
     return "You";
   }
 
   if (ctx) {
-    return SegmentKeyUtils.renderLabel(key, ctx);
+    return SegmentKeyUtils.renderLabel(key, ctx, manager);
   }
 
   if (key.speaker_index != null) {

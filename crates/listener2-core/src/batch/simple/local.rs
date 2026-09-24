@@ -19,7 +19,7 @@ use super::super::{
 use crate::{BatchEvent, BatchRuntime};
 
 pub(super) const SONIQO_PARAKEET_MAX_CHUNK_SAMPLES: usize = TARGET_SAMPLE_RATE as usize * 59 / 2;
-pub(super) const SONIQO_DIARIZATION_MAX_SAMPLES: usize = TARGET_SAMPLE_RATE as usize * 10 * 60;
+pub(super) const SONIQO_DIARIZATION_MAX_SAMPLES: usize = TARGET_SAMPLE_RATE as usize * 30 * 60;
 pub(super) const SONIQO_PROGRESS_PLANNED: f64 = 0.05;
 const SONIQO_PROGRESS_RANGE: f64 = 0.90;
 pub(super) const SONIQO_PROGRESS_MAX: f64 = 0.95;
@@ -294,7 +294,6 @@ pub(in crate::batch) async fn run_soniqo_batch(
             .first()
             .map(anlg_language::Language::bcp47_code);
         let language_hint = soniqo_language_hint(language.as_deref());
-        let num_speakers = listen_params.num_speakers;
         let language_label = language.as_deref().unwrap_or("auto").to_string();
         let language_hint_label = language_hint.as_deref().unwrap_or("auto").to_string();
         let started_at = Instant::now();
@@ -319,7 +318,7 @@ pub(in crate::batch) async fn run_soniqo_batch(
                 model,
                 &file_path,
                 language_hint.as_deref(),
-                num_speakers,
+                listen_params.num_speakers,
                 Some(&progress),
                 &async_runtime,
             )
@@ -431,13 +430,13 @@ fn transcribe_soniqo_file(
         .iter()
         .map(|channel| channel.sample_count)
         .collect::<Vec<_>>();
-    let diarization_within_limit =
-        soniqo_diarization_plan_within_limit(&channel_sample_counts, num_speakers);
-    let diarization_num_speakers = if diarization_within_limit {
-        num_speakers
-    } else {
-        None
-    };
+    let system_matches_mic = transcribed_channel_count == 2
+        && resampled_channels_match(&channel_files[0], &channel_files[1]);
+    let diarization_within_limit = soniqo_diarization_plan_within_limit(
+        &channel_sample_counts,
+        num_speakers,
+        system_matches_mic,
+    );
     if !diarization_within_limit {
         tracing::warn!(
             anarlog.stt.provider.name = "soniqo",
@@ -458,18 +457,17 @@ fn transcribe_soniqo_file(
     let mut channel_speaker_segments = Vec::with_capacity(transcribed_channel_count);
     for (channel_index, channel) in channel_files.into_iter().enumerate() {
         ensure_local_batch_running(progress)?;
-        let speaker_segments = match soniqo_diarization_speaker_count(
-            diarization_num_speakers,
+        let speaker_segments = match soniqo_diarization_bounds(
+            num_speakers,
             transcribed_channel_count,
             channel_index,
-        ) {
-            Some(speaker_count) => diarize_soniqo_channel_file(
-                model,
-                channel_index,
-                &channel,
-                speaker_count,
-                progress,
-            )?,
+            system_matches_mic,
+        )
+        .filter(|_| diarization_within_limit)
+        {
+            Some(bounds) => {
+                diarize_soniqo_channel_file(model, channel_index, &channel, bounds, progress)?
+            }
             None => Vec::new(),
         };
         let plan = soniqo_channel_plan(
@@ -698,20 +696,48 @@ pub(super) fn soniqo_batch_progress(completed_chunks: usize, total_chunks: usize
     (SONIQO_PROGRESS_PLANNED + ratio * SONIQO_PROGRESS_RANGE).min(SONIQO_PROGRESS_MAX)
 }
 
-pub(super) fn soniqo_diarization_speaker_count(
+pub(super) fn soniqo_diarization_bounds(
     num_speakers: Option<u32>,
     channel_count: usize,
     channel_index: usize,
-) -> Option<usize> {
-    let total = usize::try_from(num_speakers?).ok()?;
+    system_matches_mic: bool,
+) -> Option<anlg_transcribe_soniqo::DiarizationBounds> {
+    if num_speakers == Some(1) {
+        return None;
+    }
 
-    let count = match channel_count {
-        1 => total,
-        2 if channel_index == 1 => total.saturating_sub(1),
-        _ => return None,
+    let discover = matches!(
+        (channel_count, channel_index, system_matches_mic),
+        (1, 0, _) | (2, 1, false)
+    );
+    discover.then_some(anlg_transcribe_soniqo::DiarizationBounds::DISCOVERED)
+}
+
+fn resampled_channels_match(left: &ResampledChannelFile, right: &ResampledChannelFile) -> bool {
+    if left.sample_count != right.sample_count {
+        return false;
+    }
+
+    let mut left_reader = match hound::WavReader::open(left.file.path()) {
+        Ok(reader) => reader,
+        Err(_) => return false,
+    };
+    let mut right_reader = match hound::WavReader::open(right.file.path()) {
+        Ok(reader) => reader,
+        Err(_) => return false,
     };
 
-    (count >= 2).then_some(count)
+    left_reader
+        .samples::<f32>()
+        .zip(right_reader.samples::<f32>())
+        .all(
+            |(left_sample, right_sample)| match (left_sample, right_sample) {
+                (Ok(left_sample), Ok(right_sample)) => {
+                    left_sample.to_bits() == right_sample.to_bits()
+                }
+                _ => false,
+            },
+        )
 }
 
 pub(super) fn collect_soniqo_channel_transcripts<I>(
@@ -806,7 +832,7 @@ fn diarize_soniqo_channel_file(
     model: anlg_transcribe_soniqo::SoniqoModel,
     channel_index: usize,
     channel: &ResampledChannelFile,
-    speaker_count: usize,
+    bounds: anlg_transcribe_soniqo::DiarizationBounds,
     progress: Option<&SoniqoProgressReporter>,
 ) -> std::result::Result<Vec<anlg_transcribe_soniqo::DiarizationSegment>, String> {
     ensure_local_batch_running(progress)?;
@@ -817,7 +843,7 @@ fn diarize_soniqo_channel_file(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
     ensure_local_batch_running(progress)?;
-    let segments = diarize_soniqo_channel(model, channel_index, &samples, speaker_count);
+    let segments = diarize_soniqo_channel(model, channel_index, &samples, bounds);
     ensure_local_batch_running(progress)?;
     Ok(segments)
 }
@@ -829,7 +855,7 @@ pub(super) fn ensure_soniqo_diarization_within_limit(
         return Ok(());
     }
     Err(
-        "Soniqo speaker diarization is limited to recordings up to 10 minutes to prevent excessive memory use. Retry without an exact speaker count or use another transcription provider."
+        "Soniqo speaker diarization is limited to recordings up to 30 minutes to prevent excessive memory use. Use another transcription provider for a longer recording."
             .to_string(),
     )
 }
@@ -837,15 +863,17 @@ pub(super) fn ensure_soniqo_diarization_within_limit(
 pub(super) fn soniqo_diarization_plan_within_limit(
     channel_sample_counts: &[usize],
     num_speakers: Option<u32>,
+    system_matches_mic: bool,
 ) -> bool {
     channel_sample_counts
         .iter()
         .enumerate()
         .all(|(channel_index, sample_count)| {
-            match soniqo_diarization_speaker_count(
+            match soniqo_diarization_bounds(
                 num_speakers,
                 channel_sample_counts.len(),
                 channel_index,
+                system_matches_mic,
             ) {
                 Some(_) => *sample_count <= SONIQO_DIARIZATION_MAX_SAMPLES,
                 None => true,
@@ -857,16 +885,17 @@ fn diarize_soniqo_channel(
     model: anlg_transcribe_soniqo::SoniqoModel,
     channel_index: usize,
     samples: &[f32],
-    speaker_count: usize,
+    bounds: anlg_transcribe_soniqo::DiarizationBounds,
 ) -> Vec<anlg_transcribe_soniqo::DiarizationSegment> {
     let started_at = Instant::now();
-    match anlg_transcribe_soniqo::diarize_samples(model, samples, speaker_count) {
+    match anlg_transcribe_soniqo::diarize_samples(model, samples, bounds) {
         Ok(segments) => {
             tracing::info!(
                 anarlog.stt.provider.name = "soniqo",
                 anarlog.stt.model = %model,
                 channel.index = channel_index,
-                speaker.count = speaker_count,
+                speaker.minimum = bounds.minimum,
+                speaker.maximum = bounds.maximum,
                 segment.count = segments.len(),
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 "soniqo_channel_diarization_completed"
@@ -878,7 +907,8 @@ fn diarize_soniqo_channel(
                 anarlog.stt.provider.name = "soniqo",
                 anarlog.stt.model = %model,
                 channel.index = channel_index,
-                speaker.count = speaker_count,
+                speaker.minimum = bounds.minimum,
+                speaker.maximum = bounds.maximum,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 error = %error,
                 "soniqo_channel_diarization_failed"

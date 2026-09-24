@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use swift_rs::{Bool, SRData, SRString, swift};
 
 use crate::{
-    DiarizationSegment, Error, FileTranscript, LivePartial, ModelDownloadState, Result,
-    SoniqoModel, TranscriptSource,
+    DiarizationBounds, DiarizationSegment, Error, FileTranscript, LivePartial, ModelDownloadState,
+    Result, SoniqoModel, TranscriptSource,
 };
 
 swift!(fn _soniqo_model_cache_dir(model_id: &SRString) -> SRString);
@@ -20,7 +20,7 @@ swift!(fn _soniqo_transcribe_audio_file(
 swift!(fn _soniqo_diarize_audio(
     model_id: &SRString,
     samples: &SRData,
-    exact_speakers: &SRString
+    speaker_bounds: &SRString
 ) -> SRString);
 swift!(fn _soniqo_live_start(model_id: &SRString) -> SRString);
 swift!(fn _soniqo_live_append(
@@ -49,6 +49,7 @@ struct LiveAppendPayload {
 #[serde(rename_all = "camelCase")]
 struct DiarizationPayload {
     segments: Vec<DiarizationSegment>,
+    #[allow(dead_code)]
     num_speakers: usize,
     error: Option<String>,
 }
@@ -147,22 +148,17 @@ pub(crate) fn transcribe_file(
 pub(crate) fn diarize_samples(
     model: SoniqoModel,
     samples: &[f32],
-    exact_speakers: usize,
+    bounds: DiarizationBounds,
 ) -> Result<Vec<DiarizationSegment>> {
     let model_id = sr_string(model.as_str());
     let samples = floats_to_sr_data(samples);
-    let exact_speakers_value = sr_string(&exact_speakers.to_string());
-    let payload = unsafe { _soniqo_diarize_audio(&model_id, &samples, &exact_speakers_value) };
+    let encoded_bounds = bounds.encode();
+    let speaker_bounds = sr_string(&encoded_bounds);
+    let payload = unsafe { _soniqo_diarize_audio(&model_id, &samples, &speaker_bounds) };
     let result: DiarizationPayload = serde_json::from_str(payload.as_str())?;
 
     if let Some(error) = result.error {
         return Err(Error::Bridge(error));
-    }
-    if result.num_speakers != exact_speakers {
-        return Err(Error::Bridge(format!(
-            "Soniqo diarization returned {} speakers instead of {}",
-            result.num_speakers, exact_speakers
-        )));
     }
 
     Ok(result.segments)

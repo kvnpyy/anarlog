@@ -462,6 +462,24 @@ fn propagates_remote_party_identity_when_channel_marked_complete() {
 }
 
 #[test]
+fn keeps_diarized_remote_speakers_distinct_from_the_channel_identity() {
+    let finals = vec![fw_si("0", 0, 100, 1, 0), fw_si("1", 200, 300, 1, 1)];
+    let assignments = vec![channel_human("remote", ChannelProfile::RemoteParty)];
+    let opts = SegmentBuilderOptions {
+        complete_channels: Some(vec![ChannelProfile::DirectMic, ChannelProfile::RemoteParty]),
+        ..Default::default()
+    };
+
+    let result = build_segments(&finals, &[], &assignments, Some(&opts));
+
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].key.speaker_index, Some(0));
+    assert_eq!(result[0].key.speaker_human_id, None);
+    assert_eq!(result[1].key.speaker_index, Some(1));
+    assert_eq!(result[1].key.speaker_human_id, None);
+}
+
+#[test]
 fn partial_word_ignores_its_own_runtime_hint_and_keeps_previous_segment_key() {
     let finals = vec![fw_si("0", 0, 100, 0, 0)];
     let partials = vec![pw_si("1", 150, 250, 0, 1)];

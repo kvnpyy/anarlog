@@ -19,7 +19,7 @@ use local::{
     SONIQO_PROGRESS_MAX, SONIQO_PROGRESS_PLANNED, SoniqoChunkStrategy, audio_rms,
     collect_soniqo_channel_transcripts, ensure_soniqo_diarization_within_limit,
     resample_audio_to_channel_files, resample_audio_to_channel_files_until, soniqo_batch_progress,
-    soniqo_chunk_strategy, soniqo_diarization_plan_within_limit, soniqo_diarization_speaker_count,
+    soniqo_chunk_strategy, soniqo_diarization_bounds, soniqo_diarization_plan_within_limit,
     soniqo_language_hint,
 };
 

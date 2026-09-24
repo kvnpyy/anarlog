@@ -135,10 +135,27 @@ pub fn transcribe_file(
     result
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiarizationBounds {
+    pub minimum: usize,
+    pub maximum: usize,
+}
+
+impl DiarizationBounds {
+    pub const DISCOVERED: Self = Self {
+        minimum: 1,
+        maximum: 8,
+    };
+
+    pub fn encode(self) -> String {
+        format!("{}-{}", self.minimum, self.maximum)
+    }
+}
+
 pub fn diarize_samples(
     model: SoniqoModel,
     samples: &[f32],
-    exact_speakers: usize,
+    bounds: DiarizationBounds,
 ) -> Result<Vec<DiarizationSegment>> {
     ensure_supported_platform(model)?;
     if model.batch_model() != SoniqoModel::ParakeetBatch {
@@ -147,13 +164,13 @@ pub fn diarize_samples(
             model.display_name()
         )));
     }
-    if exact_speakers < 2 {
+    if bounds.minimum < 1 || bounds.maximum < bounds.minimum {
         return Err(Error::Bridge(
-            "speaker diarization requires at least two speakers".to_string(),
+            "speaker diarization bounds are invalid".to_string(),
         ));
     }
 
-    platform::diarize_samples(model.batch_model(), samples, exact_speakers)
+    platform::diarize_samples(model.batch_model(), samples, bounds)
 }
 
 pub struct LiveTranscriptionSession {

@@ -842,14 +842,12 @@ private actor SoniqoBridge {
     }
   }
 
-  func diarizeAudioJSON(modelId: String, samplesData: Data, exactSpeakers: String) async -> String {
+  func diarizeAudioJSON(modelId: String, samplesData: Data, speakerBounds: String) async -> String {
     do {
       guard let kind = SpeechModelKind.resolve(modelId) else {
         throw SoniqoBridgeError.message("Unsupported Soniqo model: \(modelId)")
       }
-      guard let speakerCount = Int(exactSpeakers), speakerCount >= 2 else {
-        throw SoniqoBridgeError.message("Soniqo diarization requires at least two speakers.")
-      }
+      let bounds = try parseSpeakerBounds(speakerBounds)
 
       let samples = try decodeFloatSamples(from: samplesData)
       let pipeline = try await ensureModelLoaded(kind).asDiarizationPipeline()
@@ -857,7 +855,7 @@ private actor SoniqoBridge {
       let result = try pipeline.diarize(
         audio: samples,
         sampleRate: soniqoFileTranscriptionSampleRate,
-        speakerBounds: Community1SpeakerBounds(exact: speakerCount)
+        speakerBounds: bounds
       )
       return encodeDiarizationJSON(result)
     } catch {
@@ -1315,16 +1313,28 @@ public func _soniqo_transcribe_audio_file(
 public func _soniqo_diarize_audio(
   modelId: SRString,
   samples: SRData,
-  exactSpeakers: SRString
+  speakerBounds: SRString
 ) -> SRString {
   SRString(
     waitForValue {
       await SoniqoBridge.shared.diarizeAudioJSON(
         modelId: modelId.toString(),
         samplesData: Data(samples.toArray()),
-        exactSpeakers: exactSpeakers.toString()
+        speakerBounds: speakerBounds.toString()
       )
     })
+}
+
+private func parseSpeakerBounds(_ value: String) throws -> Community1SpeakerBounds {
+  let parts = value.split(separator: "-", omittingEmptySubsequences: false)
+  guard parts.count == 2, let minimum = Int(parts[0]), let maximum = Int(parts[1]), minimum >= 1,
+    maximum >= minimum
+  else {
+    throw SoniqoBridgeError.message(
+      "Soniqo diarization speaker bounds must look like 1-8."
+    )
+  }
+  return Community1SpeakerBounds(minimum: minimum, maximum: maximum)
 }
 
 @_cdecl("_soniqo_live_start")

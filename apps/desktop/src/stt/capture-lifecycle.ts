@@ -55,7 +55,6 @@ import {
   flushLiveTranscriptDeltasToDatabase,
   softDeleteTranscript,
   transcriptExists,
-  useSessionParticipantHumanIds,
 } from "~/stt/queries";
 import { waitForSessionSearchIndex } from "~/stt/search-index-consistency";
 
@@ -158,7 +157,6 @@ export function getPostCaptureAction(
 export function useCaptureLifecycle(sessionId: string) {
   const session = useSession(sessionId);
   const transcriptExistence = useSessionTranscriptExistence(sessionId);
-  const participantHumanIds = useSessionParticipantHumanIds(sessionId);
   const audioRetention = normalizeAudioRetention(
     useConfigValue("audio_retention"),
   );
@@ -211,20 +209,12 @@ export function useCaptureLifecycle(sessionId: string) {
         recoveredMarker?.ownerUserId ?? session?.user_id ?? "";
       const provider = recoveredMarker?.provider ?? conn?.provider;
       const model = recoveredMarker?.model ?? conn?.model;
-      const hasMultipleRemoteParticipants =
-        new Set(
-          participantHumanIds.filter(
-            (humanId) => humanId && humanId !== ownerUserId,
-          ),
-        ).size > 1;
       const shouldUseLocalBatchForSpeakerDiarization = () =>
-        hasMultipleRemoteParticipants &&
         localBatchDiarizationAvailableRef.current &&
         isRealtimeLocalModel(model);
       const shouldRefineSpeakerDiarization = () =>
-        hasMultipleRemoteParticipants &&
-        ((provider === "anarlog" && model === "cloud") ||
-          shouldUseLocalBatchForSpeakerDiarization());
+        (provider === "anarlog" && model === "cloud") ||
+        shouldUseLocalBatchForSpeakerDiarization();
       const cloudsyncLeaseKey = `${sessionId}:${transcriptId}`;
       let pendingSummaryMode = recoveredMarker?.summaryMode;
       let completionTracked = false;
@@ -793,7 +783,6 @@ export function useCaptureLifecycle(sessionId: string) {
       audioRetention,
       conn?.model,
       conn?.provider,
-      participantHumanIds,
       rememberSpeakers,
       session?.raw_md,
       session?.user_id,

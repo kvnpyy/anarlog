@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    DiarizationSegment, Error, FileTranscript, LivePartial, ModelDownloadState, Result,
-    SoniqoModel, TranscriptSource,
+    DiarizationBounds, DiarizationSegment, Error, FileTranscript, LivePartial, ModelDownloadState,
+    Result, SoniqoModel, TranscriptSource,
 };
 
 pub(crate) fn model_cache_dir(_model: SoniqoModel) -> Result<PathBuf> {
@@ -36,7 +36,7 @@ pub(crate) fn transcribe_file(
 pub(crate) fn diarize_samples(
     _model: SoniqoModel,
     _samples: &[f32],
-    _exact_speakers: usize,
+    _bounds: DiarizationBounds,
 ) -> Result<Vec<DiarizationSegment>> {
     Err(Error::UnsupportedPlatform)
 }

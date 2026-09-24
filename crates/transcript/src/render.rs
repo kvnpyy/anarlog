@@ -138,7 +138,7 @@ fn max_speaker_number_for_participants(
     participants.sort();
     participants.dedup();
 
-    (participants.len() > 1).then_some(participants.len())
+    (participants.len() > 1).then_some(8)
 }
 
 fn offset_transcript_data(
@@ -326,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn caps_unknown_speaker_labels_to_participant_count() {
+    fn keeps_discovered_speaker_labels_distinct() {
         let segments = render_transcript_segments(RenderTranscriptRequest {
             transcripts: vec![RenderTranscriptInput {
                 started_at: Some(0),
@@ -345,7 +345,7 @@ mod tests {
         assert_eq!(segments.len(), 3);
         assert_eq!(segments[0].speaker_label, "Speaker 1");
         assert_eq!(segments[1].speaker_label, "Speaker 2");
-        assert_eq!(segments[2].speaker_label, "Speaker 2");
+        assert_eq!(segments[2].speaker_label, "Speaker 3");
     }
 
     #[test]

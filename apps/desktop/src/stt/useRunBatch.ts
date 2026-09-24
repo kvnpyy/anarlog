@@ -22,7 +22,7 @@ import {
   maybeIdentifyTranscriptSpeakers,
 } from "~/services/voiceprint";
 import { markSessionAudioTranscriptionComplete } from "~/session/attachments";
-import { useSession, useSessionParticipants } from "~/session/queries";
+import { useSession } from "~/session/queries";
 import { useConfigValue } from "~/shared/config";
 import { id } from "~/shared/utils";
 import type { BatchPersistCallback } from "~/store/zustand/listener/transcript";
@@ -693,7 +693,6 @@ export function getSessionSpeakerCount(
 
 export const useRunBatch = (sessionId: string) => {
   const session = useSession(sessionId);
-  const participants = useSessionParticipants(sessionId);
 
   const startTranscription = useListener((state) => state.startTranscription);
   const { conn } = useSTTConnection();
@@ -815,17 +814,6 @@ export const useRunBatch = (sessionId: string) => {
         });
       }
       let transcriptId: string | null = null;
-      const inferredNumSpeakers =
-        options?.numSpeakers === undefined &&
-        options?.minSpeakers === undefined &&
-        options?.maxSpeakers === undefined
-          ? getSessionSpeakerCount(
-              participants
-                .filter((participant) => participant.source !== "excluded")
-                .map((participant) => participant.humanId),
-              session?.user_id,
-            )
-          : undefined;
 
       const handlePersist: BatchPersistCallback | undefined =
         options?.handlePersist;
@@ -913,7 +901,7 @@ export const useRunBatch = (sessionId: string) => {
             api_key: target.apiKey,
             keywords,
             languages,
-            num_speakers: options?.numSpeakers ?? inferredNumSpeakers,
+            num_speakers: options?.numSpeakers,
             min_speakers: options?.minSpeakers,
             max_speakers: options?.maxSpeakers,
           };
@@ -1048,7 +1036,6 @@ export const useRunBatch = (sessionId: string) => {
       dictionaryTerms,
       rememberSpeakers,
       session,
-      participants,
       spokenLanguages,
       startTranscription,
       sessionId,

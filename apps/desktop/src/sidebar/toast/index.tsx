@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { sonnerToast, TOAST_DURATIONS } from "@anlg/ui/components/ui/toast";
 
@@ -273,14 +273,10 @@ export function ToastNotifications() {
     return null;
   }
 
-  const descriptionKey =
-    typeof displayToast.description === "string"
-      ? displayToast.description
-      : displayToast.id;
   const previewKey =
     devtoolsPreview && devtoolsToast
       ? `${devtoolsToast.id}:${devtoolsPreview.key}`
-      : `${displayToast.id}:${descriptionKey}`;
+      : displayToast.id;
 
   return (
     <SonnerNotification
@@ -302,8 +298,17 @@ function SonnerNotification({
 }) {
   const toastRef = useLatestRef(toast);
   const onDismissRef = useLatestRef(onDismiss);
+  const activeIdRef = useRef(toast.id);
+  const ignoreDismissRef = useRef(false);
 
-  useMountEffect(() => {
+  useEffect(() => {
+    const previousId = activeIdRef.current;
+    if (previousId !== toast.id) {
+      ignoreDismissRef.current = true;
+      sonnerToast.dismiss(previousId);
+      activeIdRef.current = toast.id;
+    }
+
     let shouldPersistDismissal = true;
     const dismissible = toast.lifecycle.type === "persistent";
     const options = {
@@ -322,9 +327,10 @@ function SonnerNotification({
           }
         : undefined,
       onDismiss: () => {
-        if (shouldPersistDismissal) {
-          onDismissRef.current?.();
+        if (ignoreDismissRef.current || !shouldPersistDismissal) {
+          return;
         }
+        onDismissRef.current?.();
       },
     };
 
@@ -338,11 +344,32 @@ function SonnerNotification({
       sonnerToast.message(toast.description, options);
     }
 
+    const ignoreTimer = window.setTimeout(() => {
+      ignoreDismissRef.current = false;
+    }, 0);
+
     return () => {
       shouldPersistDismissal = false;
-      sonnerToast.dismiss(toast.id);
+      window.clearTimeout(ignoreTimer);
     };
-  });
+  }, [
+    onDismissRef,
+    toast.description,
+    toast.icon,
+    toast.id,
+    toast.lifecycle.type,
+    toast.loading,
+    toast.primaryAction?.label,
+    toast.variant,
+    toastRef,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      ignoreDismissRef.current = true;
+      sonnerToast.dismiss(activeIdRef.current);
+    };
+  }, []);
 
   return null;
 }

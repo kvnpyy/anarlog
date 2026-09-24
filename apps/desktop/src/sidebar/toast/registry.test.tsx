@@ -305,6 +305,23 @@ describe("sidebar toast registry", () => {
     expect(toast?.loading).toBeUndefined();
   });
 
+  it("keeps the restart button when the download has not settled yet", () => {
+    const toast = getToastToShow(
+      createToastRegistry({
+        ...baseParams,
+        update: {
+          ...baseParams.update,
+          status: "ready",
+          version: "1.0.34",
+          downloadStarting: true,
+        },
+      }),
+      () => false,
+    );
+
+    expect(toast?.primaryAction?.label).toBe("Restart");
+  });
+
   it("creates devtools previews with app toast content", () => {
     const languageModelToast = createDevtoolsToastPreview({
       preview: "language-model",

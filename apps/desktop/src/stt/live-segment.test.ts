@@ -77,15 +77,63 @@ describe("SegmentKeyUtils", () => {
     ).toBe("Speaker 2");
   });
 
-  it("labels remote-party segments as the unique other participant", () => {
+  it("labels an undiarized remote party as the unique other participant", () => {
     const key: Parameters<typeof SegmentKeyUtils.renderLabel>[0] = {
       channel: "RemoteParty",
-      speaker_index: 0,
+      speaker_index: null,
       speaker_human_id: null,
     };
 
     expect(SegmentKeyUtils.isKnownSpeaker(key, twoPersonCtx)).toBe(true);
     expect(SegmentKeyUtils.renderLabel(key, twoPersonCtx)).toBe("Artem");
+  });
+
+  it("keeps diarized remote speakers distinct when the invite lists one person", () => {
+    const segments: Segment[] = [0, 1].map(
+      (speakerIndex) =>
+        ({
+          id: `segment-${speakerIndex}`,
+          key: {
+            channel: "RemoteParty",
+            speaker_index: speakerIndex,
+            speaker_human_id: null,
+          },
+          words: [],
+          start_ms: 0,
+          end_ms: 0,
+          text: "",
+        }) as Segment,
+    );
+    const manager = SpeakerLabelManager.fromSegments(segments, twoPersonCtx);
+
+    expect(
+      SegmentKeyUtils.renderLabel(segments[0]!.key, twoPersonCtx, manager),
+    ).toBe("Speaker 1");
+    expect(
+      SegmentKeyUtils.renderLabel(segments[1]!.key, twoPersonCtx, manager),
+    ).toBe("Speaker 2");
+  });
+
+  it("labels the only diarized remote speaker as the unique invitee", () => {
+    const segments: Segment[] = [
+      {
+        id: "segment-0",
+        key: {
+          channel: "RemoteParty",
+          speaker_index: 0,
+          speaker_human_id: null,
+        },
+        words: [],
+        start_ms: 0,
+        end_ms: 0,
+        text: "",
+      } as Segment,
+    ];
+    const manager = SpeakerLabelManager.fromSegments(segments, twoPersonCtx);
+
+    expect(
+      SegmentKeyUtils.renderLabel(segments[0]!.key, twoPersonCtx, manager),
+    ).toBe("Artem");
   });
 
   it("labels unknown speakers with a suggested name", () => {
@@ -104,9 +152,9 @@ describe("SegmentKeyUtils", () => {
   });
 
   it("derives max speaker number from distinct participants plus self", () => {
-    expect(getMaxSpeakerNumberForParticipants(["remote"], "self")).toBe(2);
+    expect(getMaxSpeakerNumberForParticipants(["remote"], "self")).toBe(8);
     expect(getMaxSpeakerNumberForParticipants(["self", "remote"], "self")).toBe(
-      2,
+      8,
     );
     expect(getMaxSpeakerNumberForParticipants([], "self")).toBeUndefined();
   });

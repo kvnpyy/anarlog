@@ -462,20 +462,18 @@ fn build_listen_params(args: &ListenerArgs) -> owhisper_interface::ListenParams 
         "redemption_time_ms".to_string(),
         redemption_time_ms.to_string(),
     )]);
-    let num_speakers = expected_speakers(args);
-
     owhisper_interface::ListenParams {
         model: Some(args.model.clone()),
         languages: args.languages.clone(),
         sample_rate: super::super::SAMPLE_RATE,
         keywords: args.keywords.clone(),
-        num_speakers,
-        max_speakers: num_speakers,
+        min_speakers: Some(1),
         custom_query: Some(custom_query),
         ..Default::default()
     }
 }
 
+#[cfg(test)]
 fn expected_speakers(args: &ListenerArgs) -> Option<u32> {
     crate::expected_speakers_per_channel(&args.participant_human_ids, args.self_human_id.as_deref())
 }
@@ -700,8 +698,9 @@ mod tests {
         let params = build_listen_params(&args);
         let custom_query = params.custom_query.expect("custom query");
 
-        assert_eq!(params.num_speakers, Some(1));
-        assert_eq!(params.max_speakers, Some(1));
+        assert_eq!(params.num_speakers, None);
+        assert_eq!(params.min_speakers, Some(1));
+        assert_eq!(params.max_speakers, None);
         assert!(!custom_query.contains_key("speaker_labels"));
         assert!(!custom_query.contains_key("max_speakers"));
     }
@@ -715,14 +714,15 @@ mod tests {
         let params = build_listen_params(&args);
         let custom_query = params.custom_query.expect("custom query");
 
-        assert_eq!(params.num_speakers, Some(1));
-        assert_eq!(params.max_speakers, Some(1));
+        assert_eq!(params.num_speakers, None);
+        assert_eq!(params.min_speakers, Some(1));
+        assert_eq!(params.max_speakers, None);
         assert!(!custom_query.contains_key("speaker_labels"));
         assert!(!custom_query.contains_key("max_speakers"));
     }
 
     #[test]
-    fn build_listen_params_limits_each_channel_to_remote_participants() {
+    fn build_listen_params_does_not_cap_channels_at_the_invite_size() {
         let mut args = listener_args("https://api.anarlog.so/stt", "cloud");
         args.participant_human_ids = vec![
             "self".to_string(),
@@ -733,8 +733,9 @@ mod tests {
 
         let params = build_listen_params(&args);
 
-        assert_eq!(params.num_speakers, Some(2));
-        assert_eq!(params.max_speakers, Some(2));
+        assert_eq!(params.num_speakers, None);
+        assert_eq!(params.min_speakers, Some(1));
+        assert_eq!(params.max_speakers, None);
     }
 
     #[test]
