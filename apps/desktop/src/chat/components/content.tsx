@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import { ArrowElbowDownRight, CircleNotch, Trash } from "@phosphor-icons/react";
+import { ArrowElbowDownRight, Trash } from "@phosphor-icons/react";
 import type { ChatStatus } from "ai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -9,18 +9,20 @@ import { ChatMessageInput } from "./input";
 import { LiveAskRail } from "./live-ask-rail";
 
 import type { useLanguageModel } from "~/ai/hooks";
+import { chatActivityFromParts } from "~/chat/activity";
+import { chatStepLabel } from "~/chat/activity-label";
 import { dedupeByKey, type ContextRef } from "~/chat/context/entities";
 import {
   hasSessionContextDragData,
   readSessionContextDragData,
 } from "~/chat/context/session-drag";
 import type { DisplayEntity } from "~/chat/context/use-chat-context-pipeline";
-import { hasRenderableContent } from "~/chat/message-content";
 import type { ChatMessageSender, AnlgUIMessage } from "~/chat/types";
 import {
-  isWaitingForAssistantContent,
+  assistantTurnHasAnswerText,
   shouldShowChatThinking,
 } from "~/chat/waiting";
+import { ActivityTrail } from "~/shared/ui/activity-trail";
 import { id } from "~/shared/utils";
 import { useFolderFilter } from "~/store/zustand/folder-filter";
 
@@ -110,6 +112,13 @@ export function ChatContent({
   const hideThread = hideEmptyLiveBody || collapseThread;
   const [awaitingReply, setAwaitingReply] = useState(false);
   const showThinking = shouldShowChatThinking(status, messages, awaitingReply);
+  const activityMessage = messages[messages.length - 1];
+  const activity = chatActivityFromParts(
+    activityMessage?.role === "assistant" ? activityMessage.parts : undefined,
+  );
+  const activeStep =
+    activity.steps.find((step) => step.state === "active") ??
+    activity.steps[activity.steps.length - 1];
   const folderName = useFolderFilter((state) => state.activeFolderPath);
   const inputPlaceholder =
     placeholder ??
@@ -252,11 +261,7 @@ export function ChatContent({
 
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (
-      last?.role === "assistant" &&
-      hasRenderableContent(last) &&
-      !isWaitingForAssistantContent(last)
-    ) {
+    if (last?.role === "assistant" && assistantTurnHasAnswerText(last)) {
       setAwaitingReply(false);
     }
   }, [messages]);
@@ -334,7 +339,15 @@ export function ChatContent({
               onRemoveMessage={removeQueuedMessage}
             />
           )}
-          {showThinking && !collapseThread ? <ChatThinkingStatus /> : null}
+          {showThinking && !collapseThread ? (
+            <ChatThinkingStatus
+              parts={
+                activityMessage?.role === "assistant"
+                  ? activityMessage.parts
+                  : undefined
+              }
+            />
+          ) : null}
           {askScope ? (
             <div className="flex shrink-0 justify-center px-1 pb-1.5">
               <button
@@ -358,6 +371,9 @@ export function ChatContent({
             isStreaming={
               awaitingReply || status === "streaming" || status === "submitted"
             }
+            activityLabel={
+              showThinking && activeStep ? chatStepLabel(activeStep) : undefined
+            }
             onStop={stop}
             placeholder={inputPlaceholder}
           />
@@ -367,22 +383,25 @@ export function ChatContent({
   );
 }
 
-function ChatThinkingStatus() {
+function ChatThinkingStatus({ parts }: { parts?: AnlgUIMessage["parts"] }) {
+  const activity = chatActivityFromParts(parts);
+
   return (
-    <div
+    <ActivityTrail
       role="status"
       aria-live="polite"
       data-chat-thinking-status
-      className="text-foreground flex shrink-0 items-center gap-2 px-4 py-2 text-sm"
-    >
-      <CircleNotch className="size-3.5 shrink-0 animate-spin" />
-      <span>{t`Thinking...`}</span>
-      <span aria-hidden="true" className="flex items-center gap-0.5">
-        <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
-        <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
-        <span className="size-1 animate-bounce rounded-full bg-current" />
-      </span>
-    </div>
+      compact
+      className="shrink-0 px-4 py-2"
+      sourceHeading={t`Pulled from`}
+      sources={activity.sources}
+      steps={activity.steps.map((step) => ({
+        id: step.id,
+        label: chatStepLabel(step),
+        detail: step.query,
+        state: step.failed ? "failed" : step.state,
+      }))}
+    />
   );
 }
 

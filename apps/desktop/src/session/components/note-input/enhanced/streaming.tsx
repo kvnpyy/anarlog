@@ -1,10 +1,10 @@
 import { Trans } from "@lingui/react/macro";
 import { Streamdown } from "streamdown";
 
-import { Spinner } from "@anlg/ui/components/ui/spinner";
 import { cn } from "@anlg/utils";
 
 import { streamdownComponents } from "../../streamdown";
+import { SummaryActivity } from "./summary-activity";
 
 import { useAITaskTask, useLLMConnection } from "~/ai/hooks";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
@@ -63,49 +63,12 @@ export function StreamingView({
 
   if (streamedText.trim().length === 0) {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="text-muted-foreground flex flex-col items-start gap-3 pb-2"
-      >
-        <Spinner size={28} />
-        <div className="flex flex-col gap-0.5 text-sm">
-          <p className="animate-pulse leading-5">
-            {preparing ? (
-              <Trans>Preparing summary...</Trans>
-            ) : isReasoning ? (
-              <Trans>Model is thinking...</Trans>
-            ) : (
-              <Trans>Analyzing structure...</Trans>
-            )}
-          </p>
-          <p className="flex items-start gap-1.5 pl-4 text-xs leading-5">
-            <span
-              aria-hidden="true"
-              className="border-muted-foreground/60 mt-[5px] h-2 w-2 shrink-0 rounded-bl-[2px] border-b border-l"
-            />
-            <span>
-              {preparing ? (
-                <Trans>
-                  Generating your notes from the transcript. This usually takes
-                  a few seconds.
-                </Trans>
-              ) : isReasoning ? (
-                <Trans>
-                  Reasoning models think through the transcript before writing.
-                </Trans>
-              ) : isLocalModel ? (
-                <Trans>
-                  On-device models can take a few minutes to warm up before text
-                  appears.
-                </Trans>
-              ) : (
-                <Trans>Tip: The Acorn team loves our users!</Trans>
-              )}
-            </span>
-          </p>
-        </div>
-      </div>
+      <SummaryActivity
+        preparing={preparing}
+        reasoning={isReasoning}
+        retrying={currentStep?.type === "retrying"}
+        localModel={isLocalModel}
+      />
     );
   }
 

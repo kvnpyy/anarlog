@@ -32,6 +32,29 @@ describe("shouldShowChatThinking", () => {
     ).toBe(false);
   });
 
+  it("shows thinking while a tool is still running", () => {
+    expect(
+      shouldShowChatThinking(
+        "streaming",
+        [
+          {
+            id: "a1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-search_meetings",
+                toolCallId: "search-1",
+                state: "input-available",
+                input: { query: "q" },
+              },
+            ],
+          } as AnlgUIMessage,
+        ],
+        true,
+      ),
+    ).toBe(true);
+  });
+
   it("keeps thinking after a tool finishes and before the next text", () => {
     expect(
       shouldShowChatThinking(

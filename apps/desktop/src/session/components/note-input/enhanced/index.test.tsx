@@ -167,8 +167,8 @@ describe("Enhanced", () => {
 
     expect(screen.getByText("Enhanced editor")).not.toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.queryByText("Preparing summary...")).toBeNull();
-    expect(screen.queryByTestId("spinner")).toBeNull();
+    expect(screen.queryByText("Gathering the transcript")).toBeNull();
+    expect(screen.queryByTestId("summary-forming")).toBeNull();
   });
 
   it("shows a preparing status while auto-enhance is queued", () => {
@@ -178,8 +178,10 @@ describe("Enhanced", () => {
 
     expect(screen.queryByTestId("enhanced-editor")).toBeNull();
     expect(screen.getByRole("status")).not.toBeNull();
-    expect(screen.getByText("Preparing summary...")).not.toBeNull();
-    expect(screen.getByTestId("spinner")).not.toBeNull();
+    expect(screen.getByText("Gathering the transcript")).not.toBeNull();
+    expect(screen.getByText("Shaping the notes")).not.toBeNull();
+    expect(screen.getByText("Writing the notes")).not.toBeNull();
+    expect(screen.getByTestId("summary-forming")).not.toBeNull();
   });
 
   it("shows a generating status before streamed text arrives", () => {
@@ -195,11 +197,12 @@ describe("Enhanced", () => {
 
     expect(screen.queryByTestId("enhanced-editor")).toBeNull();
     expect(screen.getByRole("status")).not.toBeNull();
-    expect(screen.getByText("Analyzing structure...")).not.toBeNull();
+    expect(screen.getByText("Shaping the notes")).not.toBeNull();
+    expect(screen.getByText("Gathering the transcript")).not.toBeNull();
     expect(
-      screen.getByText("Tip: The Acorn team loves our users!"),
-    ).not.toBeNull();
-    expect(screen.getByTestId("spinner")).not.toBeNull();
+      screen.queryByText("Tip: The Acorn team loves our users!"),
+    ).toBeNull();
+    expect(screen.getByTestId("summary-forming")).not.toBeNull();
   });
 
   it("renders streamed summary in the enhanced editor", () => {
@@ -215,8 +218,9 @@ describe("Enhanced", () => {
 
     expect(screen.getByTestId("enhanced-editor")).not.toBeNull();
     expect(screen.getByText("Streaming summary")).not.toBeNull();
+    expect(screen.getByText("Writing the notes")).not.toBeNull();
     expect(screen.queryByTestId("summary-title-space")).toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByTestId("summary-forming")).toBeNull();
   });
 
   it("keeps the completed stream visible in the editor until SQLite content arrives", () => {

@@ -1,5 +1,7 @@
 import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { useQuery } from "@tanstack/react-query";
+import { getVersion } from "@tauri-apps/api/app";
 import { platform } from "@tauri-apps/plugin-os";
 
 import { SettingSwitchRow } from "~/settings/setting-row";
@@ -39,6 +41,11 @@ export function AppSettingsView({
 }: AppSettingsViewProps) {
   const currentPlatform = platform();
   const isMacos = currentPlatform === "macos";
+  const { data: version } = useQuery({
+    queryKey: ["tauri", "app-version"],
+    queryFn: getVersion,
+    staleTime: Infinity,
+  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -91,6 +98,9 @@ export function AppSettingsView({
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">About</h2>
+        {version ? (
+          <p className="text-muted-foreground text-sm">Version {version}</p>
+        ) : null}
         <p className="text-muted-foreground text-sm">{PRODUCT_TAGLINE}</p>
         <p className="text-muted-foreground text-sm">{PRODUCT_ATTRIBUTION}</p>
         <p className="text-muted-foreground text-xs leading-5">

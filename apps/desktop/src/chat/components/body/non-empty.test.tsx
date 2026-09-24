@@ -34,7 +34,35 @@ describe("ChatBodyNonEmpty", () => {
       />,
     );
 
-    expect(screen.getByText("Thinking...")).not.toBeNull();
+    expect(screen.getByText("Searched your meetings")).not.toBeNull();
+    expect(screen.getByText("Writing the answer")).not.toBeNull();
+    expect(screen.queryByText("Thinking...")).toBeNull();
+  });
+
+  it("shows the search while a tool is still running", () => {
+    render(
+      <ChatBodyNonEmpty
+        messages={[
+          {
+            id: "assistant-1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-web_search",
+                toolCallId: "web-1",
+                state: "input-available",
+                input: { query: "acorn pricing" },
+              },
+            ],
+          } as AnlgUIMessage,
+        ]}
+        status="streaming"
+      />,
+    );
+
+    expect(screen.getByText("Searching the web")).not.toBeNull();
+    expect(screen.getByText("acorn pricing")).not.toBeNull();
+    expect(screen.queryByText("Writing the answer")).toBeNull();
   });
 
   it("shows thinking when the next model step has started", () => {

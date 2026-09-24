@@ -1,28 +1,32 @@
-import { Trans } from "@lingui/react/macro";
-import { CircleNotch } from "@phosphor-icons/react";
+import { t } from "@lingui/core/macro";
 
 import { MessageBubble, MessageContainer } from "./shared";
 
-export function LoadingMessage() {
+import { chatActivityFromParts } from "~/chat/activity";
+import { chatStepLabel } from "~/chat/activity-label";
+import type { AnlgUIMessage } from "~/chat/types";
+import { ActivityTrail } from "~/shared/ui/activity-trail";
+
+export function LoadingMessage({ message }: { message?: AnlgUIMessage }) {
+  const activity = chatActivityFromParts(message?.parts);
+
   return (
     <MessageContainer align="start">
       <MessageBubble variant="loading">
-        <div
+        <ActivityTrail
           role="status"
           aria-live="polite"
           data-chat-thinking
-          className="flex items-center gap-2"
-        >
-          <CircleNotch className="h-3.5 w-3.5 animate-spin" />
-          <span className="text-sm">
-            <Trans>Thinking...</Trans>
-          </span>
-          <span aria-hidden="true" className="flex items-center gap-0.5">
-            <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
-            <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
-            <span className="size-1 animate-bounce rounded-full bg-current" />
-          </span>
-        </div>
+          className="min-w-56 border-0 bg-transparent px-0 py-0"
+          sourceHeading={t`Pulled from`}
+          sources={activity.sources}
+          steps={activity.steps.map((step) => ({
+            id: step.id,
+            label: chatStepLabel(step),
+            detail: step.query,
+            state: step.failed ? "failed" : step.state,
+          }))}
+        />
       </MessageBubble>
     </MessageContainer>
   );

@@ -1,8 +1,21 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  getVersion: vi.fn(() => Promise.resolve("0.1.19")),
   platform: vi.fn(() => "macos"),
+}));
+
+vi.mock("@tauri-apps/api/app", () => ({
+  getVersion: mocks.getVersion,
 }));
 
 vi.mock("@tauri-apps/plugin-os", () => ({
@@ -22,6 +35,10 @@ function renderAppSettings({
   appStoreBuild = false,
   automaticUpdates = setting(),
 } = {}) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   return {
     ...render(
       <AppSettingsView
@@ -31,6 +48,13 @@ function renderAppSettings({
         showAppInDock={setting()}
         showTrayIcon={setting()}
       />,
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+        ),
+      },
     ),
     automaticUpdates,
   };
@@ -109,10 +133,13 @@ describe("AppSettingsView", () => {
     expect(screen.queryByLabelText("Have a Pro invite?")).toBeNull();
   });
 
-  it("shows About and license attribution", () => {
+  it("shows About and license attribution", async () => {
     renderAppSettings();
 
     expect(screen.getByText("About")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Version 0.1.19")).toBeTruthy();
+    });
     expect(screen.getByText("Local meeting notes. Live Ask.")).toBeTruthy();
     expect(screen.getByText("Acorn is built on Anarlog (MIT).")).toBeTruthy();
     expect(

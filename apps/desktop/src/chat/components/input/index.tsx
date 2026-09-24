@@ -37,6 +37,7 @@ export function ChatMessageInput({
   onSendMessage,
   disabled: disabledProp,
   isStreaming,
+  activityLabel,
   onStop,
   onDraftContentChange,
   onContextRefsChange,
@@ -52,6 +53,7 @@ export function ChatMessageInput({
   ) => void;
   disabled?: boolean | { disabled: boolean; message?: string };
   isStreaming?: boolean;
+  activityLabel?: string;
   onStop?: () => void;
   onDraftContentChange?: (hasDraftContent: boolean) => void;
   onContextRefsChange?: (refs: ContextRef[]) => void;
@@ -197,7 +199,9 @@ export function ChatMessageInput({
                 className="text-muted-foreground flex min-w-0 items-center gap-1.5 px-1 text-xs"
               >
                 <CircleNotch className="size-3.5 shrink-0 animate-spin" />
-                <span className="truncate">{t`Thinking...`}</span>
+                <span className="truncate">
+                  {activityLabel ?? t`Thinking...`}
+                </span>
               </div>
             ) : null}
             <div className="flex shrink-0 items-center gap-1">
@@ -224,7 +228,9 @@ export function ChatMessageInput({
                       className="text-muted-foreground inline-flex size-7 items-center justify-center"
                     >
                       <CircleNotch className="size-3.5 animate-spin" />
-                      <span className="sr-only">{t`Thinking...`}</span>
+                      <span className="sr-only">
+                        {activityLabel ?? t`Thinking...`}
+                      </span>
                     </span>
                   ) : null}
                   <Button

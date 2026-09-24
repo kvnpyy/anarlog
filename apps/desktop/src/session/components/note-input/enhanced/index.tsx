@@ -9,6 +9,7 @@ import { EmptyEnhanced } from "./empty";
 import { EnhanceError } from "./enhance-error";
 import { getStreamedEnhancePreview } from "./stream-preview";
 import { StreamingView } from "./streaming";
+import { SummaryActivity } from "./summary-activity";
 
 import { useAITaskTask } from "~/ai/hooks";
 import { useLLMConnectionStatus } from "~/ai/hooks";
@@ -102,18 +103,21 @@ export const Enhanced = forwardRef<
 
     if (showStreaming && streamPreview) {
       return (
-        <EnhancedEditor
-          key={`${enhancedNoteId}-preview`}
-          ref={ref}
-          sessionId={sessionId}
-          sessionTitle={sessionTitle}
-          enhancedNoteId={enhancedNoteId}
-          content={enhancedNote?.content ?? ""}
-          contentOverride={streamPreview}
-          onNavigateToTitle={onNavigateToTitle}
-          onViewReady={onViewReady}
-          onViewDisposed={onViewDisposed}
-        />
+        <div className="flex flex-col gap-4">
+          {status === "generating" ? <SummaryActivity writing compact /> : null}
+          <EnhancedEditor
+            key={`${enhancedNoteId}-preview`}
+            ref={ref}
+            sessionId={sessionId}
+            sessionTitle={sessionTitle}
+            enhancedNoteId={enhancedNoteId}
+            content={enhancedNote?.content ?? ""}
+            contentOverride={streamPreview}
+            onNavigateToTitle={onNavigateToTitle}
+            onViewReady={onViewReady}
+            onViewDisposed={onViewDisposed}
+          />
+        </div>
       );
     }
 

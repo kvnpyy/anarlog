@@ -492,10 +492,6 @@ msgstr "An unexpected error occurred."
 msgid "Anagram"
 msgstr "Anagram"
 
-#: src/session/components/note-input/enhanced/streaming.tsx
-msgid "Analyzing structure..."
-msgstr "Analyzing structure..."
-
 #: src/templates/template-icon-picker.tsx
 msgid "Animals & Nature"
 msgstr "Animals & Nature"
@@ -863,6 +859,14 @@ msgstr "Chat history"
 msgid "Check microphone permission and the selected input device, then try again."
 msgstr "Check microphone permission and the selected input device, then try again."
 
+#: src/chat/activity-label.ts
+msgid "Checked earlier meetings"
+msgstr "Checked earlier meetings"
+
+#: src/chat/activity-label.ts
+msgid "Checked your calendar"
+msgstr "Checked your calendar"
+
 #: src/imports/screen.tsx
 msgid "Checking connection"
 msgstr "Checking connection"
@@ -870,6 +874,10 @@ msgstr "Checking connection"
 #: src/settings/automations/starter-config.tsx
 msgid "Checking connection…"
 msgstr "Checking connection…"
+
+#: src/chat/activity-label.ts
+msgid "Checking earlier meetings"
+msgstr "Checking earlier meetings"
 
 #: src/settings/sync/index.tsx
 msgid "Checking for changes"
@@ -886,6 +894,10 @@ msgstr "Checking migration..."
 #: src/onboarding/account/after-login.tsx
 msgid "Checking trial eligibility..."
 msgstr "Checking trial eligibility..."
+
+#: src/chat/activity-label.ts
+msgid "Checking your calendar"
+msgstr "Checking your calendar"
 
 #: src/settings/developers/cli.tsx
 msgid "Checking…"
@@ -1852,6 +1864,14 @@ msgstr "Draft email"
 msgid "Draft follow-up email."
 msgstr "Draft follow-up email."
 
+#: src/chat/activity-label.ts
+msgid "Drafted a change"
+msgstr "Drafted a change"
+
+#: src/chat/activity-label.ts
+msgid "Drafting a change"
+msgstr "Drafting a change"
+
 #: src/templates/details.tsx
 #: src/templates/template-form.tsx
 msgid "Duplicate"
@@ -2106,6 +2126,10 @@ msgstr "Find key decisions."
 msgid "Find something someone said."
 msgstr "Find something someone said."
 
+#: src/chat/activity-label.ts
+msgid "Finding related meetings"
+msgstr "Finding related meetings"
+
 #: src/instruction/index.tsx
 msgid "Finish checkout in your browser, then return to Acorn."
 msgstr "Finish checkout in your browser, then return to Acorn."
@@ -2117,6 +2141,10 @@ msgstr "Finish in your browser, then return to Acorn."
 #: src/settings/general/account.tsx
 msgid "Finish sign-in"
 msgstr "Finish sign-in"
+
+#: src/chat/activity-label.ts
+msgid "Finished a step"
+msgstr "Finished a step"
 
 #: src/settings/ai/llm/subscriptions/connect.tsx
 msgid "Finishing connection…"
@@ -2150,6 +2178,10 @@ msgstr "For enabled notifications"
 msgid "Forever"
 msgstr "Forever"
 
+#: src/chat/activity-label.ts
+msgid "Found related meetings"
+msgstr "Found related meetings"
+
 #: src/settings/general/account.tsx
 msgid "Free"
 msgstr "Free"
@@ -2166,6 +2198,10 @@ msgstr "Full access"
 #: src/main/windows-title-bar.tsx
 msgid "Full Screen"
 msgstr "Full Screen"
+
+#: src/session/components/note-input/enhanced/summary-activity.tsx
+msgid "Gathering the transcript"
+msgstr "Gathering the transcript"
 
 #: src/settings/general/index.tsx
 #: src/sidebar/settings.tsx
@@ -2185,7 +2221,7 @@ msgstr "Generating title..."
 msgid "Generating transcript..."
 msgstr "Generating transcript..."
 
-#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/session/components/note-input/enhanced/summary-activity.tsx
 msgid "Generating your notes from the transcript. This usually takes a few seconds."
 msgstr "Generating your notes from the transcript. This usually takes a few seconds."
 
@@ -2669,6 +2705,14 @@ msgstr "Locked note"
 msgid "Login"
 msgstr "Login"
 
+#: src/chat/activity-label.ts
+msgid "Looked up people"
+msgstr "Looked up people"
+
+#: src/chat/activity-label.ts
+msgid "Looking up people"
+msgstr "Looking up people"
+
 #: src/settings/appearance/theme.tsx
 msgid "Low-light canvas"
 msgstr "Low-light canvas"
@@ -2847,10 +2891,6 @@ msgstr "Model being used"
 #: src/settings/ai/stt/context.tsx
 msgid "Model download couldn’t start"
 msgstr "Model download couldn’t start"
-
-#: src/session/components/note-input/enhanced/streaming.tsx
-msgid "Model is thinking..."
-msgstr "Model is thinking..."
 
 #: src/settings/general/week-start.tsx
 msgid "Monday"
@@ -3175,7 +3215,7 @@ msgstr "Older files that differ from your current data were kept as recovery cop
 msgid "Oldest"
 msgstr "Oldest"
 
-#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/session/components/note-input/enhanced/summary-activity.tsx
 msgid "On-device models can take a few minutes to warm up before text appears."
 msgstr "On-device models can take a few minutes to warm up before text appears."
 
@@ -3273,6 +3313,14 @@ msgstr "Open the meeting link when listening starts."
 #: src/session-sharing/management-panel.tsx
 msgid "Open web copy"
 msgstr "Open web copy"
+
+#: src/chat/activity-label.ts
+msgid "Opened a meeting"
+msgstr "Opened a meeting"
+
+#: src/chat/activity-label.ts
+msgid "Opening a meeting"
+msgstr "Opening a meeting"
 
 #: src/settings/ai/llm/subscriptions/connect.tsx
 msgid "Opening sign-in…"
@@ -3444,10 +3492,6 @@ msgstr "Post to a channel"
 msgid "Prepare for events with a 5-minute reminder."
 msgstr "Prepare for events with a 5-minute reminder."
 
-#: src/session/components/note-input/enhanced/streaming.tsx
-msgid "Preparing summary..."
-msgstr "Preparing summary..."
-
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "Preparing transcript..."
 msgstr "Preparing transcript..."
@@ -3509,6 +3553,11 @@ msgstr "Protect cloud sync"
 msgid "Public on the web"
 msgstr "Public on the web"
 
+#: src/chat/components/content.tsx
+#: src/chat/components/message/loading.tsx
+msgid "Pulled from"
+msgstr "Pulled from"
+
 #: src/calendar/components/calendar-view.tsx
 msgid "Pulling in your events…"
 msgstr "Pulling in your events…"
@@ -3533,11 +3582,19 @@ msgstr "Read meeting controls, chat, and participant status."
 msgid "Read meeting controls, visible chat, and participant status"
 msgstr "Read meeting controls, visible chat, and participant status"
 
+#: src/chat/activity-label.ts
+msgid "Read the transcript"
+msgstr "Read the transcript"
+
+#: src/chat/activity-label.ts
+msgid "Reading the transcript"
+msgstr "Reading the transcript"
+
 #: src/onboarding/index.tsx
 msgid "Ready to go"
 msgstr "Ready to go"
 
-#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/session/components/note-input/enhanced/summary-activity.tsx
 msgid "Reasoning models think through the transcript before writing."
 msgstr "Reasoning models think through the transcript before writing."
 
@@ -3990,6 +4047,30 @@ msgstr "Search timezone..."
 msgid "Search..."
 msgstr "Search..."
 
+#: src/chat/activity-label.ts
+msgid "Searched notes and transcripts"
+msgstr "Searched notes and transcripts"
+
+#: src/chat/activity-label.ts
+msgid "Searched the web"
+msgstr "Searched the web"
+
+#: src/chat/activity-label.ts
+msgid "Searched your meetings"
+msgstr "Searched your meetings"
+
+#: src/chat/activity-label.ts
+msgid "Searching notes and transcripts"
+msgstr "Searching notes and transcripts"
+
+#: src/chat/activity-label.ts
+msgid "Searching the web"
+msgstr "Searching the web"
+
+#: src/chat/activity-label.ts
+msgid "Searching your meetings"
+msgstr "Searching your meetings"
+
 #: src/settings/team/index.tsx
 msgid "Seats"
 msgstr "Seats"
@@ -4144,6 +4225,10 @@ msgstr "Setting up encrypted cloud sync."
 #: src/sidebar/toast/registry.tsx
 msgid "Settings"
 msgstr "Settings"
+
+#: src/session/components/note-input/enhanced/summary-activity.tsx
+msgid "Shaping the notes"
+msgstr "Shaping the notes"
 
 #: src/session-sharing/draft-panel.tsx
 #: src/session-sharing/management-panel.tsx
@@ -4708,6 +4793,10 @@ msgstr "Take the enhanced note with decisions and action items."
 msgid "Take the enhanced note with decisions and follow-ups."
 msgstr "Take the enhanced note with decisions and follow-ups."
 
+#: src/session/components/note-input/enhanced/summary-activity.tsx
+msgid "Taking another pass"
+msgstr "Taking another pass"
+
 #: src/settings/developers/skills.tsx
 msgid "Teach coding agents when and how to use the Acorn CLI and MCP"
 msgstr "Teach coding agents when and how to use the Acorn CLI and MCP"
@@ -4766,6 +4855,10 @@ msgstr "Test failed ({0})"
 msgid "Test runs are not available yet."
 msgstr "Test runs are not available yet."
 
+#: src/chat/activity-label.ts
+msgid "That step didn't finish"
+msgstr "That step didn't finish"
+
 #: src/onboarding/folder-location.tsx
 msgid "The app will restart after onboarding to apply your storage changes"
 msgstr "The app will restart after onboarding to apply your storage changes"
@@ -4802,9 +4895,12 @@ msgstr "Then"
 msgid "These rules apply to every member. Sharing changes fail closed on the server."
 msgstr "These rules apply to every member. Sharing changes fail closed on the server."
 
-#: src/chat/components/content.tsx
+#: src/session/components/note-input/enhanced/summary-activity.tsx
+msgid "Thinking it through"
+msgstr "Thinking it through"
+
+#: src/chat/activity-label.ts
 #: src/chat/components/input/index.tsx
-#: src/chat/components/message/loading.tsx
 msgid "Thinking..."
 msgstr "Thinking..."
 
@@ -4849,10 +4945,6 @@ msgstr "Timezone"
 #: src/settings/dictionary/index.tsx
 msgid "Tip: Add teammate names, acronyms, company jargon, and product terms."
 msgstr "Tip: Add teammate names, acronyms, company jargon, and product terms."
-
-#: src/session/components/note-input/enhanced/streaming.tsx
-msgid "Tip: The Acorn team loves our users!"
-msgstr "Tip: The Acorn team loves our users!"
 
 #: src/sidebar/timeline/utils/index.ts
 msgid "Today"
@@ -5295,6 +5387,10 @@ msgstr "Where your notes and recordings are stored"
 msgid "Workflow"
 msgstr "Workflow"
 
+#: src/chat/activity-label.ts
+msgid "Working on it"
+msgstr "Working on it"
+
 #: src/sidebar/settings.tsx
 msgid "Workspace"
 msgstr "Workspace"
@@ -5314,6 +5410,14 @@ msgstr "Workspace subdomain"
 #: src/automations/starters.tsx
 msgid "Write to a folder"
 msgstr "Write to a folder"
+
+#: src/chat/activity-label.ts
+msgid "Writing the answer"
+msgstr "Writing the answer"
+
+#: src/session/components/note-input/enhanced/summary-activity.tsx
+msgid "Writing the notes"
+msgstr "Writing the notes"
 
 #: src/sidebar/timeline/utils/index.ts
 msgid "Yesterday"

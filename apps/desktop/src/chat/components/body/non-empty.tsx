@@ -43,7 +43,15 @@ export function ChatBodyNonEmpty({
           }
         />
       ))}
-      {showLoadingState && <LoadingMessage />}
+      {showLoadingState && (
+        <LoadingMessage
+          message={
+            messages[messages.length - 1]?.role === "assistant"
+              ? messages[messages.length - 1]
+              : undefined
+          }
+        />
+      )}
       {showErrorState && <ErrorMessage error={error} onRetry={onReload} />}
     </div>
   );
