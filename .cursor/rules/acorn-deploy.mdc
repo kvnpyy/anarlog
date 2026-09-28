@@ -27,3 +27,17 @@ The `.exe.sig` must sit next to the installer. Do not bump the feed version with
 Staging/stable in GitHub Actions is leftover Anarlog wiring. For Acorn, ship the production Mac build (the Action input is still `channel: stable` if that workflow is used). Do not explain those channel names unless he asks.
 
 A PR is not a deploy. GitHub check failures are GitHub tests, not his local app.
+
+## Mac notarization
+
+After the production Mac DMG is signed, notarize it with the keychain profile already on this Mac. Do not look for an Apple ID in the .p12. The certificate only has the Developer ID name and team `36T9P944XY`.
+
+```bash
+xcrun notarytool submit path/to/Acorn_<version>_aarch64.dmg \
+  --keychain-profile acorn-notary --wait
+xcrun stapler staple path/to/Acorn_<version>_aarch64.dmg
+```
+
+`acorn-notary` is in the login keychain. If notarytool says the profile is missing, the login keychain is locked or the search list is hitting the locked `acorn-codesign` keychain. Unlock the login keychain and retry. Do not ask Kevin for the Apple ID.
+
+The `acorn-codesign` keychain was replaced on 2026-09-24 and the saved password no longer opens it. Sign with keychain `acorn-codesign-current`, built from `~/.acorn-signing/developer-id-legacy.p12`. Do not ask him to type that old password.
