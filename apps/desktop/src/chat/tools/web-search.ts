@@ -80,9 +80,10 @@ export async function runWebSearch(
 export const buildWebSearchTool = (deps: ToolDependencies) =>
   tool({
     description: `
-Search the public web for current or external information.
-Use this for questions about public websites, URLs, companies, products, people, news, or facts that may not be in local notes.
-Return source URLs in the final answer when web results are used.
+Check a public spelling or identity, such as a company name, product name, or a person's public title.
+Return the source URL and label the result as public.
+Do not use web results to fill what was said in a meeting, including deal-analysis fields.
+Do not crawl or summarize websites. One search for the entity is enough.
 Do not use this when the user is asking only about local notes, meetings, contacts, or calendar events.
 `.trim(),
     inputSchema: webSearchInputSchema,

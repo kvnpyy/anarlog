@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { ToolDependencies } from "./types";
 
+import { mentionsAccount } from "~/chat/analysis";
 import type { SearchFilters } from "~/search/contexts/engine/types";
 import {
   clampSearchCreatedAtFilter,
@@ -88,6 +89,7 @@ Search for meetings using note and transcript content plus optional date filters
 Use this first for open-ended questions about past meetings, people, decisions, or topics when the answer may be in meeting notes and no meeting note context is attached.
 Use filters.created_at.kind="relative" with recent_days for natural-language date ranges.
 Use an empty query string when the user only wants meetings by date/time filter.
+Pass account when the user names a company or deal. Meetings that do not mention that name are omitted.
 Returns relevant meetings with matching content excerpts.
 `.trim(),
     inputSchema: z.object({
@@ -96,6 +98,12 @@ Returns relevant meetings with matching content excerpts.
         .optional()
         .describe(
           "Optional text query for finding relevant meetings. Omit this when filtering only by date/time.",
+        ),
+      account: z
+        .string()
+        .optional()
+        .describe(
+          "Company or deal this question is about. Meetings that do not mention this name are omitted.",
         ),
       filters: searchMeetingsFiltersSchema,
       limit: z
@@ -108,6 +116,7 @@ Returns relevant meetings with matching content excerpts.
     }),
     execute: async (params: {
       query?: string;
+      account?: string;
       filters?: SearchMeetingsFiltersInput;
       limit?: number;
     }) => {
@@ -143,15 +152,31 @@ Returns relevant meetings with matching content excerpts.
         }
         return !folderSessionIds || folderSessionIds.has(hit.document.id);
       });
+      const account = params.account?.trim();
+      const accountHits = account
+        ? meetingHits.filter((hit) =>
+            mentionsAccount(
+              `${hit.document.title}\n${hit.document.content}`,
+              account,
+            ),
+          )
+        : meetingHits;
       const limit = params.limit ?? 5;
-      const results = meetingHits.slice(0, limit).map((hit) => ({
+      const results = accountHits.slice(0, limit).map((hit) => ({
         id: hit.document.id,
         title: hit.document.title,
         excerpt: hit.document.content.slice(0, 180),
         score: hit.score,
         created_at: hit.document.created_at,
       }));
+      const omitted = account ? meetingHits.length - accountHits.length : 0;
 
-      return withAiWindowMeta({ results }, window);
+      return withAiWindowMeta(
+        {
+          results,
+          ...(omitted > 0 ? { omitted_other_accounts: omitted } : {}),
+        },
+        window,
+      );
     },
   });

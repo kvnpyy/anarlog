@@ -9,6 +9,7 @@ export const FREE_AI_WINDOW_DAYS = 30;
 export const PRO_AI_WINDOW_DAYS = 365;
 export const FREE_AI_WINDOW_NOTICE =
   "Free only searches the last 30 days. Acorn Pro remembers 365 days.";
+export const FREE_AI_DAILY_QUESTIONS = 30;
 
 export const ACORN_PLANS = [
   {
@@ -20,13 +21,19 @@ export const ACORN_PLANS = [
     features: [
       { label: "Unlimited local notes — never locked", included: true },
       { label: "Live transcription and Live Ask", included: true },
-      { label: "Default AI (Haiku)", included: true },
+      {
+        label: `${FREE_AI_DAILY_QUESTIONS} AI questions a day`,
+        included: true,
+      },
+      { label: "Haiku for everyday questions", included: true },
+      { label: "Smarter model for deal analysis", included: true },
       {
         label: "Your own Anthropic, OpenAI, Grok, Gemini, or custom keys",
         included: true,
       },
       { label: "30-day AI memory", included: true },
-      { label: "Smarter AI", included: false },
+      { label: "Unlimited AI questions", included: false },
+      { label: "Smarter AI on every question", included: false },
       { label: "365-day AI memory", included: false },
       { label: "Teams & shared notes", included: false },
       { label: "CLI, MCP & webhooks", included: false },
@@ -40,7 +47,8 @@ export const ACORN_PLANS = [
     subtitle: "Checkout isn’t open yet",
     features: [
       { label: "Everything in Free", included: true },
-      { label: "Smarter AI", included: true },
+      { label: "Unlimited AI questions", included: true },
+      { label: "Smarter AI on every question", included: true },
       { label: "365-day AI memory", included: true },
       { label: "Teams & shared notes", included: true },
       { label: "CLI, MCP & webhooks", included: true },

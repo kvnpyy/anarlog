@@ -616,6 +616,25 @@ describe("session correction chat tool", () => {
     expect(mocks.updateSettingValue).not.toHaveBeenCalled();
   });
 
+  it("saves a corrected name when it is not in the note", async () => {
+    mocks.loadSessionContentSnapshot.mockResolvedValue(
+      snapshot({ notes: [summary("Discussed the loyalty program.")] }),
+    );
+
+    const result = await (buildTool() as any).execute({
+      oldText: "PowerViews",
+      newText: "Power Reviews",
+      dictionaryTerms: ["Power Reviews"],
+    });
+
+    expect(mocks.applySessionContentCorrections).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "applied",
+      message: "Saved the corrected name for future notes and transcription.",
+      dictionaryChanges: { addedTerms: ["Power Reviews"] },
+    });
+  });
+
   it("does not report a durable correction as failed when dictionary storage fails", async () => {
     mocks.loadSessionContentSnapshot.mockResolvedValue(
       snapshot({ notes: [summary("Discussed X roadmap.")] }),

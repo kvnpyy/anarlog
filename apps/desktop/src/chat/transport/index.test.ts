@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   agentStream: vi.fn(),
+  constructedModels: [] as unknown[],
   getRecentLiveTranscriptContext: vi.fn(() => null as string | null),
   smoothStream: vi.fn(),
   streamTransform: vi.fn(),
@@ -15,6 +16,9 @@ vi.mock("ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("ai")>()),
   smoothStream: mocks.smoothStream,
   ToolLoopAgent: class {
+    constructor(options: { model: unknown }) {
+      mocks.constructedModels.push(options.model);
+    }
     stream = mocks.agentStream;
   },
 }));
@@ -24,6 +28,7 @@ import { CustomChatTransport } from "./index";
 describe("CustomChatTransport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.constructedModels.length = 0;
     mocks.getRecentLiveTranscriptContext.mockReturnValue(null);
     mocks.smoothStream.mockReturnValue(mocks.streamTransform);
     mocks.agentStream.mockResolvedValue({
@@ -177,5 +182,75 @@ describe("CustomChatTransport", () => {
     const serialized = JSON.stringify(streamArgs.messages);
     expect(serialized).toContain("Help me sound smart in this meeting");
     expect(serialized).not.toContain("Sound smart");
+  });
+
+  it("uses the smarter model for a deal-analysis question", async () => {
+    const everyday = { id: "haiku" };
+    const deal = { id: "sonnet" };
+    const transport = new CustomChatTransport(
+      everyday as never,
+      {},
+      undefined,
+      undefined,
+      { dealAnalysisModel: deal as never },
+    );
+
+    await transport.sendMessages({
+      abortSignal: new AbortController().signal,
+      chatId: "chat-1",
+      messageId: undefined,
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "full meddpicc for Bonobos" }],
+        },
+      ],
+      trigger: "submit-message",
+    });
+
+    expect(mocks.constructedModels).toEqual([deal]);
+  });
+
+  it("answers with the daily limit instead of calling the model", async () => {
+    const transport = new CustomChatTransport(
+      {} as never,
+      {},
+      undefined,
+      undefined,
+      {
+        reserveTurn: async () => ({
+          allowed: false,
+          message: "You've used today's 30 free AI questions.",
+        }),
+      },
+    );
+
+    const stream = await transport.sendMessages({
+      abortSignal: new AbortController().signal,
+      chatId: "chat-1",
+      messageId: undefined,
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          parts: [{ type: "text", text: "What did we decide?" }],
+        },
+      ],
+      trigger: "submit-message",
+    });
+
+    const chunks: Array<{ type: string; delta?: string }> = [];
+    const reader = stream.getReader();
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      chunks.push(next.value as { type: string; delta?: string });
+    }
+
+    expect(mocks.agentStream).not.toHaveBeenCalled();
+    expect(chunks.map((chunk) => chunk.delta).join("")).toContain(
+      "30 free AI questions",
+    );
   });
 });

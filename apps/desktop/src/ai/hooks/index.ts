@@ -1,6 +1,7 @@
 export { useAITaskTask } from "./useAITaskTask";
 export {
   type LLMConnectionStatus,
+  useDealAnalysisLanguageModel,
   useLanguageModel,
   useLLMConnection,
   useLLMConnectionStatus,

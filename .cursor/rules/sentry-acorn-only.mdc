@@ -1,0 +1,16 @@
+---
+description: Sentry lookups in this repo stay on Acorn Desktop.
+alwaysApply: true
+---
+
+# Sentry scope
+
+This Cursor project is Acorn. Sentry is signed in to the whole `kevin-mow` account, which also contains other products. Do not read those.
+
+When using Sentry from this repo:
+
+- Organization: `kevin-mow`
+- Region: `https://de.sentry.io`
+- Project slug: `react-native` (the project is named Acorn Desktop)
+
+Pass that project on every search. Do not list issues, events, or projects for the account without it. If a result is from another project, drop it and do not describe it.

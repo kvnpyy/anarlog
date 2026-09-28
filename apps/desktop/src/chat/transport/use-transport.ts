@@ -6,15 +6,22 @@ import { commands as templateCommands } from "@anlg/plugin-template";
 import { CustomChatTransport } from "./index";
 import type { ResolvedChatContext } from "./index";
 
-import { useLanguageModel } from "~/ai/hooks";
+import {
+  useDealAnalysisLanguageModel,
+  useLanguageModel,
+  useLLMConnection,
+} from "~/ai/hooks";
+import { useBillingAccess } from "~/auth/billing-context";
 import type { ContextRef } from "~/chat/context/entities";
 import { hydrateSessionContext } from "~/chat/context/session-context-hydrator";
 import {
   formatUserProfileGuidance,
   readUserProfile,
 } from "~/chat/context/user-profile";
+import { reserveFreeAiTurn } from "~/chat/reserve-ai-turn";
 import { loadHuman, loadOrganization } from "~/contacts/queries";
 import { useToolRegistry } from "~/contexts/tool";
+import { isAcornHostedApiKey } from "~/shared/acorn-defaults";
 import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue, useConfigValues } from "~/shared/config";
 import { FREE_AI_WINDOW_DAYS, PRO_AI_WINDOW_DAYS } from "~/shared/product";
@@ -24,13 +31,14 @@ Context and local meeting tool guidance:
 - Use list_meetings for recent meetings, title or ID lookup, pagination, and exact recurring-series filtering. Never guess a meeting ID.
 - Meeting search tools only include meetings inside the current AI knowledge window. If a tool result includes notice or error "outside_ai_window", tell the user that Free only searches the last ${FREE_AI_WINDOW_DAYS} days and that Acorn Pro remembers ${PRO_AI_WINDOW_DAYS} days. Do not claim you searched older meetings.
 - Use search_meetings for open-ended questions about topics, people, decisions, or date ranges across meeting content. Use search_meeting_content when the user needs exact wording from notes or transcripts.
+- When the user names a company, account, or deal, pass that exact name as account on search_meetings and search_meeting_content. Ignore meetings that do not mention that company, including related meetings. Do not mix facts from another account into the answer.
 - After resolving an ID, use get_meeting for the canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for bounded transcript pages, following pagination.next_offset only when more context is needed.
 - Use get_recurring_meeting_history for meetings in the same recurring series. Use find_related_meetings only for broader relationships such as shared participants or nearby dates.
 - When the user refers to the current meeting, prefer the attached meeting context. Do not fetch it again unless the task needs newer structured data.
 - When the user asks to prepare for a meeting, create an agenda, organize talking points, or add drafted content before or during a meeting, call edit_memo with the complete replacement markdown so they can review and apply it. Preserve relevant existing memo content. Use edit_memo even when the memo is empty; do not use edit_summary for meeting preparation.
 - When the user asks to rewrite, revise, refocus, shorten, or restructure an existing summary, call edit_summary with the complete replacement markdown so they can review and apply it. Do not return the rewrite only as a fenced markdown block.
 - Use edit_summary only for existing generated post-meeting summaries. Use apply_session_correction for narrow exact old-to-new corrections and edit_summary for broader summary rewrites. Only return a draft without calling edit_memo or edit_summary when the user explicitly asks not to change the meeting content or no target session can be resolved.
-- When the user corrects note content with wording like "it's not X but Y", use apply_session_correction to update the current session summary, visible session title, and transcript unless they explicitly ask for one target only. Add uncommon names, companies, products, acronyms, or jargon from the correction to dictionaryTerms so future transcription and summaries can prefer them; skip common names. If the tool reports partial, use get_meeting or retry with the exact remaining text instead of claiming both were updated.
+- When the user corrects note content with wording like "it's not X but Y", use apply_session_correction to update the current session summary, visible session title, and transcript unless they explicitly ask for one target only. Add uncommon names, companies, products, acronyms, or jargon from the correction to dictionaryTerms so future transcription and summaries can prefer them; skip common names. If the wrong name is only in this chat, or the note does not contain it, still call apply_session_correction with dictionaryTerms set to the correct name. If the tool reports partial, use get_meeting or retry with the exact remaining text instead of claiming both were updated.
 - When the user asks to move a recording, transcript, or notes onto a different existing meeting, resolve both meeting IDs with list_meetings or search_meetings, then call move_meeting_contents. Default the source to the current meeting when they are looking at the misplaced recording. Do not guess IDs. If the target already has a recording or transcript, explain that and stop.
 - Do not ask the user to open or share a meeting until list_meetings, search_meetings, search_meeting_content, and get_meeting cannot find enough local context.
 - Use typed meeting tools instead of constructing shell commands, crawling files, or accessing SQLite directly.
@@ -51,9 +59,17 @@ Copy-ready draft guidance:
 - Do not write an internal recap, debrief, or "here's what we need to do internally" email as if you work at the other company. On a sales, customer, or vendor call, write the follow-up the user would send to the other side.
 - When drafting a follow-up email, only include facts, names, dates, commitments, and next steps that appear in the meeting transcript or notes. Omit anything unclear. Do not invent recipients, product names, numbers, quotes, or action items.
 
+Deal analysis:
+- Answer analyses from meetings about the named account only. Use only facts, names, numbers, dates, and commitments those meetings state. If a point was not said, write "Not in the notes."
+- Preserve product, company, and person names exactly as the notes write them.
+- For MEDDPICC, use only these fields, in this order: Metrics (how they will measure success), Economic Buyer, Decision Criteria, Decision Process, Paper Process, Identify Pain, Champion, Competition.
+- MEDDPIC is that list without Paper Process. BANT is Budget, Authority, Need, Timeline. SPICED is Situation, Pain, Impact, Critical Event, Decision.
+- One section per field. Do not invent framework letters, extra sections, titles, competitors, or timelines to fill a template.
+
 Web search guidance:
-- Use web_search for public websites, URLs, companies, products, people, news, or current facts that may be outside local notes.
-- Include source URLs in the final answer when web_search results are used.
+- Use web_search only to check a public spelling or identity: a company name, product name, or a person's public title.
+- Label that result as public and include the source URL. Do not use it to fill what was said on a call, including any MEDDPICC field.
+- Do not crawl or summarize websites. One search for the entity is enough.
 - Do not use web_search for questions that only need local notes, contacts, or calendar events.
 `.trim();
 
@@ -226,7 +242,12 @@ export function useTransport(
 ) {
   const registry = useToolRegistry();
   const configuredModel = useLanguageModel("chat");
+  const dealAnalysisModel = useDealAnalysisLanguageModel();
+  const { conn } = useLLMConnection();
+  const { isPro } = useBillingAccess();
   const model = modelOverride ?? configuredModel;
+  const meterHostedChat =
+    !isPro && conn?.providerId === "acorn" && isAcornHostedApiKey(conn.apiKey);
   const language = useConfigValue("ai_language") || "en";
   const acornPro = useConfigValue("acorn_pro") === true;
   const knowledgeWindow = getAiKnowledgeWindow(acornPro);
@@ -345,8 +366,20 @@ export function useTransport(
           ? ({ kind: "text", text } satisfies ResolvedChatContext)
           : null;
       },
+      {
+        dealAnalysisModel: modelOverride ? null : dealAnalysisModel,
+        reserveTurn: meterHostedChat ? reserveFreeAiTurn : undefined,
+      },
     );
-  }, [model, tools, effectiveSystemPrompt, userId]);
+  }, [
+    model,
+    tools,
+    effectiveSystemPrompt,
+    userId,
+    modelOverride,
+    dealAnalysisModel,
+    meterHostedChat,
+  ]);
 
   return {
     transport,

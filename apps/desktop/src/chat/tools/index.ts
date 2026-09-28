@@ -132,7 +132,12 @@ type LocalTools = {
     output: MeetingPage;
   };
   search_meeting_content: {
-    input: { query: string; meeting_ids?: string[]; limit?: number };
+    input: {
+      query: string;
+      account?: string;
+      meeting_ids?: string[];
+      limit?: number;
+    };
     output: {
       query: string;
       scanned?: number;
@@ -165,6 +170,7 @@ type LocalTools = {
   search_meetings: {
     input: {
       query?: string;
+      account?: string;
       filters?: {
         created_at?:
           | ({

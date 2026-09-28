@@ -202,6 +202,11 @@ export const SETTING_DEFINITIONS = {
     path: ["personalization", "dictionary_terms"],
     default: "[]" as string,
   },
+  ai_usage_daily: {
+    type: "string",
+    path: ["ai", "usage_daily"],
+    default: "" as string,
+  },
   user_profile_name: {
     type: "string",
     path: ["personalization", "user_name"],

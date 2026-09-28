@@ -425,6 +425,34 @@ function dictionaryKey(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
+async function dictionaryOnlyResult(
+  sessionId: string | undefined,
+  terms: string[] | undefined,
+) {
+  if (!terms || terms.length === 0) {
+    return null;
+  }
+
+  try {
+    const dictionaryChanges = await saveDictionaryTerms(terms);
+    return {
+      status: "applied" as const,
+      message: "Saved the corrected name for future notes and transcription.",
+      sessionId,
+      summaryChanges: [],
+      transcriptChanges: [],
+      dictionaryChanges,
+    };
+  } catch (error) {
+    console.error("Failed to save correction dictionary terms", error);
+    return {
+      status: "error" as const,
+      message: "The corrected name could not be saved.",
+      sessionId,
+    };
+  }
+}
+
 async function saveDictionaryTerms(
   terms?: string[],
 ): Promise<DictionaryChange> {
@@ -463,7 +491,7 @@ export const buildApplySessionCorrectionTool = (
 ) =>
   tool({
     description:
-      "Apply a correction to a session summary, visible session title, and/or transcript. Use this when the user corrects note content, for example 'it's not X but Y'. Prefer summary_and_transcript for factual meeting corrections unless the user explicitly asks for one target only. Read the note first if you need exact summary text.",
+      "Apply a correction to a session summary, visible session title, and/or transcript. Use this when the user corrects note content, for example 'it's not X but Y'. Prefer summary_and_transcript for factual meeting corrections unless the user explicitly asks for one target only. Read the note first if you need exact summary text. Pass dictionaryTerms for the corrected name even when that text is only in the chat and not in the note.",
     inputSchema: z.object({
       sessionId: z
         .string()
@@ -505,11 +533,13 @@ export const buildApplySessionCorrectionTool = (
       const target = params.target ?? "summary_and_transcript";
 
       if (!sessionId) {
-        return {
-          status: "error",
-          message:
-            "No active session selected. Provide sessionId explicitly when calling apply_session_correction.",
-        };
+        return (
+          (await dictionaryOnlyResult(undefined, params.dictionaryTerms)) ?? {
+            status: "error",
+            message:
+              "No active session selected. Provide sessionId explicitly when calling apply_session_correction.",
+          }
+        );
       }
 
       const newText = params.newText.trim();
@@ -526,11 +556,13 @@ export const buildApplySessionCorrectionTool = (
         (params.sessionId ? undefined : deps.getEnhancedNoteId());
       const snapshot = await loadSessionContentSnapshot(sessionId);
       if (!snapshot) {
-        return {
-          status: "error",
-          message: "The target session could not be loaded.",
-          sessionId,
-        };
+        return (
+          (await dictionaryOnlyResult(sessionId, params.dictionaryTerms)) ?? {
+            status: "error",
+            message: "The target session could not be loaded.",
+            sessionId,
+          }
+        );
       }
 
       let editSummary = shouldEditSummary(target);
@@ -581,12 +613,14 @@ export const buildApplySessionCorrectionTool = (
         transcriptChanges.length === 0 &&
         !titleChange
       ) {
-        return {
-          status: "not_found",
-          message:
-            "No exact match found. Read the note and call apply_session_correction with the exact current text.",
-          sessionId,
-        };
+        return (
+          (await dictionaryOnlyResult(sessionId, params.dictionaryTerms)) ?? {
+            status: "not_found",
+            message:
+              "No exact match found. Read the note and call apply_session_correction with the exact current text.",
+            sessionId,
+          }
+        );
       }
 
       try {

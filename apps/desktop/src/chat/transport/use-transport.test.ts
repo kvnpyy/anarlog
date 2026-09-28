@@ -16,6 +16,17 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Base prompt");
     expect(prompt).toContain("Use list_meetings");
     expect(prompt).toContain("Use search_meetings");
+    expect(prompt).toContain("pass that exact name as account");
+    expect(prompt).toContain("Do not mix facts from another account");
+    expect(prompt).toContain("Not in the notes");
+    expect(prompt).toContain(
+      "Metrics (how they will measure success), Economic Buyer, Decision Criteria, Decision Process, Paper Process, Identify Pain, Champion, Competition",
+    );
+    expect(prompt).toContain("still call apply_session_correction");
+    expect(prompt).toContain(
+      "Use web_search only to check a public spelling or identity",
+    );
+    expect(prompt).toContain("Do not crawl or summarize websites");
     expect(prompt).toContain("Use search_meeting_content");
     expect(prompt).toContain("use get_meeting");
     expect(prompt).toContain("Use get_meeting_transcript");

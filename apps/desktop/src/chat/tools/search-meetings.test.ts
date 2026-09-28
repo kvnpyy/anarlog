@@ -125,4 +125,43 @@ describe("search meetings chat tool", () => {
       expect.objectContaining({ id: "in-folder", title: "Standup" }),
     ]);
   });
+
+  it("drops meetings about a different account", async () => {
+    const search = vi.fn().mockResolvedValue([
+      {
+        score: 0.9,
+        document: {
+          id: "bonobos",
+          type: "session",
+          title: "Bonobos loyalty",
+          content: "Frank wants Power Reviews pricing beaten.",
+          created_at: 300,
+        },
+      },
+      {
+        score: 0.7,
+        document: {
+          id: "fiber",
+          type: "session",
+          title: "Expression Fiber Arts",
+          content: "Founder is away in New Zealand.",
+          created_at: 200,
+        },
+      },
+    ]);
+    const tool = buildSearchMeetingsTool({
+      search,
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+    } as any);
+
+    const result = await (tool as any).execute({
+      query: "loyalty",
+      account: "Bonobos",
+    });
+
+    expect(result.results.map((meeting: { id: string }) => meeting.id)).toEqual(
+      ["bonobos"],
+    );
+    expect(result.omitted_other_accounts).toBe(1);
+  });
 });

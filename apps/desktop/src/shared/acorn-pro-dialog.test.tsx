@@ -36,9 +36,15 @@ describe("AcornPlansDialog", () => {
     render(<AcornPlansDialog open={true} onOpenChange={onOpenChange} />);
 
     expect(screen.getByRole("heading", { name: "Plans" })).toBeTruthy();
-    expect(screen.getByText(/Free runs Haiku. Pro is smarter AI/)).toBeTruthy();
-    expect(screen.getAllByText("Smarter AI").length).toBeGreaterThan(0);
-    expect(screen.getByText("Default AI (Haiku)")).toBeTruthy();
+    expect(
+      screen.getByText(/Free includes 30 AI questions a day/),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText("Smarter AI on every question").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("30 AI questions a day")).toBeTruthy();
+    expect(screen.getByText("Haiku for everyday questions")).toBeTruthy();
+    expect(screen.getByText("Smarter model for deal analysis")).toBeTruthy();
     expect(screen.getByText("30-day AI memory")).toBeTruthy();
     expect(screen.getAllByText("365-day AI memory").length).toBeGreaterThan(0);
     expect(

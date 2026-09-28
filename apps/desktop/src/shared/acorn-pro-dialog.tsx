@@ -13,7 +13,7 @@ import { useBillingAccess } from "~/auth/billing-context";
 import { AcornPlanCards } from "~/shared/acorn-plans";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
 import { AcornShareCard } from "~/shared/acorn-share-card";
-import { PRODUCT_NAME } from "~/shared/product";
+import { FREE_AI_DAILY_QUESTIONS, PRODUCT_NAME } from "~/shared/product";
 import {
   GlassDialogCancelButton,
   GlassDialogContent,
@@ -42,8 +42,9 @@ export function AcornPlansDialog({
         <DialogHeader className="bg-card/75 sticky top-0 z-10 px-5 pt-5 pb-3 text-left backdrop-blur-md sm:text-left">
           <DialogTitle>Plans</DialogTitle>
           <DialogDescription>
-            Free runs Haiku. Pro is smarter AI. Checkout isn’t open yet — share{" "}
-            {PRODUCT_NAME} or redeem an invite.
+            Free includes {FREE_AI_DAILY_QUESTIONS} AI questions a day. Pro is
+            unlimited smarter AI. Checkout isn’t open yet — share {PRODUCT_NAME}{" "}
+            or redeem an invite.
           </DialogDescription>
         </DialogHeader>
         <div className="px-5">

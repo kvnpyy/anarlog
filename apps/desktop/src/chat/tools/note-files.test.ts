@@ -173,6 +173,20 @@ describe("note file chat tools", () => {
     expect(mocks.loadSessionContentSnapshot).toHaveBeenCalledWith("session-1");
   });
 
+  it("omits notes about a different account", async () => {
+    const contentSearchTool = buildSearchMeetingContentTool({
+      getAiKnowledgeWindow: unboundedAiKnowledgeWindow,
+    } as any);
+
+    const result = await (contentSearchTool as any).execute({
+      query: "contract renewal",
+      account: "Bonobos",
+    });
+
+    expect(result.results).toEqual([]);
+    expect(result.omitted_other_accounts).toBe(1);
+  });
+
   it("returns metadata snippets for participant matches", () => {
     const result = noteFileTestInternals.searchNote(
       {

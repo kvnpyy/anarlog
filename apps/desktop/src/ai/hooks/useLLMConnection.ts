@@ -30,6 +30,8 @@ import {
 } from "~/settings/ai/shared/eligibility";
 import { useAiProvider } from "~/settings/providers";
 import {
+  ACORN_HOSTED_SONNET_MODEL,
+  acornHostedLlmTier,
   getAcornDefaultLlm,
   isAcornHostedApiKey,
   resolveAcornHostedLlmModel,
@@ -68,6 +70,27 @@ type LLMConnectionResult = {
 
 export const normalizeLLMProviderId = (providerId: string): string =>
   providerId === "hyprnote" ? "anarlog" : providerId;
+
+export function useDealAnalysisLanguageModel(): LanguageModelV3 | null {
+  const { conn } = useLLMConnection();
+
+  return useMemo(() => {
+    if (!conn || conn.providerId !== "acorn") {
+      return null;
+    }
+    if (!isAcornHostedApiKey(conn.apiKey)) {
+      return null;
+    }
+    if (acornHostedLlmTier(conn.modelId) === "sonnet") {
+      return null;
+    }
+
+    return createLanguageModel(
+      { ...conn, modelId: ACORN_HOSTED_SONNET_MODEL },
+      "chat",
+    );
+  }, [conn]);
+}
 
 export const useLanguageModel = (task?: CharTask): LanguageModelV3 | null => {
   const { conn } = useLLMConnection();

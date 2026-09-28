@@ -4,6 +4,7 @@ import { z } from "zod";
 import { CONTEXT_TEXT_FIELD } from "./context-text";
 import type { ToolDependencies } from "./types";
 
+import { mentionsAccount } from "~/chat/analysis";
 import {
   loadActiveSessionIds,
   loadSessionContentSnapshot,
@@ -374,11 +375,13 @@ function searchNote(note: LoadedNoteFile, query: string): SearchMatch | null {
 
 async function searchMeetingContent({
   query,
+  account,
   sessionIds,
   limit,
   deps,
 }: {
   query: string;
+  account?: string;
   sessionIds?: string[];
   limit: number;
   deps: ToolDependencies;
@@ -401,6 +404,8 @@ async function searchMeetingContent({
     : await loadActiveSessionIds();
   const results: SearchMatch[] = [];
   let scanned = 0;
+  let omittedOtherAccounts = 0;
+  const accountName = account?.trim();
 
   for (const sessionId of candidateIds) {
     const note = await loadNoteFile(sessionId);
@@ -408,6 +413,18 @@ async function searchMeetingContent({
       continue;
     }
     if (!noteInWindow(note, deps)) {
+      continue;
+    }
+    if (
+      accountName &&
+      !mentionsAccount(
+        [note.title, ...note.sections.map((section) => section.text)].join(
+          "\n",
+        ),
+        accountName,
+      )
+    ) {
+      omittedOtherAccounts += 1;
       continue;
     }
     scanned += 1;
@@ -423,6 +440,9 @@ async function searchMeetingContent({
     {
       query: trimmedQuery,
       scanned,
+      ...(omittedOtherAccounts > 0
+        ? { omitted_other_accounts: omittedOtherAccounts }
+        : {}),
       results: results.slice(0, limit),
     },
     window,
@@ -589,9 +609,15 @@ export const buildReadNoteTool = (_deps: ToolDependencies) =>
 export const buildSearchMeetingContentTool = (deps: ToolDependencies) =>
   tool({
     description:
-      "Search local meeting notes and transcripts for exact words or phrases. Use search_meetings first for open-ended questions about past meetings, people, decisions, or topics. This is lexical content search, not vector search.",
+      "Search local meeting notes and transcripts for exact words or phrases. Use search_meetings first for open-ended questions about past meetings, people, decisions, or topics. This is lexical content search, not vector search. Pass account when the user names a company or deal so notes about other companies are omitted.",
     inputSchema: z.object({
       query: z.string().describe("Text to search for in meeting content"),
+      account: z
+        .string()
+        .optional()
+        .describe(
+          "Company or deal this question is about. Notes that do not mention this name are omitted.",
+        ),
       meeting_ids: z
         .array(z.string())
         .optional()
@@ -606,11 +632,13 @@ export const buildSearchMeetingContentTool = (deps: ToolDependencies) =>
     }),
     execute: async (params: {
       query: string;
+      account?: string;
       meeting_ids?: string[];
       limit?: number;
     }) => {
       const result = await searchMeetingContent({
         query: params.query,
+        account: params.account,
         sessionIds: params.meeting_ids,
         limit: Math.min(params.limit ?? DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT),
         deps,

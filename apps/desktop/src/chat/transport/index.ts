@@ -1,6 +1,7 @@
 import {
   type ChatTransport,
   convertToModelMessages,
+  createUIMessageStream,
   type LanguageModel,
   smoothStream,
   stepCountIs,
@@ -30,10 +31,18 @@ import {
 } from "./helpers";
 
 import { trackAnalyticsEvent } from "~/analytics";
+import { questionNeedsSmarterModel, textFromUiMessage } from "~/chat/analysis";
 
 export type ResolvedChatContext =
   | { kind: "session"; context: SessionContext }
   | { kind: "text"; text: string };
+
+export type ChatTurnPolicy = {
+  dealAnalysisModel?: LanguageModel | null;
+  reserveTurn?: () => Promise<
+    { allowed: true } | { allowed: false; message: string }
+  >;
+};
 
 export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
   constructor(
@@ -43,6 +52,7 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     private resolveContextRef?: (
       ref: ContextRef,
     ) => Promise<ResolvedChatContext | null>,
+    private policy?: ChatTurnPolicy,
   ) {}
 
   private async renderContextBlock(
@@ -205,8 +215,32 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
       ...liveTranscriptBlocks,
     ]);
 
+    if (this.policy?.reserveTurn) {
+      const decision = await this.policy.reserveTurn();
+      if (!decision.allowed) {
+        return createUIMessageStream<AnlgUIMessage>({
+          originalMessages: options.messages,
+          execute: ({ writer }) => {
+            const id = "ai-usage-limit";
+            writer.write({ type: "text-start", id });
+            writer.write({ type: "text-delta", id, delta: decision.message });
+            writer.write({ type: "text-end", id });
+          },
+        });
+      }
+    }
+
+    const lastUserText =
+      lastUserMessageIndex === -1
+        ? ""
+        : textFromUiMessage(options.messages[lastUserMessageIndex] ?? {});
+    const model =
+      this.policy?.dealAnalysisModel && questionNeedsSmarterModel(lastUserText)
+        ? this.policy.dealAnalysisModel
+        : this.model;
+
     const agent = new ToolLoopAgent({
-      model: this.model,
+      model,
       instructions: this.systemPrompt,
       tools,
       stopWhen: stepCountIs(MAX_TOOL_STEPS),
