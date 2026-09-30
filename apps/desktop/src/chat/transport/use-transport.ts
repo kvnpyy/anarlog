@@ -18,9 +18,11 @@ import {
   formatUserProfileGuidance,
   readUserProfile,
 } from "~/chat/context/user-profile";
+import { loadMeetingPreface } from "~/chat/meeting-preface";
 import { reserveFreeAiTurn } from "~/chat/reserve-ai-turn";
 import { loadHuman, loadOrganization } from "~/contacts/queries";
 import { useToolRegistry } from "~/contexts/tool";
+import { useSearchEngine } from "~/search/contexts/engine";
 import { isAcornHostedApiKey } from "~/shared/acorn-defaults";
 import { getAiKnowledgeWindow } from "~/shared/ai-window";
 import { useConfigValue, useConfigValues } from "~/shared/config";
@@ -32,6 +34,10 @@ Context and local meeting tool guidance:
 - Meeting search tools only include meetings inside the current AI knowledge window. If a tool result includes notice or error "outside_ai_window", tell the user that Free only searches the last ${FREE_AI_WINDOW_DAYS} days and that Acorn Pro remembers ${PRO_AI_WINDOW_DAYS} days. Do not claim you searched older meetings.
 - Use search_meetings for open-ended questions about topics, people, decisions, or date ranges across meeting content. Use search_meeting_content when the user needs exact wording from notes or transcripts.
 - When the user names a company, account, or deal, pass that exact name as account on search_meetings and search_meeting_content. Ignore meetings that do not mention that company, including related meetings. Do not mix facts from another account into the answer.
+- If the current meeting does not answer the question, search earlier meetings and calendar events for the same people and company before you say it is unknown. Use search_calendar_events for attendee names and emails.
+- Read attendee emails as names, in whatever format they use. Dots, underscores, and hyphens are separators: jane.doe, jane_doe, and jane-doe are Jane Doe. A single letter is an initial: j.doe is J Doe. firstname.lastname is Firstname Lastname. If the local part has no separator, do not invent a split. Compare that whole string to the invite name and to names said on the call, and keep the spelling the email contains. njuly@ matches July, not Julie. Ignore role addresses such as info, sales, support, and noreply. When a line says "email reads", that reading wins over the transcript spelling.
+- For "how did I do" or other coaching, read the earlier meetings with those people first, then judge this call against what was already covered.
+- When the user says to remember a correction for an account, call apply_session_correction with dictionaryTerms for the corrected name, company, or short fact before you answer. Do not reply with only a checklist. A spelling fix does not require redoing the rest of the answer.
 - After resolving an ID, use get_meeting for the canonical note, summaries, participants, and action items. Use get_meeting_transcript separately for bounded transcript pages, following pagination.next_offset only when more context is needed.
 - Use get_recurring_meeting_history for meetings in the same recurring series. Use find_related_meetings only for broader relationships such as shared participants or nearby dates.
 - When the user refers to the current meeting, prefer the attached meeting context. Do not fetch it again unless the task needs newer structured data.
@@ -55,6 +61,8 @@ Copy-ready draft guidance:
 - Avoid obvious AI writing: no "I hope this finds you well", "delve", "furthermore", "leverage", "I'd be happy to", or stiff corporate filler.
 - In transcripts, "You" is the person using Acorn. A speaker labeled with their profile name is also them. Never treat the user as a third party.
 - The Acorn user is the sender of every follow-up. Write in first person as them. Never refer to them in the third person.
+- Before writing, name the sender and the recipients. The sender is only the Acorn user: lines labeled You:, or a speaker whose name matches their profile. Every other speaker is a recipient.
+- "I", "we", and "our" in the draft belong to the sender's company. When another speaker said "we" or "our", write "you" and "your". A sentence the recipient could send to their own team is the wrong voice. Rewrite it as the email the sender sends to them.
 - Recipients are the other people on the call. Address them by name when known. Sign with the user's name if known.
 - Do not write an internal recap, debrief, or "here's what we need to do internally" email as if you work at the other company. On a sales, customer, or vendor call, write the follow-up the user would send to the other side.
 - When drafting a follow-up email, only include facts, names, dates, commitments, and next steps that appear in the meeting transcript or notes. Omit anything unclear. Do not invent recipients, product names, numbers, quotes, or action items.
@@ -96,7 +104,7 @@ Live Ask rail guidance:
 - Stay on the user's side of the conversation. Coach them, not the other party.
 - Lines to say next are only for the Acorn user. Infer their company and role from You: lines and their profile. The other party's "we", "our", team, and internal concerns belong to that party. On a vendor and customer call, never draft the other side's lines, even when their concerns fill the transcript.
 - If the user says those lines sound like the other company, a customer, or a named party they are not, they are correcting their side. Discard the previous lines and write new ones only they would say. Do not rephrase the other party's points, and do not treat the correction as a switch from questions to statements.
-- When drafting a follow-up email, write it as the Acorn user to the other speakers. Never as the other party's internal recap.
+- When drafting a follow-up email, the sender is only the Acorn user. Other speakers are the recipients. Their "we" and "our" become "you" and "your". Never write the email in another speaker's voice.
 - Reply only in this chat. Do not call edit_memo, edit_summary, apply_session_correction, or move_meeting_contents.
 - Do not open editor tabs or rewrite the note unless the user explicitly asks to change it after the meeting.
 - Keep answers short: tight bullets, no large headings, no long preambles.
@@ -251,6 +259,7 @@ export function useTransport(
   const language = useConfigValue("ai_language") || "en";
   const acornPro = useConfigValue("acorn_pro") === true;
   const knowledgeWindow = getAiKnowledgeWindow(acornPro);
+  const { search } = useSearchEngine();
   const profile = readUserProfile(
     useConfigValues([
       "user_profile_name",
@@ -368,6 +377,38 @@ export function useTransport(
       },
       {
         dealAnalysisModel: modelOverride ? null : dealAnalysisModel,
+        senderName: profile.name,
+        loadPreface: async (sessionIds, userTexts) => {
+          const sessionId = sessionIds[sessionIds.length - 1];
+          const latest = userTexts[userTexts.length - 1] ?? "";
+          if (!sessionId) {
+            if (latest.trim().length < 12) {
+              return null;
+            }
+            const hits = await search(latest, null);
+            const meetings = hits
+              .filter((hit) => hit.document.type === "session")
+              .slice(0, 3);
+            if (meetings.length === 0) {
+              return null;
+            }
+            return `Related meetings:\n${meetings
+              .map(
+                (hit) =>
+                  `- ${hit.document.title}: ${hit.document.content
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .slice(0, 400)}`,
+              )
+              .join("\n")}`;
+          }
+          return loadMeetingPreface({
+            sessionId,
+            userTexts,
+            senderName: profile.name,
+            isPro: acornPro,
+          });
+        },
         reserveTurn: meterHostedChat ? reserveFreeAiTurn : undefined,
       },
     );
@@ -379,6 +420,9 @@ export function useTransport(
     modelOverride,
     dealAnalysisModel,
     meterHostedChat,
+    profile.name,
+    acornPro,
+    search,
   ]);
 
   return {

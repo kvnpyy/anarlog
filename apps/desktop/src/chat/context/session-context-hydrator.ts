@@ -1,5 +1,7 @@
 import type { SessionContext, Transcript } from "@anlg/plugin-template";
 
+import { loadSessionInviteAttendees } from "~/calendar/queries";
+import { formatInviteAttendee } from "~/chat/analysis";
 import { loadHumansByIds } from "~/contacts/queries";
 import {
   loadSessionContentSnapshot,
@@ -122,6 +124,23 @@ export async function hydrateSessionContext(
       ? [{ name: participant.name, jobTitle: participant.jobTitle || null }]
       : [],
   );
+  const inviteAttendees = await loadSessionInviteAttendees(sessionId);
+  for (const attendee of inviteAttendees) {
+    const label = formatInviteAttendee(attendee);
+    if (!label) {
+      continue;
+    }
+    const email = attendee.email?.trim().toLowerCase();
+    const alreadyListed = participants.some((participant) => {
+      const current = participant.name.toLowerCase();
+      return (
+        current === label.toLowerCase() || (email && current.includes(email))
+      );
+    });
+    if (!alreadyListed) {
+      participants.push({ name: label, jobTitle: null });
+    }
+  }
 
   const enhancedContent = snapshot.enhancedNotes
     .map((note) => note.markdown || null)

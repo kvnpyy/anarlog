@@ -207,6 +207,11 @@ export const SETTING_DEFINITIONS = {
     path: ["ai", "usage_daily"],
     default: "" as string,
   },
+  account_memory: {
+    type: "string",
+    path: ["ai", "account_memory"],
+    default: "{}" as string,
+  },
   user_profile_name: {
     type: "string",
     path: ["personalization", "user_name"],

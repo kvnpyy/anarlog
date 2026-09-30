@@ -4,10 +4,15 @@ const mocks = vi.hoisted(() => ({
   formatMeetingChatRecordsAsMarkdown: vi.fn(),
   loadMeetingChatRecords: vi.fn(),
   loadSessionContentSnapshot: vi.fn(),
+  loadSessionInviteAttendees: vi.fn(),
   loadHumansByIds: vi.fn(),
   buildRenderTranscriptRequestFromRows: vi.fn(),
   collectAssignedHumanIdsFromTranscriptRows: vi.fn(),
   renderTranscriptSegments: vi.fn(),
+}));
+
+vi.mock("~/calendar/queries", () => ({
+  loadSessionInviteAttendees: mocks.loadSessionInviteAttendees,
 }));
 
 vi.mock("~/contacts/queries", () => ({
@@ -39,6 +44,7 @@ import {
 describe("session chat context hydration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.loadSessionInviteAttendees.mockResolvedValue([]);
     mocks.collectAssignedHumanIdsFromTranscriptRows.mockReturnValue([
       "human-assigned",
     ]);
@@ -108,6 +114,22 @@ describe("session chat context hydration", () => {
         },
       ],
     });
+  });
+
+  it("adds calendar invite emails beside attendee names", async () => {
+    mocks.loadSessionInviteAttendees.mockResolvedValue([
+      { name: "Nick July", email: "njuly@shoesforcrews.com" },
+    ]);
+
+    const context = await hydrateSessionContext("session-1", "user-1");
+
+    expect(context?.participants).toEqual([
+      { name: "SQLite Person", jobTitle: "Engineer" },
+      {
+        name: "Nick July <njuly@shoesforcrews.com>",
+        jobTitle: null,
+      },
+    ]);
   });
 
   it("hydrates note and speaker context from the canonical snapshot", async () => {
@@ -213,6 +235,21 @@ describe("chatTranscriptSpeakerLabel", () => {
         "user-1",
       ),
     ).toBe("Kevin");
+  });
+
+  it("keeps microphone audio as You even when diarization names someone else", () => {
+    expect(
+      chatTranscriptSpeakerLabel(
+        {
+          speaker_label: "Nichole",
+          key: {
+            channel: "DirectMic",
+            speaker_human_id: "nichole",
+          },
+        },
+        "user-1",
+      ),
+    ).toBe("You");
   });
 
   it("maps the user's mic, assigned identity, and You label to You", () => {

@@ -110,6 +110,10 @@ describe("calendar SQLite selection", () => {
         meeting_link: "",
         description: "Weekly plan",
         participant_count: 2,
+        participants_json: JSON.stringify([
+          { name: "Nick July", email: "njuly@shoesforcrews.com" },
+          { name: "You", email: "you@example.com", is_current_user: true },
+        ]),
         linked_session_id: "session-1",
       },
     ]);
@@ -124,6 +128,7 @@ describe("calendar SQLite selection", () => {
         meetingLink: null,
         description: "Weekly plan",
         participantCount: 2,
+        participants: [{ name: "Nick July", email: "njuly@shoesforcrews.com" }],
         linkedSessionId: "session-1",
       },
     ]);

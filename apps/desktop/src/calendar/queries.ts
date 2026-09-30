@@ -57,6 +57,7 @@ type CalendarEventSearchSqlRow = {
   meeting_link: string;
   description: string;
   participant_count: number;
+  participants_json: string;
   linked_session_id: string;
 };
 
@@ -69,6 +70,7 @@ export type CalendarEventSearchResult = {
   meetingLink: string | null;
   description: string | null;
   participantCount: number;
+  participants: Array<{ name: string | null; email: string | null }>;
   linkedSessionId: string | null;
 };
 
@@ -333,6 +335,7 @@ export async function searchCalendarEvents(
           THEN json_array_length(event.participants_json)
           ELSE 0
         END AS participant_count,
+        event.participants_json AS participants_json,
         COALESCE((
           SELECT session.id
           FROM sessions AS session
@@ -363,7 +366,8 @@ export async function searchCalendarEvents(
               event.title || char(10) ||
               event.location || char(10) ||
               event.meeting_link || char(10) ||
-              event.description
+              event.description || char(10) ||
+              COALESCE(event.participants_json, '')
             ),
             ?
           ) > 0
@@ -383,6 +387,7 @@ export async function searchCalendarEvents(
     meetingLink: row.meeting_link || null,
     description: row.description || null,
     participantCount: Number(row.participant_count) || 0,
+    participants: inviteAttendeesFromJson(row.participants_json),
     linkedSessionId: row.linked_session_id || null,
   }));
 }
@@ -524,6 +529,52 @@ export function mapTimelineSessionRows(
 
 function normalizeCalendarRow(row: CalendarSqlRow): CalendarRow {
   return { ...row, enabled: Boolean(row.enabled) };
+}
+
+export function inviteAttendeesFromJson(
+  value: string | undefined,
+): Array<{ name: string | null; email: string | null }> {
+  return parseEventParticipants(value)
+    .filter((participant) => participant.is_current_user !== true)
+    .map((participant) => ({
+      name: participant.name?.trim() || null,
+      email: participant.email?.trim() || null,
+    }))
+    .filter((participant) => participant.name || participant.email);
+}
+
+export async function loadSessionInviteAttendees(
+  sessionId: string,
+): Promise<Array<{ name: string | null; email: string | null }>> {
+  const rows = await liveQueryClient.execute<{ participants_json: string }>(
+    `
+      SELECT event.participants_json AS participants_json
+      FROM sessions AS session
+      JOIN events AS event
+        ON event.deleted_at IS NULL
+        AND (
+          event.id = session.event_id
+          OR (
+            event.tracking_id_event = CASE
+              WHEN json_valid(session.event_json)
+              THEN json_extract(session.event_json, '$.tracking_id')
+              ELSE ''
+            END
+            AND event.calendar_id = CASE
+              WHEN json_valid(session.event_json)
+              THEN json_extract(session.event_json, '$.calendar_id')
+              ELSE ''
+            END
+          )
+        )
+      WHERE session.id = ? AND session.deleted_at IS NULL
+      ORDER BY event.started_at, event.id
+      LIMIT 1
+    `,
+    [sessionId],
+  );
+
+  return inviteAttendeesFromJson(rows[0]?.participants_json);
 }
 
 export function parseEventParticipants(

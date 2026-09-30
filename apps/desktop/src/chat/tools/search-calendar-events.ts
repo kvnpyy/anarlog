@@ -6,7 +6,7 @@ import type { ToolDependencies } from "./types";
 export const buildSearchCalendarEventsTool = (deps: ToolDependencies) =>
   tool({
     description:
-      "Search calendar events and return schedule, location, and linked session info.",
+      "Search calendar events by title, description, or attendee name and email. Returns each attendee's name and email. Use email spellings when a transcript name is only how it sounded.",
     inputSchema: z.object({
       query: z.string().describe("Search query for calendar events"),
       limit: z

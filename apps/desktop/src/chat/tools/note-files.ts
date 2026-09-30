@@ -699,6 +699,44 @@ export const buildFindRelatedMeetingsTool = (deps: ToolDependencies) =>
     },
   });
 
+export async function loadPriorMeetingBriefs(
+  sessionId: string,
+  isPro: boolean,
+): Promise<string | null> {
+  const related = await listRelatedNotes({
+    sessionId,
+    limit: 8,
+    deps: {
+      getAiKnowledgeWindow: () => getAiKnowledgeWindow(isPro),
+    } as ToolDependencies,
+  });
+  const samePeople = related.results.filter((result) =>
+    result.reasons.some(
+      (reason) =>
+        reason.startsWith("shared participant") ||
+        reason === "same calendar event",
+    ),
+  );
+  const briefs: string[] = [];
+  for (const result of samePeople.slice(0, 3)) {
+    const note = await loadNoteFile(result.sessionId);
+    if (!note) {
+      continue;
+    }
+    const excerpt =
+      note.sections.find((section) => section.title !== "Transcript")?.text ??
+      "";
+    const clipped = excerpt.replace(/\s+/g, " ").trim().slice(0, 700);
+    briefs.push(
+      `- ${note.title}${note.date ? ` (${note.date})` : ""}${clipped ? `: ${clipped}` : ""}`,
+    );
+  }
+  if (briefs.length === 0) {
+    return null;
+  }
+  return `Prior meetings with these people:\n${briefs.join("\n")}`;
+}
+
 export const noteFileTestInternals = {
   buildNoteSections,
   queryTerms,

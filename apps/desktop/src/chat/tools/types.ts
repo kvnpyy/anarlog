@@ -20,6 +20,7 @@ export type CalendarEventSearchResult = {
   meetingLink: string | null;
   description: string | null;
   participantCount: number;
+  participants: Array<{ name: string | null; email: string | null }>;
   linkedSessionId: string | null;
 };
 

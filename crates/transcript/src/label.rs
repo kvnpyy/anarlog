@@ -83,21 +83,23 @@ pub fn render_speaker_label(
     ctx: Option<&SpeakerLabelContext>,
     mut labeler: Option<&mut SpeakerLabeler>,
 ) -> String {
+    if key.channel == ChannelProfile::DirectMic
+        && let Some(ctx) = ctx
+    {
+        if let Some(self_human_id) = ctx.self_human_id.as_ref()
+            && let Some(name) = ctx.human_name_by_id.get(self_human_id)
+        {
+            return name.clone();
+        }
+        return "You".to_string();
+    }
+
     if let Some(ctx) = ctx {
         if let Some(human_id) = key.speaker_human_id.as_ref() {
             if let Some(name) = ctx.human_name_by_id.get(human_id) {
                 return name.clone();
             }
             return human_id.clone();
-        }
-
-        if key.channel == ChannelProfile::DirectMic
-            && let Some(self_human_id) = ctx.self_human_id.as_ref()
-        {
-            if let Some(name) = ctx.human_name_by_id.get(self_human_id) {
-                return name.clone();
-            }
-            return "You".to_string();
         }
     } else if let Some(human_id) = key.speaker_human_id.as_ref() {
         return human_id.clone();
@@ -122,6 +124,8 @@ pub fn render_speaker_label(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
+
     use crate::ChannelProfile;
 
     fn direct_mic_key() -> SegmentKey {
@@ -186,6 +190,24 @@ mod tests {
         assert_eq!(labeler.label_for(&a, None), "Speaker 1");
         assert_eq!(labeler.label_for(&b, None), "Speaker 2");
         assert_eq!(labeler.label_for(&c, None), "Speaker 2");
+    }
+
+    #[test]
+    fn keeps_direct_mic_as_self_when_diarization_assigns_someone_else() {
+        let mut names = HashMap::new();
+        names.insert("self".to_string(), "Kevin".to_string());
+        names.insert("nichole".to_string(), "Nichole".to_string());
+        let ctx = SpeakerLabelContext {
+            self_human_id: Some("self".to_string()),
+            human_name_by_id: names,
+        };
+        let key = SegmentKey {
+            channel: ChannelProfile::DirectMic,
+            speaker_index: Some(1),
+            speaker_human_id: Some("nichole".to_string()),
+        };
+
+        assert_eq!(render_speaker_label(&key, Some(&ctx), None), "Kevin");
     }
 
     #[test]

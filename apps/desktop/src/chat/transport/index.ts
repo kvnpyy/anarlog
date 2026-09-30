@@ -32,6 +32,10 @@ import {
 
 import { trackAnalyticsEvent } from "~/analytics";
 import { questionNeedsSmarterModel, textFromUiMessage } from "~/chat/analysis";
+import {
+  draftUsesOtherPartyVoice,
+  isEmailDraftRequest,
+} from "~/chat/meeting-preface";
 
 export type ResolvedChatContext =
   | { kind: "session"; context: SessionContext }
@@ -39,6 +43,11 @@ export type ResolvedChatContext =
 
 export type ChatTurnPolicy = {
   dealAnalysisModel?: LanguageModel | null;
+  senderName?: string | null;
+  loadPreface?: (
+    sessionIds: string[],
+    userTexts: string[],
+  ) => Promise<string | null>;
   reserveTurn?: () => Promise<
     { allowed: true } | { allowed: false; message: string }
   >;
@@ -210,7 +219,17 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
         ? undefined
         : options.messages[lastUserMessageIndex]?.metadata?.transcriptWindowMs,
     );
+    const userTexts = options.messages.flatMap((message) =>
+      message.role === "user" ? [textFromUiMessage(message)] : [],
+    );
+    const sessionIds = effectiveContextRefs.flatMap((ref) =>
+      ref.kind === "session" ? [ref.sessionId] : [],
+    );
+    const preface = this.policy?.loadPreface
+      ? await this.policy.loadPreface(sessionIds, userTexts)
+      : null;
     const effectiveContextBlock = joinContextBlocks([
+      preface,
       persistedContextBlock,
       ...liveTranscriptBlocks,
     ]);
@@ -295,8 +314,45 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
       }
     }
 
+    const modelMessages = await convertToModelMessages(messagesWithContext);
+    const senderName = this.policy?.senderName?.trim() ?? "";
+    if (isEmailDraftRequest(lastUserText) && senderName) {
+      const first = await agent.generate({
+        messages: modelMessages,
+        abortSignal: options.abortSignal,
+      });
+      let text = first.text.trim();
+      if (
+        draftUsesOtherPartyVoice(text, effectiveContextBlock ?? "", senderName)
+      ) {
+        const retry = await agent.generate({
+          messages: await convertToModelMessages([
+            ...messagesWithContext,
+            {
+              id: "wrong-voice-draft",
+              role: "assistant",
+              parts: [{ type: "text", text }],
+            },
+            {
+              id: "wrong-voice-retry",
+              role: "user",
+              parts: [
+                {
+                  type: "text",
+                  text: `That draft is in a recipient's voice. Rewrite it so ${senderName} is the only sender. Address the other people as you.`,
+                },
+              ],
+            },
+          ]),
+          abortSignal: options.abortSignal,
+        });
+        text = retry.text.trim() || text;
+      }
+      return textOnlyUiMessageStream(text, options.messages);
+    }
+
     const result = await agent.stream({
-      messages: await convertToModelMessages(messagesWithContext),
+      messages: modelMessages,
       abortSignal: options.abortSignal,
       experimental_transform: smoothStream({
         chunking: "line",
@@ -335,6 +391,21 @@ export class CustomChatTransport implements ChatTransport<AnlgUIMessage> {
     async () => {
       return null;
     };
+}
+
+function textOnlyUiMessageStream(
+  text: string,
+  originalMessages: AnlgUIMessage[],
+) {
+  return createUIMessageStream<AnlgUIMessage>({
+    originalMessages,
+    execute: ({ writer }) => {
+      const id = "meeting-reply";
+      writer.write({ type: "text-start", id });
+      writer.write({ type: "text-delta", id, delta: text });
+      writer.write({ type: "text-end", id });
+    },
+  });
 }
 
 function collectLiveTranscriptBlocks(

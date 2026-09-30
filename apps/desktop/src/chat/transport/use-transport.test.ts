@@ -17,6 +17,14 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain("Use list_meetings");
     expect(prompt).toContain("Use search_meetings");
     expect(prompt).toContain("pass that exact name as account");
+    expect(prompt).toContain("search_calendar_events");
+    expect(prompt).toContain("jane.doe, jane_doe, and jane-doe are Jane Doe");
+    expect(prompt).toContain("njuly@ matches July, not Julie");
+    expect(prompt).toContain("name the sender and the recipients");
+    expect(prompt).toContain('write "you" and "your"');
+    expect(prompt).toContain("wrong voice");
+    expect(prompt).toContain("read the earlier meetings");
+    expect(prompt).toContain("dictionaryTerms");
     expect(prompt).toContain("Do not mix facts from another account");
     expect(prompt).toContain("Not in the notes");
     expect(prompt).toContain(
@@ -108,7 +116,7 @@ describe("chat transport prompt guidance", () => {
     expect(prompt).toContain('"You" is the person using Acorn');
     expect(prompt).toContain("Never give questions for the other party");
     expect(prompt).toContain("in their role");
-    expect(prompt).toContain("Never as the other party's internal recap");
+    expect(prompt).toContain("Never write the email in another speaker's voice");
     expect(prompt).toContain("Lines to say next are only for the Acorn user");
     expect(prompt).toContain("they are correcting their side");
     expect(prompt).toContain(
