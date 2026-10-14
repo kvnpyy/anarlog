@@ -106,6 +106,19 @@ describe("floating meeting window synchronizer", () => {
     await synchronizer.dispose();
   });
 
+  it("pushes overlay state before showing the window", async () => {
+    const synchronizer = createFloatingMeetingWindowSynchronizer();
+
+    synchronizer.update(routeState(0.1));
+    await vi.waitFor(() => expect(mocks.show).toHaveBeenCalledOnce());
+
+    expect(mocks.update.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.show.mock.invocationCallOrder[0]!,
+    );
+
+    await synchronizer.dispose();
+  });
+
   it("uses a full update when any non-amplitude state changes", async () => {
     const synchronizer = createFloatingMeetingWindowSynchronizer();
 

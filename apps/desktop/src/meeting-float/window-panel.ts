@@ -151,19 +151,6 @@ export async function showFloatingMeetingWindow(
     return false;
   }
 
-  if (shouldShow) {
-    const showResult = await windowsCommands.floatingBarShow();
-    if (!shouldContinue()) {
-      await hideFloatingMeetingPanel();
-      return false;
-    }
-
-    if (showResult.status === "error") {
-      console.error("Failed to show floating meeting panel:", showResult.error);
-      return false;
-    }
-  }
-
   const amplitudeOnly =
     !shouldShow &&
     appliedRouteState !== null &&
@@ -208,6 +195,19 @@ export async function showFloatingMeetingWindow(
   if (shouldSendTranscript) {
     sentTranscriptSessionId = routeState.sessionId;
     sentTranscriptBubbles = routeState.transcriptBubbles;
+  }
+
+  if (shouldShow) {
+    const showResult = await windowsCommands.floatingBarShow();
+    if (!shouldContinue()) {
+      await hideFloatingMeetingPanel();
+      return false;
+    }
+
+    if (showResult.status === "error") {
+      console.error("Failed to show floating meeting panel:", showResult.error);
+      return false;
+    }
   }
 
   return true;
