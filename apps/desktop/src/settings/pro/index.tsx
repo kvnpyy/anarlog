@@ -2,6 +2,7 @@ import { setAcornProEntitlement } from "~/auth/acorn-pro";
 import { useBillingAccess } from "~/auth/billing-context";
 import { SettingsPageTitle } from "~/settings/page-title";
 import { SettingSwitchRow } from "~/settings/setting-row";
+import { AcornLinkedInCard } from "~/shared/acorn-linkedin-card";
 import { AcornPlanCards } from "~/shared/acorn-plans";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
 import { AcornShareCard } from "~/shared/acorn-share-card";
@@ -17,13 +18,15 @@ export function SettingsPro() {
         <p className="text-muted-foreground max-w-xl text-sm leading-6">
           {isPro
             ? `You’re on ${PRODUCT_NAME} Pro on this Mac.`
-            : `You’re on Free. Checkout isn’t open yet — share ${PRODUCT_NAME} or redeem an invite.`}
+            : `You’re on Free. Checkout isn’t open yet — share ${PRODUCT_NAME}, follow us on LinkedIn, or redeem an invite.`}
         </p>
       </div>
 
       <AcornPlanCards isPro={isPro} />
 
       <AcornShareCard />
+
+      <AcornLinkedInCard />
 
       {isPro ? null : <AcornProInviteForm alreadyPro={isPro} />}
 

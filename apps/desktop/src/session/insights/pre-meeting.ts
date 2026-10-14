@@ -9,6 +9,7 @@ import {
 import systemPromptTemplate from "./pre-meeting-brief.system.md.jinja?raw";
 import userPromptTemplate from "./pre-meeting-brief.user.md.jinja?raw";
 
+import { companyTermsFromEmails } from "~/contacts/company-from-email";
 import { extractPlainText } from "~/search/contexts/engine/utils";
 import type { PastSessionNote } from "~/session/insights/past-notes";
 
@@ -25,7 +26,7 @@ const BRIEF_GENERATION_TIMEOUT_MS = 45_000;
 const BRIEF_MAX_OUTPUT_TOKENS = 4_096;
 const briefSchema = z.object({
   opener: z.string().optional(),
-  bullets: z.array(z.string()).min(1).max(MAX_BRIEF_BULLETS),
+  bullets: z.array(z.string()).max(MAX_BRIEF_BULLETS),
 });
 const SECTION_LABEL_REGEX =
   /^(quick\s+)?(recap|summary|overview|agenda|insights?|upcoming|next steps|prepare|brief)\b/i;
@@ -253,11 +254,28 @@ function getBriefPromptMeetings(notes: PastSessionNote[]) {
       {
         title: note.title,
         date: note.dateLabel,
+        reason: briefSourceReason(note.relationship),
         participants: note.participantNames ?? [],
+        companies: note.companies ?? [],
         notes: facts.join("\n"),
       },
     ];
   });
+}
+
+function briefSourceReason(
+  relationship: PastSessionNote["relationship"],
+): string {
+  switch (relationship) {
+    case "same_series":
+      return "same recurring series";
+    case "matching_title":
+      return "same meeting title";
+    case "shared_participants":
+      return "same people";
+    case "same_company":
+      return "same company";
+  }
 }
 
 export function mergeBriefMarkdown(brief: string, existing: string): string {
@@ -302,6 +320,9 @@ export async function streamPreMeetingBrief({
       ),
       location: compactBriefText(event.location ?? "", 120),
       participants: getBriefEventParticipantNames(event),
+      companies: companyTermsFromEmails(
+        (event.participants ?? []).map((participant) => participant.email),
+      ),
       description: compactBriefText(event.description ?? "", 400),
     },
     past_meetings: getBriefPromptMeetings(sourceNotes),
@@ -376,9 +397,13 @@ async function streamStructuredBrief({
       }
     }
 
-    const final = formatPreMeetingBrief((await result.output) ?? {});
+    const output = await result.output;
+    const final = formatPreMeetingBrief(output ?? {});
     if (final) {
       return final;
+    }
+    if (output) {
+      return lastMarkdown;
     }
   } catch (error) {
     if (!lastMarkdown) {

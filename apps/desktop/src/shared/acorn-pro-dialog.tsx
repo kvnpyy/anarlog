@@ -10,6 +10,7 @@ import {
 } from "@anlg/ui/components/ui/dialog";
 
 import { useBillingAccess } from "~/auth/billing-context";
+import { AcornLinkedInCard } from "~/shared/acorn-linkedin-card";
 import { AcornPlanCards } from "~/shared/acorn-plans";
 import { AcornProInviteForm } from "~/shared/acorn-pro-invite-form";
 import { AcornShareCard } from "~/shared/acorn-share-card";
@@ -43,8 +44,8 @@ export function AcornPlansDialog({
           <DialogTitle>Plans</DialogTitle>
           <DialogDescription>
             Free includes {FREE_AI_DAILY_QUESTIONS} AI questions a day. Pro is
-            unlimited smarter AI. Checkout isn’t open yet — share {PRODUCT_NAME}{" "}
-            or redeem an invite.
+            unlimited smarter AI. Checkout isn’t open yet — share {PRODUCT_NAME}
+            , follow us on LinkedIn, or redeem an invite.
           </DialogDescription>
         </DialogHeader>
         <div className="px-5">
@@ -60,6 +61,9 @@ export function AcornPlansDialog({
           />
           <div ref={shareSectionRef} className="mt-5 scroll-mt-16">
             <AcornShareCard />
+          </div>
+          <div className="mt-4">
+            <AcornLinkedInCard />
           </div>
           <div className="mt-4 mb-5">
             <AcornProInviteForm

@@ -388,6 +388,9 @@ function makeData(
         user_id: String(row.user_id ?? ""),
         source: String(row.source ?? ""),
         name: String(row.name ?? row.human_id ?? ""),
+        email: String(row.email ?? ""),
+        organization_id: String(row.organization_id ?? ""),
+        organization_name: String(row.organization_name ?? ""),
       }),
     ),
     enhancedNotes: Object.values(tables.enhanced_notes ?? {}).map((row) => ({

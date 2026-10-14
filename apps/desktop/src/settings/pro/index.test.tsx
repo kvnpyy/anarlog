@@ -23,6 +23,12 @@ vi.mock("~/shared/acorn-share-card", () => ({
   AcornShareCard: () => <div>Share Acorn, get 3 months of Pro</div>,
 }));
 
+vi.mock("~/shared/acorn-linkedin-card", () => ({
+  AcornLinkedInCard: () => (
+    <div>Follow Acorn on LinkedIn, get 1 month of Pro</div>
+  ),
+}));
+
 import { SettingsPro } from "./index";
 
 describe("SettingsPro", () => {
@@ -37,7 +43,14 @@ describe("SettingsPro", () => {
     render(<SettingsPro />);
 
     expect(screen.getByRole("heading", { name: "Pro" })).toBeTruthy();
-    expect(screen.getByText(/share Acorn or redeem an invite/)).toBeTruthy();
+    expect(
+      screen.getByText(
+        /share Acorn, follow us on LinkedIn, or redeem an invite/,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Follow Acorn on LinkedIn, get 1 month of Pro"),
+    ).toBeTruthy();
     expect(screen.getByText("Free")).toBeTruthy();
     expect(screen.getAllByText("Pro").length).toBeGreaterThan(1);
     expect(screen.getByText("Share Acorn, get 3 months of Pro")).toBeTruthy();

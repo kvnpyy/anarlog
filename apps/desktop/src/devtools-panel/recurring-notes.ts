@@ -157,6 +157,9 @@ export async function populateRecurringMeetingNotes({
         user_id: ownerUserId,
         source: "auto",
         name: participant.name,
+        email: participant.email,
+        organization_id: "",
+        organization_name: "",
       })),
     );
     statements.push(

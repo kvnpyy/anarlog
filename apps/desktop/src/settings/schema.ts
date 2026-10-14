@@ -187,6 +187,16 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "acorn_share_email"],
     default: "" as string,
   },
+  acorn_share_granted_at: {
+    type: "string",
+    path: ["general", "acorn_share_granted_at"],
+    default: "" as string,
+  },
+  acorn_linkedin_granted_at: {
+    type: "string",
+    path: ["general", "acorn_linkedin_granted_at"],
+    default: "" as string,
+  },
   ai_language: {
     type: "string",
     path: ["language", "ai_language"],

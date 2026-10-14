@@ -15,6 +15,13 @@ import systemPromptTemplate from "./past-note-key-facts.system.md.jinja?raw";
 import userPromptTemplate from "./past-note-key-facts.user.md.jinja?raw";
 
 import { useLanguageModel } from "~/ai/hooks";
+import { useOptionalAuth } from "~/auth/auth-context";
+import {
+  companyTermFromEmail,
+  isBusinessEmail,
+  normalizeCompanyName,
+  normalizeMailbox,
+} from "~/contacts/company-from-email";
 import { executeTransaction, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import { extractPlainText } from "~/search/contexts/engine/utils";
@@ -26,8 +33,13 @@ export type PastSessionNote = {
   dateLabel: string;
   occurredAt: string;
   participantNames?: string[];
+  companies?: string[];
   sourceSummary: string;
-  relationship: "same_series" | "matching_title" | "shared_participants";
+  relationship:
+    | "same_series"
+    | "matching_title"
+    | "shared_participants"
+    | "same_company";
   summary: string | null;
   isGenerating: boolean;
   isRegenerateDisabled?: boolean;
@@ -66,6 +78,9 @@ type PastParticipantRow = {
   user_id: string;
   source: string;
   name: string;
+  email: string;
+  organization_id: string;
+  organization_name: string;
 };
 
 type PastEnhancedNoteRow = {
@@ -117,6 +132,7 @@ export function usePastSessionNotes(
   const { sessions, participants, enhancedNotes, keyFacts } =
     usePastSessionNotesData(enabled);
   const userId = sessions[sessionId]?.user_id || null;
+  const ownerEmail = useOptionalAuth()?.session?.user.email ?? null;
   const model = useLanguageModel("enhance");
 
   const built = useMemo(() => {
@@ -128,11 +144,13 @@ export function usePastSessionNotes(
       { sessions, participants, enhancedNotes, keyFacts },
       sessionId,
       userId,
+      ownerEmail,
     );
   }, [
     enabled,
     sessionId,
     userId,
+    ownerEmail,
     sessions,
     participants,
     enhancedNotes,
@@ -255,10 +273,16 @@ function usePastSessionNotesData(enabled: boolean): PastSessionNotesData {
           NULLIF(human.name, ''),
           NULLIF(participant.display_name, ''),
           participant.human_id
-        ) AS name
+        ) AS name,
+        COALESCE(NULLIF(human.email, ''), NULLIF(participant.email, ''), '') AS email,
+        COALESCE(human.organization_id, '') AS organization_id,
+        COALESCE(organization.name, '') AS organization_name
       FROM session_participants AS participant
       LEFT JOIN humans AS human
         ON human.id = participant.human_id AND human.deleted_at IS NULL
+      LEFT JOIN organizations AS organization
+        ON organization.id = human.organization_id
+        AND organization.deleted_at IS NULL
       WHERE participant.deleted_at IS NULL
       ORDER BY participant.session_id, participant.created_at, participant.id
     `,
@@ -318,6 +342,7 @@ export function buildPastSessionNotes(
   data: PastSessionNotesData,
   sessionId: string,
   userId: string | null,
+  ownerEmail?: string | null,
 ): {
   notes: PastSessionNote[];
   missing: PastSessionNoteRequest[];
@@ -333,22 +358,31 @@ export function buildPastSessionNotes(
   const participantsBySession = groupBySession(data.participants);
   const notesBySession = groupBySession(data.enhancedNotes);
   const namesByHumanId = new Map<string, string>();
+  const owner = resolveOwnerIdentity(ownerEmail);
   for (const participant of data.participants) {
     if (participant.name.trim()) {
       namesByHumanId.set(participant.human_id, participant.name.trim());
     }
+    if (userId && participant.human_id === userId) {
+      collectOwnerIdentity(owner, participant);
+    }
   }
-  const participantIdsFor = (id: string) =>
-    getSessionParticipantIds(participantsBySession.get(id) ?? [], userId);
+  const profileFor = (id: string) =>
+    getMeetingProfile(
+      participantsBySession.get(id) ?? [],
+      userId,
+      owner,
+      namesByHumanId,
+    );
 
-  const currentParticipantIds = participantIdsFor(sessionId);
+  const currentProfile = profileFor(sessionId);
   const currentEvent = getSessionEvent(currentSession);
   const currentSeriesId = getRecurrenceSeriesId(currentEvent);
   const currentTitleKey = getSessionTitleKey(currentSession);
   if (
     !currentSeriesId &&
     !currentTitleKey &&
-    currentParticipantIds.size === 0
+    currentProfile.participantIds.size === 0
   ) {
     return { notes: [], missing: [], requests: [] };
   }
@@ -376,13 +410,13 @@ export function buildPastSessionNotes(
     }
 
     const candidateEvent = getSessionEvent(candidateSession);
-    const candidateParticipantIds = participantIdsFor(candidateSessionId);
+    const candidateProfile = profileFor(candidateSessionId);
     const candidateSeriesId = getRecurrenceSeriesId(candidateEvent);
     const relationship = getPastSessionRelationship({
-      currentParticipantIds,
+      currentProfile,
       currentSeriesId,
       currentTitleKey,
-      candidateParticipantIds,
+      candidateProfile,
       candidateSeriesId,
       candidateTitleKey: getSessionTitleKey(candidateSession),
     });
@@ -406,10 +440,7 @@ export function buildPastSessionNotes(
       sourceHash,
     );
     const ownerUserId = getSessionUserId(candidateSession, userId);
-    const participantNames = getSessionParticipantNames(
-      namesByHumanId,
-      new Set([...currentParticipantIds, ...candidateParticipantIds]),
-    );
+    const participantNames = candidateProfile.participantNames;
     const request = {
       sessionId: candidateSessionId,
       userId: ownerUserId,
@@ -427,6 +458,9 @@ export function buildPastSessionNotes(
         dateLabel,
         occurredAt: candidateEvent?.started_at || candidateSession.created_at,
         participantNames,
+        ...(candidateProfile.companies.length > 0
+          ? { companies: candidateProfile.companies }
+          : {}),
         sourceSummary: source,
         relationship,
         summary: saved,
@@ -694,30 +728,163 @@ function truncateAtWord(text: string, maxLength: number): string {
   return `${slice.slice(0, end).trim()}...`;
 }
 
-function getSessionParticipantIds(
+type OwnerIdentity = {
+  emails: Set<string>;
+  companyKeys: Set<string>;
+};
+
+type MeetingProfile = {
+  participantIds: Set<string>;
+  participantNames: string[];
+  externalIds: Set<string>;
+  externalCompanyKeys: Set<string>;
+  companies: string[];
+};
+
+function resolveOwnerIdentity(
+  ownerEmail: string | null | undefined,
+): OwnerIdentity {
+  const owner: OwnerIdentity = {
+    emails: new Set(),
+    companyKeys: new Set(),
+  };
+  const mailbox = normalizeMailbox(ownerEmail ?? undefined);
+  if (!mailbox) {
+    return owner;
+  }
+
+  owner.emails.add(mailbox);
+  const key = companyKeyFromEmail(mailbox);
+  if (key) {
+    owner.companyKeys.add(key);
+  }
+  return owner;
+}
+
+function collectOwnerIdentity(
+  owner: OwnerIdentity,
+  participant: PastParticipantRow,
+) {
+  const email = normalizeMailbox(participant.email);
+  if (email) {
+    owner.emails.add(email);
+  }
+  for (const key of companyKeysFor(participant)) {
+    owner.companyKeys.add(key);
+  }
+}
+
+function getMeetingProfile(
   participants: PastParticipantRow[],
   userId: string | null,
-): Set<string> {
+  owner: OwnerIdentity,
+  namesByHumanId: Map<string, string>,
+): MeetingProfile {
   const participantIds = new Set<string>();
+  const externalIds = new Set<string>();
+  const externalCompanyKeys = new Set<string>();
+  const companyLabels = new Map<string, string>();
 
-  for (const mapping of participants) {
-    if (mapping.source === "excluded" || !mapping.human_id) {
+  for (const participant of participants) {
+    if (isCurrentUserParticipant(participant, userId, owner)) {
       continue;
     }
 
-    const ownerUserId =
-      typeof mapping.user_id === "string" && mapping.user_id.trim()
-        ? mapping.user_id
-        : null;
-    const isCurrentUser =
-      (userId && mapping.human_id === userId) ||
-      (!userId && ownerUserId && mapping.human_id === ownerUserId);
-    if (!isCurrentUser) {
-      participantIds.add(mapping.human_id);
+    participantIds.add(participant.human_id);
+    const keys = companyKeysFor(participant);
+    const sharesOwnerCompany = keys.some((key) => owner.companyKeys.has(key));
+    // Company matching is only safe once the owner's company is known.
+    // Otherwise a coworker email looks like an outside company and every
+    // internal meeting becomes related.
+    const isExternal =
+      owner.companyKeys.size > 0 && keys.length > 0 && !sharesOwnerCompany;
+    if (!isExternal) {
+      continue;
+    }
+
+    externalIds.add(participant.human_id);
+    for (const key of keys) {
+      externalCompanyKeys.add(key);
+    }
+    const label = companyLabelFor(participant);
+    if (label) {
+      companyLabels.set(label.toLowerCase(), label);
     }
   }
 
-  return participantIds;
+  return {
+    participantIds,
+    participantNames: getSessionParticipantNames(
+      namesByHumanId,
+      participantIds,
+    ),
+    externalIds,
+    externalCompanyKeys,
+    companies: [...companyLabels.values()].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+function isCurrentUserParticipant(
+  participant: PastParticipantRow,
+  userId: string | null,
+  owner: OwnerIdentity,
+): boolean {
+  if (participant.source === "excluded" || !participant.human_id) {
+    return true;
+  }
+
+  const ownerUserId =
+    typeof participant.user_id === "string" && participant.user_id.trim()
+      ? participant.user_id
+      : null;
+  if (
+    (userId && participant.human_id === userId) ||
+    (!userId && ownerUserId && participant.human_id === ownerUserId)
+  ) {
+    return true;
+  }
+
+  const email = normalizeMailbox(participant.email);
+  return Boolean(email && owner.emails.has(email));
+}
+
+function companyKeysFor(participant: PastParticipantRow): string[] {
+  const keys: string[] = [];
+  const organizationId = participant.organization_id?.trim();
+  if (organizationId) {
+    keys.push(`org:${organizationId}`);
+  }
+
+  const emailKey = companyKeyFromEmail(participant.email ?? "");
+  if (emailKey) {
+    keys.push(emailKey);
+  }
+
+  const name = normalizeCompanyName(
+    participant.organization_name,
+  )?.toLowerCase();
+  if (name) {
+    keys.push(`name:${name}`);
+  }
+  return keys;
+}
+
+function companyKeyFromEmail(email: string): string | null {
+  const mailbox = normalizeMailbox(email);
+  if (!mailbox || !isBusinessEmail(mailbox)) {
+    return null;
+  }
+
+  const domain = mailbox.split("@")[1];
+  return domain ? `domain:${domain}` : null;
+}
+
+function companyLabelFor(participant: PastParticipantRow): string | null {
+  return (
+    normalizeCompanyName(participant.organization_name) ||
+    companyTermFromEmail(participant.email) ||
+    null
+  );
 }
 
 function getSessionParticipantNames(
@@ -742,17 +909,17 @@ function getSessionParticipantNames(
 }
 
 function getPastSessionRelationship({
-  currentParticipantIds,
+  currentProfile,
   currentSeriesId,
   currentTitleKey,
-  candidateParticipantIds,
+  candidateProfile,
   candidateSeriesId,
   candidateTitleKey,
 }: {
-  currentParticipantIds: Set<string>;
+  currentProfile: MeetingProfile;
   currentSeriesId: string | null;
   currentTitleKey: string;
-  candidateParticipantIds: Set<string>;
+  candidateProfile: MeetingProfile;
   candidateSeriesId: string | null;
   candidateTitleKey: string;
 }): PastSessionNote["relationship"] | null {
@@ -760,49 +927,83 @@ function getPastSessionRelationship({
     return "same_series";
   }
 
-  const sharesParticipants = hasSharedParticipants(
-    currentParticipantIds,
-    candidateParticipantIds,
+  const sharesExternalPerson = hasOverlap(
+    currentProfile.externalIds,
+    candidateProfile.externalIds,
   );
-  if (
-    currentTitleKey &&
-    currentTitleKey === candidateTitleKey &&
-    sharesParticipants
-  ) {
+  const sharesCompany = hasOverlap(
+    currentProfile.externalCompanyKeys,
+    candidateProfile.externalCompanyKeys,
+  );
+  const sharesPerson = hasOverlap(
+    currentProfile.participantIds,
+    candidateProfile.participantIds,
+  );
+  const samePeople =
+    currentProfile.participantIds.size > 0 &&
+    sameSet(currentProfile.participantIds, candidateProfile.participantIds);
+  const sameTitle = Boolean(
+    currentTitleKey && currentTitleKey === candidateTitleKey,
+  );
+  const currentIsExternal =
+    currentProfile.externalIds.size > 0 ||
+    currentProfile.externalCompanyKeys.size > 0;
+
+  // Outside meetings follow the person or their company. Internal meetings
+  // follow the series, the title, or the exact roster. One shared coworker
+  // is not a relationship.
+  if (currentIsExternal) {
+    if (sameTitle && (sharesExternalPerson || sharesCompany)) {
+      return "matching_title";
+    }
+    if (sharesExternalPerson) {
+      return "shared_participants";
+    }
+    if (sharesCompany) {
+      return "same_company";
+    }
+    return null;
+  }
+
+  if (sameTitle && sharesPerson) {
     return "matching_title";
   }
-
-  if (sharesParticipants) {
+  if (samePeople) {
     return "shared_participants";
   }
-
   return null;
 }
 
-function hasSharedParticipants(
-  currentParticipantIds: Set<string>,
-  candidateParticipantIds: Set<string>,
-) {
-  if (currentParticipantIds.size === 0 || candidateParticipantIds.size === 0) {
-    return false;
-  }
-
-  for (const participantId of candidateParticipantIds) {
-    if (currentParticipantIds.has(participantId)) {
+function hasOverlap(left: Set<string>, right: Set<string>): boolean {
+  for (const value of left) {
+    if (right.has(value)) {
       return true;
     }
   }
-
   return false;
+}
+
+function sameSet(left: Set<string>, right: Set<string>): boolean {
+  if (left.size !== right.size) {
+    return false;
+  }
+  for (const value of left) {
+    if (!right.has(value)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function getRelationshipRank(relationship: PastSessionNote["relationship"]) {
   switch (relationship) {
     case "same_series":
-      return 2;
+      return 3;
     case "matching_title":
-      return 1;
+      return 2;
     case "shared_participants":
+      return 1;
+    case "same_company":
       return 0;
   }
 }

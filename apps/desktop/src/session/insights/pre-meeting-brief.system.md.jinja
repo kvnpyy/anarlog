@@ -2,7 +2,11 @@ You write a 20-second pre-meeting brief from the notes in the user message only.
 
 Write in {{ language }}.
 
-Fill opener with one sentence that names the single most important thing that should or will likely be discussed. Use a real fact from the notes. Fill bullets with exactly three supporting details: an open loop, a named commitment, or something to listen for.
+Those notes are earlier meetings with the same people, the same outside company, or the same recurring series. Ignore a note about a different company, a different group, or a topic this meeting will not continue. If nothing left is about this meeting, return an empty opener and an empty bullets list. An empty brief is better than filler.
+
+Fill opener with one sentence that names the single most important thing that should or will likely be discussed. Use a real fact from the notes. Fill bullets with up to three supporting details: an open loop, a named commitment, or something to listen for. Use fewer when the notes support fewer.
+
+End each bullet with the source meeting title and date in parentheses, copied from that note's heading. Example: "Ada still owes the pricing sheet (Acme pricing, May 12)."
 
 Do not justify why the meeting exists. Everyone already knows they are meeting. Do not write that a sync is crucial, important, or needed for alignment.
 
@@ -10,7 +14,7 @@ Do not copy these instructions into opener or bullets. Do not write labels, head
 
 Rules:
 
-- Three bullets total. Never a second list.
+- Up to three bullets. Never a second list.
 - Do not write a recap and then a preview. Each topic appears once.
 - Do not restate the calendar title, time, location, or attendee list.
 - Every name and fact must come from the notes. If it is not there, omit it.

@@ -351,6 +351,68 @@ describe("streamPreMeetingBrief", () => {
     expect(hoisted.renderCustom).toHaveBeenCalled();
   });
 
+  it("stays empty when the model finds nothing relevant", async () => {
+    hoisted.streamText.mockReturnValue({
+      partialOutputStream: (async function* () {
+        yield { opener: "", bullets: [] };
+      })(),
+      output: Promise.resolve({ opener: "", bullets: [] }),
+    });
+
+    const text = await streamPreMeetingBrief({
+      model: { id: "model-1" } as never,
+      language: "en",
+      event: { title: "Weekly Product Sync" },
+      notes: [makeNote({ sessionId: "previous" })],
+    });
+
+    expect(text).toBe("");
+    expect(hoisted.streamText).toHaveBeenCalledOnce();
+  });
+
+  it("tells the model why each past meeting was included", async () => {
+    hoisted.streamText.mockReturnValue({
+      partialOutputStream: (async function* () {
+        yield { bullets: ["Follow up with Ada (Acme intro, May 12)."] };
+      })(),
+      output: Promise.resolve({
+        bullets: ["Follow up with Ada (Acme intro, May 12)."],
+      }),
+    });
+
+    await streamPreMeetingBrief({
+      model: { id: "model-1" } as never,
+      language: "en",
+      event: {
+        title: "Acme review",
+        participants: [{ name: "Ada", email: "ada@acme.com" }],
+      },
+      notes: [
+        makeNote({
+          sessionId: "intro",
+          title: "Acme intro",
+          relationship: "same_company",
+          companies: ["Acme"],
+          summary: "Ada asked for a revised rollout date.",
+        }),
+      ],
+    });
+
+    const promptContext = hoisted.renderCustom.mock.calls.find((call) => {
+      const ctx = call[1] as { past_meetings?: unknown };
+      return Array.isArray(ctx.past_meetings);
+    })?.[1] as {
+      meeting: { companies: string[] };
+      past_meetings: Array<{ reason: string; companies: string[] }>;
+    };
+
+    expect(promptContext.meeting.companies).toEqual(["Acme"]);
+    expect(promptContext.past_meetings[0]).toMatchObject({
+      reason: "same company",
+      companies: ["Acme"],
+    });
+  });
+
   it("keeps the last streamed brief when the final JSON fails to validate", async () => {
     hoisted.streamText.mockReturnValue({
       partialOutputStream: (async function* () {

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getStoredSettingValues: vi.fn(),
   setSettingValues: vi.fn(),
   setAcornProEntitlement: vi.fn(),
+  extendAcornPro: vi.fn(),
   acornRegisterShareCode: vi.fn(),
   acornSendShareInvites: vi.fn(),
   acornRequestShareVerify: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("~/settings/queries", () => ({
 
 vi.mock("./acorn-pro", () => ({
   setAcornProEntitlement: mocks.setAcornProEntitlement,
+  extendAcornPro: mocks.extendAcornPro,
 }));
 
 vi.mock("~/types/tauri.gen", () => ({
@@ -55,6 +57,7 @@ describe("acorn share codes", () => {
     });
     mocks.setSettingValues.mockReset().mockResolvedValue(undefined);
     mocks.setAcornProEntitlement.mockReset().mockResolvedValue(undefined);
+    mocks.extendAcornPro.mockReset().mockResolvedValue("2027-01-01");
     mocks.acornRegisterShareCode.mockReset().mockResolvedValue({
       status: "ok",
       data: "ok",
@@ -177,14 +180,51 @@ describe("acorn share codes", () => {
     });
 
     await expect(syncShareReferrerGrant()).resolves.toBe(true);
-    expect(mocks.setAcornProEntitlement).toHaveBeenCalledWith(
-      true,
-      "share",
-      expect.any(String),
-    );
-    const expiresAt = mocks.setAcornProEntitlement.mock.calls[0]?.[2] as string;
-    const remainingMs = Date.parse(expiresAt) - Date.now();
-    expect(remainingMs).toBeGreaterThan(89 * 86_400_000);
-    expect(remainingMs).toBeLessThan(91 * 86_400_000);
+    expect(mocks.extendAcornPro).toHaveBeenCalledWith("share", 90);
+    expect(mocks.setSettingValues).toHaveBeenCalledWith({
+      acorn_share_granted_at: expect.any(String),
+    });
+  });
+
+  it("grants the referrer months only once", async () => {
+    mocks.getStoredSettingValues.mockResolvedValue({
+      values: {
+        acorn_share_code: "aaaaaaaaaaaaaaaaaaaaaaaa",
+        acorn_share_granted_at: "2026-10-01T00:00:00.000Z",
+        acorn_pro: true,
+      },
+    });
+
+    await expect(syncShareReferrerGrant()).resolves.toBe(false);
+    expect(mocks.extendAcornPro).not.toHaveBeenCalled();
+  });
+
+  it("marks an earlier share grant without adding more time", async () => {
+    mocks.getStoredSettingValues.mockResolvedValue({
+      values: {
+        acorn_share_code: "aaaaaaaaaaaaaaaaaaaaaaaa",
+        acorn_pro: true,
+        acorn_pro_source: "share",
+        acorn_pro_expires_at: "2027-01-01T00:00:00.000Z",
+      },
+    });
+
+    await expect(syncShareReferrerGrant()).resolves.toBe(false);
+    expect(mocks.extendAcornPro).not.toHaveBeenCalled();
+    expect(mocks.setSettingValues).toHaveBeenCalledWith({
+      acorn_share_granted_at: expect.any(String),
+    });
+  });
+
+  it("does not double-grant when two checks run together", async () => {
+    mocks.getStoredSettingValues.mockResolvedValue({
+      values: {
+        acorn_share_code: "aaaaaaaaaaaaaaaaaaaaaaaa",
+        acorn_pro: false,
+      },
+    });
+
+    await Promise.all([syncShareReferrerGrant(), syncShareReferrerGrant()]);
+    expect(mocks.extendAcornPro).toHaveBeenCalledOnce();
   });
 });

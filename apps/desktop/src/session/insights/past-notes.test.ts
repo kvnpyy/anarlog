@@ -485,6 +485,260 @@ describe("past note relationship indexing", () => {
     ]);
   });
 
+  it("keeps an outside meeting to the same people and company", () => {
+    const data = makeData({
+      sessions: {
+        current: {
+          title: "Acme quarterly review",
+          created_at: "2026-06-03T10:00:00.000Z",
+          event_json: "",
+        },
+        intro: {
+          title: "Acme intro",
+          created_at: "2026-05-20T10:00:00.000Z",
+          event_json: "",
+        },
+        pricing: {
+          title: "Pricing with Cal",
+          created_at: "2026-05-28T10:00:00.000Z",
+          event_json: "",
+        },
+        hiring: {
+          title: "Hiring loop",
+          created_at: "2026-05-30T10:00:00.000Z",
+          event_json: "",
+        },
+      },
+      mapping_session_participant: {
+        current_owner: person("current", "self", "Kevin", "kevin@acorn.test"),
+        current_ada: person("current", "ada", "Ada", "ada@acme.com"),
+        current_bob: person("current", "bob", "Bob", "bob@acorn.test"),
+        intro_ada: person("intro", "ada", "Ada", "ada@acme.com"),
+        pricing_cal: person("pricing", "cal", "Cal", "cal@acme.com"),
+        hiring_bob: person("hiring", "bob", "Bob", "bob@acorn.test"),
+      },
+      enhanced_notes: {
+        intro_summary: {
+          session_id: "intro",
+          content: "Ada asked for a revised rollout date.",
+          position: 0,
+        },
+        pricing_summary: {
+          session_id: "pricing",
+          content: "Cal wants the enterprise price before Friday.",
+          position: 0,
+        },
+        hiring_summary: {
+          session_id: "hiring",
+          content: "Bob will schedule the next interview.",
+          position: 0,
+        },
+      },
+    });
+
+    const result = buildPastSessionNotes(
+      data,
+      "current",
+      "self",
+      "kevin@acorn.test",
+    );
+
+    expect(
+      result.notes.map((note) => [note.sessionId, note.relationship]),
+    ).toEqual([
+      ["intro", "shared_participants"],
+      ["pricing", "same_company"],
+    ]);
+    expect(result.notes[0]?.participantNames).toEqual(["Ada"]);
+    expect(result.notes[0]?.companies).toEqual(["Acme"]);
+    expect(result.notes[1]?.companies).toEqual(["Acme"]);
+  });
+
+  it("does not pull an internal meeting that only shares one coworker", () => {
+    const data = makeData({
+      sessions: {
+        current: {
+          title: "Product review",
+          created_at: "2026-06-03T10:00:00.000Z",
+          event_json: "",
+        },
+        hiring: {
+          title: "Hiring loop",
+          created_at: "2026-05-22T10:00:00.000Z",
+          event_json: "",
+        },
+      },
+      mapping_session_participant: {
+        current_alex: person("current", "alex", "Alex", "alex@acorn.test"),
+        current_jamie: person("current", "jamie", "Jamie", "jamie@acorn.test"),
+        hiring_alex: person("hiring", "alex", "Alex", "alex@acorn.test"),
+      },
+      enhanced_notes: {
+        hiring_summary: {
+          session_id: "hiring",
+          content: "Alex will schedule the next interview.",
+          position: 0,
+        },
+      },
+    });
+
+    const result = buildPastSessionNotes(
+      data,
+      "current",
+      "self",
+      "kevin@acorn.test",
+    );
+
+    expect(result.notes).toEqual([]);
+  });
+
+  it("keeps one-to-one history and drops a larger meeting with that person", () => {
+    const data = makeData({
+      sessions: {
+        current: {
+          title: "Check-in",
+          created_at: "2026-06-03T10:00:00.000Z",
+          event_json: "",
+        },
+        previous: {
+          title: "Staffing chat",
+          created_at: "2026-05-20T10:00:00.000Z",
+          event_json: "",
+        },
+        all_hands: {
+          title: "All hands",
+          created_at: "2026-05-27T10:00:00.000Z",
+          event_json: "",
+        },
+      },
+      mapping_session_participant: {
+        current_alex: person("current", "alex", "Alex", "alex@acorn.test"),
+        previous_alex: person("previous", "alex", "Alex", "alex@acorn.test"),
+        all_hands_alex: person("all_hands", "alex", "Alex", "alex@acorn.test"),
+        all_hands_jamie: person(
+          "all_hands",
+          "jamie",
+          "Jamie",
+          "jamie@acorn.test",
+        ),
+      },
+      enhanced_notes: {
+        previous_summary: {
+          session_id: "previous",
+          content: "Alex will send the staffing plan.",
+          position: 0,
+        },
+        all_hands_summary: {
+          session_id: "all_hands",
+          content: "The team reviewed the quarter.",
+          position: 0,
+        },
+      },
+    });
+
+    const result = buildPastSessionNotes(
+      data,
+      "current",
+      "self",
+      "kevin@acorn.test",
+    );
+
+    expect(result.notes.map((note) => note.sessionId)).toEqual(["previous"]);
+  });
+
+  it("does not treat the signed-in user as a shared participant", () => {
+    const data = makeData({
+      sessions: {
+        current: {
+          title: "Acme review",
+          created_at: "2026-06-03T10:00:00.000Z",
+          event_json: "",
+        },
+        unrelated: {
+          title: "Design critique",
+          created_at: "2026-05-20T10:00:00.000Z",
+          event_json: "",
+        },
+      },
+      mapping_session_participant: {
+        current_me: person(
+          "current",
+          "calendar-me",
+          "Kevin",
+          "kevin@acorn.test",
+        ),
+        current_ada: person("current", "ada", "Ada", "ada@acme.com"),
+        unrelated_me: person(
+          "unrelated",
+          "calendar-me",
+          "Kevin",
+          "kevin@acorn.test",
+        ),
+        unrelated_sam: person("unrelated", "sam", "Sam", "sam@acorn.test"),
+      },
+      enhanced_notes: {
+        unrelated_summary: {
+          session_id: "unrelated",
+          content: "Sam will revise the mock.",
+          position: 0,
+        },
+      },
+    });
+
+    const result = buildPastSessionNotes(
+      data,
+      "current",
+      "self",
+      "kevin@acorn.test",
+    );
+
+    expect(result.notes).toEqual([]);
+  });
+
+  it("lists only the people who attended the past meeting", () => {
+    const data = makeData({
+      sessions: {
+        current: {
+          title: "Weekly Product Sync",
+          created_at: "2026-06-03T10:00:00.000Z",
+          event_json: JSON.stringify({
+            started_at: "2026-06-03T10:00:00.000Z",
+            recurrence_series_id: "series-1",
+          }),
+        },
+        previous: {
+          title: "Weekly Product Sync",
+          created_at: "2026-05-28T10:00:00.000Z",
+          event_json: JSON.stringify({
+            started_at: "2026-05-28T10:00:00.000Z",
+            recurrence_series_id: "series-1",
+          }),
+        },
+      },
+      mapping_session_participant: {
+        current_ada: person("current", "ada", "Ada", "ada@acme.com"),
+        current_bob: person("current", "bob", "Bob", "bob@acorn.test"),
+        previous_ada: person("previous", "ada", "Ada", "ada@acme.com"),
+      },
+      enhanced_notes: {
+        previous_summary: {
+          session_id: "previous",
+          content: "Ada asked for the rollout date.",
+          position: 0,
+        },
+      },
+    });
+
+    const result = buildPastSessionNotes(
+      data,
+      "current",
+      "self",
+      "kevin@acorn.test",
+    );
+
+    expect(result.notes[0]?.participantNames).toEqual(["Ada"]);
+  });
+
   it("visits each participant and note row a bounded number of times", () => {
     const sessions: Record<string, ReturnType<typeof session>> = {
       current: session("current", "2026-06-03T10:00:00.000Z"),
@@ -575,6 +829,22 @@ describe("buildSessionKeyFactsStatements", () => {
   });
 });
 
+function person(
+  sessionId: string,
+  humanId: string,
+  name: string,
+  email: string,
+) {
+  return {
+    session_id: sessionId,
+    human_id: humanId,
+    user_id: "self",
+    source: "auto",
+    name,
+    email,
+  };
+}
+
 function makeData(
   tables: Record<string, Record<string, Record<string, unknown>>>,
 ): PastSessionNotesData {
@@ -598,6 +868,9 @@ function makeData(
         user_id: String(row.user_id ?? ""),
         source: String(row.source ?? ""),
         name: String(row.name ?? row.human_id ?? ""),
+        email: String(row.email ?? ""),
+        organization_id: String(row.organization_id ?? ""),
+        organization_name: String(row.organization_name ?? ""),
       }),
     ),
     enhancedNotes: Object.values(tables.enhanced_notes ?? {}).map((row) => ({

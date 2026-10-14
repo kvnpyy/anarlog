@@ -130,8 +130,8 @@ export async function runPreMeetingBriefJob({
         }
       },
     });
-    if (!brief) {
-      throw new Error("empty-brief");
+    if (!brief.trim()) {
+      return;
     }
 
     const markdown = mergeBriefMarkdown(brief, existingMarkdown);

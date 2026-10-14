@@ -17,6 +17,12 @@ vi.mock("~/shared/acorn-share-card", () => ({
   AcornShareCard: () => <div>Share Acorn, get 3 months of Pro</div>,
 }));
 
+vi.mock("~/shared/acorn-linkedin-card", () => ({
+  AcornLinkedInCard: () => (
+    <div>Follow Acorn on LinkedIn, get 1 month of Pro</div>
+  ),
+}));
+
 vi.mock("~/store/zustand/tabs", () => ({
   useTabs: (selector: (state: { openNew: typeof mocks.openNew }) => unknown) =>
     selector({ openNew: mocks.openNew }),
@@ -61,6 +67,9 @@ describe("AcornPlansDialog", () => {
       screen.getByRole("button", { name: "Share to get Pro" }),
     ).toBeTruthy();
     expect(screen.getByText("Share Acorn, get 3 months of Pro")).toBeTruthy();
+    expect(
+      screen.getByText("Follow Acorn on LinkedIn, get 1 month of Pro"),
+    ).toBeTruthy();
     expect(screen.getByLabelText("Have a Pro invite?")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));

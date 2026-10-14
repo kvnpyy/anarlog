@@ -20,7 +20,7 @@ vi.mock("~/shared/acorn-defaults", async (importOriginal) => {
   };
 });
 
-import { setAcornProEntitlement } from "./acorn-pro";
+import { extendAcornPro, setAcornProEntitlement } from "./acorn-pro";
 
 import {
   ACORN_HOSTED_HAIKU_MODEL,
@@ -97,5 +97,59 @@ describe("setAcornProEntitlement", () => {
       acorn_pro_source: "dev",
       acorn_pro_expires_at: "",
     });
+  });
+});
+
+describe("extendAcornPro", () => {
+  const nowMs = Date.parse("2026-10-14T12:00:00.000Z");
+  const day = 86_400_000;
+
+  beforeEach(() => {
+    mocks.setSettingValues.mockReset().mockResolvedValue(undefined);
+    mocks.getAcornDefaultLlm.mockReset().mockReturnValue(null);
+  });
+
+  function stored(values: Record<string, unknown>) {
+    mocks.getStoredSettingValues.mockReset().mockResolvedValue({
+      values,
+      hasValues: new Set(Object.keys(values)),
+    });
+  }
+
+  it("starts from now on Free", async () => {
+    stored({ acorn_pro: false });
+
+    await expect(extendAcornPro("linkedin", 30, nowMs)).resolves.toBe(
+      new Date(nowMs + 30 * day).toISOString(),
+    );
+  });
+
+  it("adds onto Pro time already left", async () => {
+    stored({
+      acorn_pro: true,
+      acorn_pro_expires_at: new Date(nowMs + 90 * day).toISOString(),
+    });
+
+    await expect(extendAcornPro("linkedin", 30, nowMs)).resolves.toBe(
+      new Date(nowMs + 120 * day).toISOString(),
+    );
+  });
+
+  it("ignores an expiry that already passed", async () => {
+    stored({
+      acorn_pro: true,
+      acorn_pro_expires_at: new Date(nowMs - 5 * day).toISOString(),
+    });
+
+    await expect(extendAcornPro("share", 90, nowMs)).resolves.toBe(
+      new Date(nowMs + 90 * day).toISOString(),
+    );
+  });
+
+  it("leaves unlimited Pro alone", async () => {
+    stored({ acorn_pro: true, acorn_pro_expires_at: "" });
+
+    await expect(extendAcornPro("linkedin", 30, nowMs)).resolves.toBeNull();
+    expect(mocks.setSettingValues).not.toHaveBeenCalled();
   });
 });

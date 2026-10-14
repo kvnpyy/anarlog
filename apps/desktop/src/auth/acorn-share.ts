@@ -1,4 +1,4 @@
-import { setAcornProEntitlement } from "./acorn-pro";
+import { extendAcornPro, setAcornProEntitlement } from "./acorn-pro";
 
 import {
   isBusinessEmail,
@@ -174,7 +174,7 @@ export async function requestShareVerify(
   }
 
   if (result.data.status === "ok") {
-    await applyShareProGrant("invitee");
+    await applyShareInviteeGrant();
   }
 
   return asShareRedeemStatus(result.data.status);
@@ -211,7 +211,7 @@ export async function confirmShareVerify(
   }
 
   if (result.data.status === "ok") {
-    await applyShareProGrant("invitee");
+    await applyShareInviteeGrant();
   }
 
   return asShareRedeemStatus(result.data.status);
@@ -236,8 +236,20 @@ function asShareRedeemStatus(status: string): ShareRedeemStatus {
   }
 }
 
-export async function syncShareReferrerGrant(): Promise<boolean> {
+let referrerGrant: Promise<boolean> | null = null;
+
+export function syncShareReferrerGrant(): Promise<boolean> {
+  referrerGrant ??= applyShareReferrerGrant().finally(() => {
+    referrerGrant = null;
+  });
+  return referrerGrant;
+}
+
+async function applyShareReferrerGrant(): Promise<boolean> {
   const stored = await getStoredSettingValues();
+  if (stored.values.acorn_share_granted_at) {
+    return false;
+  }
   const code = normalizeShareCode(stored.values.acorn_share_code ?? "");
   if (!code) {
     return false;
@@ -248,21 +260,29 @@ export async function syncShareReferrerGrant(): Promise<boolean> {
     return false;
   }
 
-  return applyShareProGrant("referrer");
+  const grantedAt = new Date().toISOString();
+  // Builds before the claim marker re-granted 90 days on every load. Keep
+  // that time, but stop it from growing again.
+  if (stored.values.acorn_pro_source === "share") {
+    await setSettingValues({ acorn_share_granted_at: grantedAt });
+    return false;
+  }
+
+  await extendAcornPro("share", SHARE_REFERRER_DAYS);
+  await setSettingValues({ acorn_share_granted_at: grantedAt });
+  return true;
 }
 
-export async function applyShareProGrant(
-  kind: "invitee" | "referrer",
-): Promise<boolean> {
-  const days = kind === "referrer" ? SHARE_REFERRER_DAYS : SHARE_INVITEE_DAYS;
-  const source = kind === "referrer" ? "share" : "share_invitee";
-  const expiresAt = new Date(Date.now() + days * 86_400_000).toISOString();
+async function applyShareInviteeGrant(): Promise<boolean> {
+  const expiresAt = new Date(
+    Date.now() + SHARE_INVITEE_DAYS * 86_400_000,
+  ).toISOString();
   const stored = await getStoredSettingValues();
   if (!shouldReplaceLocalPro(stored.values, expiresAt)) {
     return false;
   }
 
-  await setAcornProEntitlement(true, source, expiresAt);
+  await setAcornProEntitlement(true, "share_invitee", expiresAt);
   return true;
 }
 
